@@ -5,7 +5,13 @@ import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginForm from './components/auth/LoginForm';
 import SignUpForm from './components/auth/SignUpForm';
+import OtpVerification from './components/auth/OtpVerification';
 import Home from './pages/Home';
+import CitizenHome from './pages/CitizenHome';
+import Profile from './pages/Profile';
+import AdminApproveOfficers from './pages/AdminApproveOfficers';
+import RoleProtectedRoute from './components/auth/RoleProtectedRoute';
+import Officer from './pages/Officer';
 import Dashboard from './pages/Dashboard';
 import ComplaintList from './components/complaints/ComplaintList';
 
@@ -16,6 +22,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+        <Route path="/verify-otp" element={<OtpVerification />} />
       <Route 
         path="/login" 
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginForm />} 
@@ -23,6 +30,15 @@ const AppRoutes: React.FC = () => {
       <Route 
         path="/signup" 
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignUpForm />} 
+      />
+      <Route path="/officer" element={<Officer />} />
+      <Route
+        path="/citizen"
+        element={
+          <ProtectedRoute>
+            <CitizenHome />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/dashboard/*"
@@ -33,6 +49,8 @@ const AppRoutes: React.FC = () => {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/complaints" element={<ComplaintList />} />
                 <Route path="/complaints/create" element={<div>Create Complaint Page (Coming Soon)</div>} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/admin/approvals" element={<RoleProtectedRoute allowedRoles={["ADMIN","DISTRICT_COMMISSIONER"]}><AdminApproveOfficers /></RoleProtectedRoute>} />
                 <Route path="/users" element={<div>Users Page (Coming Soon)</div>} />
                 <Route path="/analytics" element={<div>Analytics Page (Coming Soon)</div>} />
                 <Route path="/notifications" element={<div>Notifications Page (Coming Soon)</div>} />

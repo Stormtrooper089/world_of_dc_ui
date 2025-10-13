@@ -9,6 +9,8 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
+  // programmatically set auth state (token + user)
+  setAuth: (auth: AuthResponse) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,6 +63,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const setAuth = (auth: AuthResponse) => {
+    setToken(auth.token);
+    setUser(auth.user);
+    localStorage.setItem('token', auth.token);
+    localStorage.setItem('user', JSON.stringify(auth.user));
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -75,6 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isLoading,
     isAuthenticated: !!user && !!token,
+    setAuth,
   };
 
   return (
