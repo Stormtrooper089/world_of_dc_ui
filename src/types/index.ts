@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  employeeId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -12,11 +13,21 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   MANAGER = 'MANAGER',
   EMPLOYEE = 'EMPLOYEE',
-  CUSTOMER = 'CUSTOMER'
+  CUSTOMER = 'CUSTOMER',
+  OFFICER = 'OFFICER',
+  DISTRICT_COMMISSIONER = 'DISTRICT_COMMISSIONER',
+  ADDITIONAL_DISTRICT_COMMISSIONER = 'ADDITIONAL_DISTRICT_COMMISSIONER',
+  BLOCK_DEVELOPMENT_OFFICER = 'BLOCK_DEVELOPMENT_OFFICER',
+  GRAM_PANCHAYAT_OFFICER = 'GRAM_PANCHAYAT_OFFICER'
 }
 
 export interface LoginCredentials {
   email: string;
+  password: string;
+}
+
+export interface OfficerLoginCredentials {
+  employeeId: string;
   password: string;
 }
 
@@ -33,6 +44,40 @@ export interface RegisterData {
   email?: string;
   address?: string;
   aadharNumber?: string;
+}
+
+// Officer types
+export interface OfficerSignupData {
+  employeeId: string;
+  name: string;
+  email: string;
+  mobileNumber: string;
+  designation: string;
+  department: string;
+  role: string;
+  password: string;
+}
+
+export interface Officer {
+  id: string;
+  employeeId: string;
+  name: string;
+  email: string;
+  mobileNumber: string;
+  designation: string;
+  department: string;
+  role: UserRole;
+  isApproved: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OfficerUpdateData {
+  name: string;
+  email: string;
+  mobileNumber: string;
+  designation: string;
+  department: string;
 }
 
 // Complaint Types

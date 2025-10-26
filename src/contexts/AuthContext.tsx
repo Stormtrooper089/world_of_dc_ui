@@ -11,6 +11,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   // programmatically set auth state (token + user)
   setAuth: (auth: AuthResponse) => void;
+  // update user data without affecting token
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,6 +72,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(auth.user));
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -85,6 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isAuthenticated: !!user && !!token,
     setAuth,
+    updateUser,
   };
 
   return (

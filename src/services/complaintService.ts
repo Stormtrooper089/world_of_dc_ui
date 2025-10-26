@@ -6,7 +6,8 @@ import {
   PaginatedResponse,
   ComplaintStatus,
   ComplaintPriority,
-  ComplaintCategory
+  ComplaintCategory,
+  ApiResponse
 } from '../types';
 
 export const complaintService = {
@@ -20,8 +21,12 @@ export const complaintService = {
     return response.data;
   },
 
-  async createComplaint(data: CreateComplaintData): Promise<Complaint> {
-    const response = await api.post<Complaint>('/complaints', data);
+  async createComplaint(data: FormData): Promise<ApiResponse<{ complaintNumber: string }>> {
+    const response = await api.post<ApiResponse<{ complaintNumber: string }>>('/complaints', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

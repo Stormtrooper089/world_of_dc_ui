@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import AdminApproveOfficers from './pages/AdminApproveOfficers';
 import RoleProtectedRoute from './components/auth/RoleProtectedRoute';
 import Officer from './pages/Officer';
+import OfficerDashboard from './pages/OfficerDashboard';
 import Dashboard from './pages/Dashboard';
 import ComplaintList from './components/complaints/ComplaintList';
 
@@ -21,17 +22,25 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-        <Route path="/verify-otp" element={<OtpVerification />} />
+      <Route path="/" element={<Officer />} />
+      <Route path="/customer" element={<Home />} />
+      <Route path="/verify-otp" element={<OtpVerification />} />
       <Route 
         path="/login" 
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginForm />} 
+        element={isAuthenticated ? <Navigate to="/officer-dashboard" replace /> : <LoginForm />} 
       />
       <Route 
         path="/signup" 
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignUpForm />} 
+        element={isAuthenticated ? <Navigate to="/officer-dashboard" replace /> : <SignUpForm />} 
       />
-      <Route path="/officer" element={<Officer />} />
+      <Route
+        path="/officer-dashboard"
+        element={
+          <ProtectedRoute>
+            <OfficerDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/citizen"
         element={
@@ -55,7 +64,7 @@ const AppRoutes: React.FC = () => {
                 <Route path="/analytics" element={<div>Analytics Page (Coming Soon)</div>} />
                 <Route path="/notifications" element={<div>Notifications Page (Coming Soon)</div>} />
                 <Route path="/settings" element={<div>Settings Page (Coming Soon)</div>} />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/customer" replace />} />
               </Routes>
             </Layout>
           </ProtectedRoute>
