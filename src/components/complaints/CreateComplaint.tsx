@@ -14,7 +14,11 @@ interface CreateComplaintData {
   files?: FileList;
 }
 
-const CreateComplaint: React.FC = () => {
+interface CreateComplaintProps {
+  onSuccess?: () => void;
+}
+
+const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [error, setError] = useState("");
@@ -63,6 +67,12 @@ const CreateComplaint: React.FC = () => {
           `Complaint created successfully! Complaint Number: ${response.data.complaintNumber}`
         );
         reset();
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          setTimeout(() => {
+            onSuccess();
+          }, 2000); // Wait 2 seconds to show success message
+        }
       } else {
         setError(response.message || "Failed to create complaint");
       }

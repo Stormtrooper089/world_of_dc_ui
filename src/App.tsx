@@ -22,6 +22,7 @@ import Dashboard from "./pages/Dashboard";
 import ComplaintList from "./components/complaints/ComplaintList";
 import CreateComplaint from "./components/complaints/CreateComplaint";
 import ComplaintDetail from "./pages/ComplaintDetail";
+import CustomerPage from "./pages/CustomerPage";
 
 // Main App Routes
 const AppRoutes: React.FC = () => {
@@ -30,7 +31,8 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Officer />} />
-      <Route path="/customer" element={<Home />} />
+      <Route path="/customer" element={<CustomerPage />} />
+      <Route path="/customer2" element={<Home />} />
       <Route path="/verify-otp" element={<OtpVerification />} />
       <Route
         path="/login"
