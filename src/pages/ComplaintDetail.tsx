@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { complaintService } from "../services/complaintService";
-import { Complaint, ComplaintStatus, ComplaintPriority } from "../types";
+import { officerService } from "../services/officerService";
+import {
+  Complaint,
+  ComplaintStatus,
+  ComplaintPriority,
+  Officer,
+} from "../types";
 import ComplaintEditModal from "../components/complaints/ComplaintEditModal";
 import CommentSection from "../components/complaints/CommentSection";
 import {
@@ -32,10 +38,12 @@ const ComplaintDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [officers, setOfficers] = useState<Officer[]>([]);
 
   useEffect(() => {
     if (id) {
       fetchComplaintDetails();
+      fetchOfficers();
     }
   }, [id]);
 
@@ -51,6 +59,20 @@ const ComplaintDetail: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchOfficers = async () => {
+    try {
+      const officersList = await officerService.getAllOfficers();
+      setOfficers(officersList);
+    } catch (err) {
+      console.error("Failed to fetch officers:", err);
+    }
+  };
+
+  const getOfficerName = (officerId: string): string => {
+    const officer = officers.find((o) => o.id === officerId);
+    return officer ? `${officer.name} (${officer.employeeId})` : officerId;
   };
 
   const handleDownloadAttachment = async (fileName: string) => {
@@ -322,7 +344,9 @@ const ComplaintDetail: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Assigned Officer
               </h3>
-              <p className="text-gray-700">{complaint.assignedToId}</p>
+              <p className="text-gray-700">
+                {getOfficerName(complaint.assignedToId)}
+              </p>
               {complaint.assignmentRemarks && (
                 <p className="text-gray-600 mt-1 italic">
                   {complaint.assignmentRemarks}

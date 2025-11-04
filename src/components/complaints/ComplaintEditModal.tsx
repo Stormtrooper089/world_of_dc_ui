@@ -80,6 +80,19 @@ const ComplaintEditModal: React.FC<ComplaintEditModalProps> = ({
           const approvedOfficers = officersList.filter((o) => o.isApproved);
           setOfficers(approvedOfficers);
           setFilteredOfficers(approvedOfficers);
+
+          // If there's an assigned officer, ensure they're in the list
+          // If not found, we might need to fetch them individually (though they should be in the list if approved)
+          if (complaint.assignedToId) {
+            const assignedOfficer = approvedOfficers.find(
+              (o) => o.id === complaint.assignedToId
+            );
+            if (!assignedOfficer) {
+              console.warn(
+                `Assigned officer ${complaint.assignedToId} not found in approved officers list`
+              );
+            }
+          }
         } catch (err) {
           console.error("Failed to fetch officers:", err);
         }
@@ -178,10 +191,11 @@ const ComplaintEditModal: React.FC<ComplaintEditModalProps> = ({
             assignedDepartment: formData.assignedDepartment,
             departmentRemarks: formData.departmentRemarks,
           }),
-        // Include officer assignment if changed
-        ...(formData.assignedToId !== complaint.assignedToId && {
-          assignedToId: formData.assignedToId,
-        }),
+        // Include officer assignment if changed or newly assigned
+        ...(formData.assignedToId &&
+          formData.assignedToId !== complaint.assignedToId && {
+            assignedToId: formData.assignedToId,
+          }),
       };
 
       const updatedComplaint = await complaintService.updateComplaint(
@@ -367,59 +381,63 @@ const ComplaintEditModal: React.FC<ComplaintEditModalProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Assign to Officer
                   </label>
-                  {complaint.assignedToId && (
-                    <div className="mb-2 text-sm text-gray-600">
-                      <span className="font-medium">Currently Assigned:</span>{" "}
-                      {officers.find((o) => o.id === complaint.assignedToId)
-                        ? `${
-                            officers.find(
-                              (o) => o.id === complaint.assignedToId
-                            )?.name
-                          } (${
-                            officers.find(
-                              (o) => o.id === complaint.assignedToId
-                            )?.employeeId
-                          })`
-                        : complaint.assignedToId}
+
+                  {/* Display Currently Assigned Officer */}
+                  {(formData.assignedToId || complaint.assignedToId) && (
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="text-sm">
+                        <span className="font-medium text-gray-700">
+                          {formData.assignedToId !== complaint.assignedToId
+                            ? "New Assignment:"
+                            : "Currently Assigned:"}
+                        </span>{" "}
+                        {(() => {
+                          const assignedId =
+                            formData.assignedToId || complaint.assignedToId;
+                          const assignedOfficer = officers.find(
+                            (o) => o.id === assignedId
+                          );
+                          return assignedOfficer
+                            ? `${assignedOfficer.name} (${assignedOfficer.employeeId})`
+                            : assignedId;
+                        })()}
+                      </div>
                     </div>
                   )}
+
+                  {/* Search Input for Officer Assignment */}
                   <div className="relative">
                     <input
                       type="text"
                       value={
                         formData.assignedToId && !officerSearchQuery
-                          ? officers.find((o) => o.id === formData.assignedToId)
-                            ? `${
-                                officers.find(
-                                  (o) => o.id === formData.assignedToId
-                                )?.name
-                              } (${
-                                officers.find(
-                                  (o) => o.id === formData.assignedToId
-                                )?.employeeId
-                              })`
-                            : ""
+                          ? (() => {
+                              const selectedOfficer = officers.find(
+                                (o) => o.id === formData.assignedToId
+                              );
+                              return selectedOfficer
+                                ? `${selectedOfficer.name} (${selectedOfficer.employeeId})`
+                                : "";
+                            })()
                           : officerSearchQuery
                       }
                       onChange={(e) => {
                         const value = e.target.value;
                         setOfficerSearchQuery(value);
-                        // Clear selected officer if user starts typing
+                        // Clear selected officer if user starts typing a new search
                         if (value && formData.assignedToId) {
                           setFormData((prev) => ({
                             ...prev,
                             assignedToId: "",
                           }));
                         }
+                        // Don't set showOfficerDropdown here - let the useEffect handle it after search
                         if (!value) {
-                          setFormData((prev) => ({
-                            ...prev,
-                            assignedToId: "",
-                          }));
                           setShowOfficerDropdown(false);
                         }
                       }}
                       onFocus={() => {
+                        // If there's a search query or we have filtered results, show dropdown
                         if (
                           officerSearchQuery.length >= 2 ||
                           filteredOfficers.length > 0
@@ -427,52 +445,72 @@ const ComplaintEditModal: React.FC<ComplaintEditModalProps> = ({
                           setShowOfficerDropdown(true);
                         }
                       }}
-                      placeholder="Search officer by name (type at least 2 characters)..."
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      placeholder={
+                        formData.assignedToId || complaint.assignedToId
+                          ? "Search for a different officer (type at least 2 characters)..."
+                          : "Search officer by name (type at least 2 characters)..."
+                      }
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-10"
                     />
-                    {(formData.assignedToId || officerSearchQuery) && (
+                    {officerSearchQuery && (
                       <button
                         type="button"
                         onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            assignedToId: "",
-                          }));
                           setOfficerSearchQuery("");
                           setShowOfficerDropdown(false);
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
-                        title="Clear"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none w-6 h-6 flex items-center justify-center"
+                        title="Clear search"
                       >
                         ×
                       </button>
                     )}
+
+                    {/* Dropdown with Search Results */}
                     {showOfficerDropdown && filteredOfficers.length > 0 && (
                       <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                        {filteredOfficers.map((officer) => (
-                          <div
-                            key={officer.id}
-                            onClick={() => {
-                              setFormData((prev) => ({
-                                ...prev,
-                                assignedToId: officer.id,
-                              }));
-                              setOfficerSearchQuery("");
-                              setShowOfficerDropdown(false);
-                            }}
-                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          >
-                            <div className="font-medium text-gray-900">
-                              {officer.name}
+                        {filteredOfficers.map((officer) => {
+                          const isCurrentlySelected =
+                            formData.assignedToId === officer.id;
+                          return (
+                            <div
+                              key={officer.id}
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  assignedToId: officer.id,
+                                }));
+                                setOfficerSearchQuery(""); // Clear search query to show selected officer name
+                                setShowOfficerDropdown(false);
+                              }}
+                              className={`px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                                isCurrentlySelected ? "bg-blue-100" : ""
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {officer.name}
+                                    {isCurrentlySelected && (
+                                      <span className="ml-2 text-xs text-blue-600 font-normal">
+                                        (Selected)
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {officer.employeeId} -{" "}
+                                    {officer.role?.replace("_", " ") ||
+                                      "Officer"}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {officer.employeeId} -{" "}
-                              {officer.role?.replace("_", " ") || "Officer"}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
+
+                    {/* No Results Message */}
                     {showOfficerDropdown &&
                       officerSearchQuery.length >= 2 &&
                       filteredOfficers.length === 0 && (
@@ -481,6 +519,12 @@ const ComplaintEditModal: React.FC<ComplaintEditModalProps> = ({
                         </div>
                       )}
                   </div>
+
+                  {/* Helper Text */}
+                  <p className="mt-2 text-xs text-gray-500">
+                    Type at least 2 characters to search for officers. Select an
+                    officer from the list to assign them to this complaint.
+                  </p>
                 </div>
               </div>
 

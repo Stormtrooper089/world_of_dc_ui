@@ -281,7 +281,7 @@ const MyComplaints: React.FC = () => {
                         </div>
                       )}
                     {/* Percentage-based progress removed */}
-                    {isDistrictCommissioner && complaint.assignedToId && (
+                    {complaint.assignedToId && (
                       <div>
                         <span className="font-medium">Assigned To:</span>{" "}
                         {getOfficerName(complaint.assignedToId)}
