@@ -30,8 +30,9 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Officer />} />
+      <Route path="/" element={<CustomerPage />} />
       <Route path="/customer" element={<CustomerPage />} />
+      <Route path="/officer-login" element={<Officer />} />
       <Route path="/customer2" element={<Home />} />
       <Route path="/verify-otp" element={<OtpVerification />} />
       <Route
