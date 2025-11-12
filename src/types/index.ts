@@ -311,3 +311,24 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+// Meeting Types
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  startDateTime: string;
+  durationMinutes: number;
+  createdById: string;
+  invitedOfficerIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MeetingCreateRequest {
+  title: string;
+  description?: string;
+  startDateTime: string; // Local time format (YYYY-MM-DDTHH:mm:ss)
+  durationMinutes: number;
+  invitedOfficerIds: string[];
+}

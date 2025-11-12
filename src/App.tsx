@@ -23,6 +23,7 @@ import ComplaintList from "./components/complaints/ComplaintList";
 import CreateComplaint from "./components/complaints/CreateComplaint";
 import ComplaintDetail from "./pages/ComplaintDetail";
 import CustomerPage from "./pages/CustomerPage";
+import MyMeetings from "./pages/MyMeetings";
 
 // Main App Routes
 const AppRoutes: React.FC = () => {
@@ -85,6 +86,7 @@ const AppRoutes: React.FC = () => {
                   element={<CreateComplaint />}
                 />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/meetings" element={<MyMeetings />} />
                 <Route
                   path="/admin/approvals"
                   element={
