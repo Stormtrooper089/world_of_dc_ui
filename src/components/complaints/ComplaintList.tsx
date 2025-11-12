@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Complaint } from '../../types';
-import { complaintService } from '../../services/complaintService';
-import ComplaintCard from './ComplaintCard';
-import { Search, Filter, Plus } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Complaint } from "../../types";
+import { complaintService } from "../../services/complaintService";
+import ComplaintCard from "./ComplaintCard";
+import { Search, Filter, Plus } from "lucide-react";
 
 const ComplaintList: React.FC = () => {
+  const navigate = useNavigate();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [error, setError] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
     loadComplaints();
@@ -21,8 +23,8 @@ const ComplaintList: React.FC = () => {
       const response = await complaintService.getComplaints();
       setComplaints(response.data);
     } catch (err: any) {
-      setError('Failed to load complaints. Please try again.');
-      console.error('Error loading complaints:', err);
+      setError("Failed to load complaints. Please try again.");
+      console.error("Error loading complaints:", err);
     } finally {
       setLoading(false);
     }
@@ -39,39 +41,40 @@ const ComplaintList: React.FC = () => {
       const results = await complaintService.searchComplaints(searchTerm);
       setComplaints(results);
     } catch (err: any) {
-      setError('Search failed. Please try again.');
-      console.error('Error searching complaints:', err);
+      setError("Search failed. Please try again.");
+      console.error("Error searching complaints:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleView = (complaint: Complaint) => {
-    // TODO: Navigate to complaint detail page
-    console.log('View complaint:', complaint);
+    navigate(`/dashboard/complaints/${complaint.id}`);
   };
 
   const handleEdit = (complaint: Complaint) => {
     // TODO: Navigate to edit complaint page
-    console.log('Edit complaint:', complaint);
+    console.log("Edit complaint:", complaint);
   };
 
   const handleDelete = async (complaint: Complaint) => {
-    if (window.confirm('Are you sure you want to delete this complaint?')) {
+    if (window.confirm("Are you sure you want to delete this complaint?")) {
       try {
         await complaintService.deleteComplaint(complaint.id);
-        setComplaints(complaints.filter(c => c.id !== complaint.id));
+        setComplaints(complaints.filter((c) => c.id !== complaint.id));
       } catch (err: any) {
-        setError('Failed to delete complaint. Please try again.');
-        console.error('Error deleting complaint:', err);
+        setError("Failed to delete complaint. Please try again.");
+        console.error("Error deleting complaint:", err);
       }
     }
   };
 
-  const filteredComplaints = complaints.filter(complaint => {
-    const matchesSearch = complaint.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || complaint.status === filterStatus;
+  const filteredComplaints = complaints.filter((complaint) => {
+    const matchesSearch =
+      complaint.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      filterStatus === "all" || complaint.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
@@ -88,8 +91,12 @@ const ComplaintList: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Citizen Complaints</h1>
-          <p className="text-gray-600">Manage and track complaints from citizens across all departments</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Citizen Complaints
+          </h1>
+          <p className="text-gray-600">
+            Manage and track complaints from citizens across all departments
+          </p>
         </div>
         <button className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
           <Plus className="h-4 w-4 mr-2" />
@@ -108,7 +115,7 @@ const ComplaintList: React.FC = () => {
                 placeholder="Search citizen complaints..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -155,7 +162,6 @@ const ComplaintList: React.FC = () => {
               key={complaint.id}
               complaint={complaint}
               onView={handleView}
-              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           ))

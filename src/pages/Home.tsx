@@ -74,6 +74,12 @@ const Home: React.FC = () => {
               >
                 Get Started
               </Link>
+              <Link
+                to="/"
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Officer Portal
+              </Link>
             </div>
           </div>
         </div>

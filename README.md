@@ -49,22 +49,26 @@ src/
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd world_of_dc_ui
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Create environment file:
+
 ```bash
 cp .env.example .env
 ```
 
 4. Update the environment variables in `.env`:
+
 ```env
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
@@ -72,6 +76,7 @@ VITE_API_BASE_URL=http://localhost:8080/api
 ### Development
 
 Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -89,12 +94,14 @@ npm run build
 This frontend is designed to work with a Java Spring Boot backend. The expected API endpoints are:
 
 ### Authentication Endpoints
+
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
 - `GET /api/auth/me` - Get current user
 - `POST /api/auth/refresh` - Refresh token
 
 ### Complaint Endpoints
+
 - `GET /api/complaints` - Get paginated complaints
 - `GET /api/complaints/{id}` - Get complaint by ID
 - `POST /api/complaints` - Create new complaint
@@ -139,3 +146,7 @@ The application uses JWT tokens for authentication. The token is stored in local
 ## License
 
 This project is licensed under the MIT License.
+
+Login employeeId: EMP001
+Password: Passw0rd!
+Role: OFFICER
