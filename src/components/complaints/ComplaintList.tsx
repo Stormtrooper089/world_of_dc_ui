@@ -20,11 +20,22 @@ const ComplaintList: React.FC = () => {
   const loadComplaints = async () => {
     try {
       setLoading(true);
-      const response = await complaintService.getComplaints();
-      setComplaints(response.data);
+      // Check if we're in public context
+      const isPublic = !window.location.pathname.includes("/dashboard");
+
+      if (isPublic) {
+        // For public view, get all complaints
+        const allComplaints = await complaintService.getAllComplaints();
+        setComplaints(Array.isArray(allComplaints) ? allComplaints : []);
+      } else {
+        // For dashboard, use paginated response
+        const response = await complaintService.getComplaints(1, 100);
+        setComplaints(Array.isArray(response.data) ? response.data : []);
+      }
     } catch (err: any) {
       setError("Failed to load complaints. Please try again.");
       console.error("Error loading complaints:", err);
+      setComplaints([]);
     } finally {
       setLoading(false);
     }
@@ -35,21 +46,18 @@ const ComplaintList: React.FC = () => {
       loadComplaints();
       return;
     }
-
-    try {
-      setLoading(true);
-      const results = await complaintService.searchComplaints(searchTerm);
-      setComplaints(results);
-    } catch (err: any) {
-      setError("Search failed. Please try again.");
-      console.error("Error searching complaints:", err);
-    } finally {
-      setLoading(false);
-    }
+    // Search is handled by filteredComplaints, no need for separate API call
   };
 
   const handleView = (complaint: Complaint) => {
-    navigate(`/dashboard/complaints/${complaint.id}`);
+    // Check if we're in a public context (not in dashboard)
+    const isPublic = !window.location.pathname.includes("/dashboard");
+    if (isPublic) {
+      // For public view, navigate to a public complaint detail or show info
+      navigate(`/complaints/${complaint.id}`);
+    } else {
+      navigate(`/dashboard/complaints/${complaint.id}`);
+    }
   };
 
   const handleEdit = (complaint: Complaint) => {
@@ -71,8 +79,9 @@ const ComplaintList: React.FC = () => {
 
   const filteredComplaints = complaints.filter((complaint) => {
     const matchesSearch =
-      complaint.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
+      !searchTerm.trim() ||
+      complaint.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
       filterStatus === "all" || complaint.status === filterStatus;
     return matchesSearch && matchesFilter;
@@ -92,16 +101,22 @@ const ComplaintList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Citizen Complaints
+            {window.location.pathname.includes("/dashboard")
+              ? "Citizen Complaints"
+              : "Public Complaints"}
           </h1>
           <p className="text-gray-600">
-            Manage and track complaints from citizens across all departments
+            {window.location.pathname.includes("/dashboard")
+              ? "Manage and track complaints from citizens across all departments"
+              : "View complaints from citizens across all departments"}
           </p>
         </div>
-        <button className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-          <Plus className="h-4 w-4 mr-2" />
-          Assign to Department
-        </button>
+        {window.location.pathname.includes("/dashboard") && (
+          <button className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <Plus className="h-4 w-4 mr-2" />
+            Assign to Department
+          </button>
+        )}
       </div>
 
       {/* Search and Filter */}
@@ -162,7 +177,11 @@ const ComplaintList: React.FC = () => {
               key={complaint.id}
               complaint={complaint}
               onView={handleView}
-              onDelete={handleDelete}
+              onDelete={
+                window.location.pathname.includes("/dashboard")
+                  ? handleDelete
+                  : undefined
+              }
             />
           ))
         )}

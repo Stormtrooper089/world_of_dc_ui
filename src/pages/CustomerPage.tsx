@@ -21,9 +21,10 @@ import {
   Smile,
   Clock,
 } from "lucide-react";
-import { Department } from "../types";
+import { Department, Complaint } from "../types";
 import { getDepartmentDisplayName } from "../utils/departmentUtils";
 import CreateComplaint from "../components/complaints/CreateComplaint";
+import ComplaintList from "../components/complaints/ComplaintList";
 
 // Analytics data for each department - defined outside component
 const getDepartmentAnalytics = (dept: Department | "All") => {
@@ -417,334 +418,352 @@ const CustomerPage: React.FC = () => {
         )}
       </header>
 
-      {/* Hero Carousel Section */}
-      <div className="relative mt-20 h-[600px] overflow-hidden">
-        {carouselImages.map((image, index) => (
-          <div
-            key={image.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentCarouselIndex ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <div
-              className={`h-full w-full bg-gradient-to-r ${image.gradient} relative`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/10 to-transparent"></div>
-              <div className="relative h-full flex items-center">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-                  <div className="max-w-2xl">
-                    <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-                      {image.title}
-                    </h1>
-                    <p className="text-xl text-blue-100 mb-8">
-                      {image.description}
-                    </p>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={handleCreateComplaint}
-                        className="bg-white text-[#0d47a1] px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center"
-                      >
-                        Create Complaint
-                        <PlusCircle className="ml-2 h-5 w-5" />
-                      </button>
-                      <Link
-                        to="/officer-login"
-                        className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
-                      >
-                        Track Status
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* Conditional Content Based on Active Tab */}
+      {activeTab === "Complaints" ? (
+        <div className="mt-20 min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <ComplaintList />
           </div>
-        ))}
-
-        {/* Carousel Controls */}
-        <button
-          onClick={handlePrevCarousel}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors backdrop-blur-sm"
-          aria-label="Previous"
-        >
-          <ArrowRight className="h-6 w-6 rotate-180" />
-        </button>
-        <button
-          onClick={handleNextCarousel}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors backdrop-blur-sm"
-          aria-label="Next"
-        >
-          <ArrowRight className="h-6 w-6" />
-        </button>
-
-        {/* Carousel Indicators */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-          {carouselImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentCarouselIndex(index)}
-              className={`h-2 rounded-full transition-all ${
-                index === currentCarouselIndex
-                  ? "w-8 bg-white"
-                  : "w-2 bg-white/50"
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Hero Carousel Section */}
+          <div className="relative mt-20 h-[600px] overflow-hidden">
+            {carouselImages.map((image, index) => (
+              <div
+                key={image.id}
+                className={`absolute inset-0 transition-opacity duration-1000 ${
+                  index === currentCarouselIndex ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <div
+                  className={`h-full w-full bg-gradient-to-r ${image.gradient} relative`}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/10 to-transparent"></div>
+                  <div className="relative h-full flex items-center">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                      <div className="max-w-2xl">
+                        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
+                          {image.title}
+                        </h1>
+                        <p className="text-xl text-blue-100 mb-8">
+                          {image.description}
+                        </p>
+                        <div className="flex gap-4">
+                          <button
+                            onClick={handleCreateComplaint}
+                            className="bg-white text-[#0d47a1] px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center"
+                          >
+                            Create Complaint
+                            <PlusCircle className="ml-2 h-5 w-5" />
+                          </button>
+                          <Link
+                            to="/officer-login"
+                            className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
+                          >
+                            Track Status
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
 
-      {/* Explore Complaints by Departments Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="mb-8">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Explore Complaints by Departments
-            </h2>
-            <p className="text-lg text-gray-600">
-              Select a department or city to view complaints and analytics
-            </p>
+            {/* Carousel Controls */}
+            <button
+              onClick={handlePrevCarousel}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors backdrop-blur-sm"
+              aria-label="Previous"
+            >
+              <ArrowRight className="h-6 w-6 rotate-180" />
+            </button>
+            <button
+              onClick={handleNextCarousel}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors backdrop-blur-sm"
+              aria-label="Next"
+            >
+              <ArrowRight className="h-6 w-6" />
+            </button>
+
+            {/* Carousel Indicators */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+              {carouselImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentCarouselIndex(index)}
+                  className={`h-2 rounded-full transition-all ${
+                    index === currentCarouselIndex
+                      ? "w-8 bg-white"
+                      : "w-2 bg-white/50"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4 mb-8">
-            <div className="relative dropdown-container">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                City
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
-                  className="w-64 px-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg text-left flex items-center justify-between hover:border-blue-500 transition-colors"
-                >
-                  <span className="text-gray-900">{selectedCity}</span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-gray-500 transition-transform ${
-                      isCityDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {isCityDropdownOpen && (
-                  <div className="absolute z-10 mt-2 w-64 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {cities.map((city) => (
-                      <button
-                        key={city}
-                        onClick={() => {
-                          setSelectedCity(city);
-                          setIsCityDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
-                          selectedCity === city
-                            ? "bg-blue-100 text-blue-700"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {city}
-                      </button>
-                    ))}
-                  </div>
-                )}
+          {/* Explore Complaints by Departments Section */}
+          <section className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+              <div className="mb-8">
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  Explore Complaints by Departments
+                </h2>
+                <p className="text-lg text-gray-600">
+                  Select a department or city to view complaints and analytics
+                </p>
               </div>
-            </div>
 
-            <div className="relative dropdown-container">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Department
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() =>
-                    setIsDepartmentDropdownOpen(!isDepartmentDropdownOpen)
-                  }
-                  className="w-64 px-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg text-left flex items-center justify-between hover:border-blue-500 transition-colors"
-                >
-                  <span className="text-gray-900">
-                    {selectedDepartment === "All"
-                      ? "All"
-                      : getDepartmentDisplayName(selectedDepartment)}
-                  </span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-gray-500 transition-transform ${
-                      isDepartmentDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {isDepartmentDropdownOpen && (
-                  <div className="absolute z-10 mt-2 w-64 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {/* Filters */}
+              <div className="flex flex-wrap gap-4 mb-8">
+                <div className="relative dropdown-container">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City
+                  </label>
+                  <div className="relative">
                     <button
-                      onClick={() => {
-                        setSelectedDepartment("All");
-                        setComplaintAnalytics(getDepartmentAnalytics("All"));
-                        setIsDepartmentDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
-                        selectedDepartment === "All"
-                          ? "bg-blue-100 text-blue-700"
-                          : "text-gray-700"
-                      }`}
+                      onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
+                      className="w-64 px-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg text-left flex items-center justify-between hover:border-blue-500 transition-colors"
                     >
-                      All
-                    </button>
-                    {Object.values(Department).map((dept) => (
-                      <button
-                        key={dept}
-                        onClick={() => {
-                          setSelectedDepartment(dept);
-                          setIsDepartmentDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
-                          selectedDepartment === dept
-                            ? "bg-blue-100 text-blue-700"
-                            : "text-gray-700"
+                      <span className="text-gray-900">{selectedCity}</span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-gray-500 transition-transform ${
+                          isCityDropdownOpen ? "rotate-180" : ""
                         }`}
+                      />
+                    </button>
+                    {isCityDropdownOpen && (
+                      <div className="absolute z-10 mt-2 w-64 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {cities.map((city) => (
+                          <button
+                            key={city}
+                            onClick={() => {
+                              setSelectedCity(city);
+                              setIsCityDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
+                              selectedCity === city
+                                ? "bg-blue-100 text-blue-700"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {city}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="relative dropdown-container">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Department
+                  </label>
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setIsDepartmentDropdownOpen(!isDepartmentDropdownOpen)
+                      }
+                      className="w-64 px-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg text-left flex items-center justify-between hover:border-blue-500 transition-colors"
+                    >
+                      <span className="text-gray-900">
+                        {selectedDepartment === "All"
+                          ? "All"
+                          : getDepartmentDisplayName(selectedDepartment)}
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-gray-500 transition-transform ${
+                          isDepartmentDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {isDepartmentDropdownOpen && (
+                      <div className="absolute z-10 mt-2 w-64 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <button
+                          onClick={() => {
+                            setSelectedDepartment("All");
+                            setComplaintAnalytics(
+                              getDepartmentAnalytics("All")
+                            );
+                            setIsDepartmentDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
+                            selectedDepartment === "All"
+                              ? "bg-blue-100 text-blue-700"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          All
+                        </button>
+                        {Object.values(Department).map((dept) => (
+                          <button
+                            key={dept}
+                            onClick={() => {
+                              setSelectedDepartment(dept);
+                              setIsDepartmentDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
+                              selectedDepartment === dept
+                                ? "bg-blue-100 text-blue-700"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {getDepartmentDisplayName(dept)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Side - Analytics Cards */}
+                <div className="lg:col-span-1 flex items-center justify-center px-4">
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Issues Reported */}
+                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
+                      <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
+                      <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
+                      <div className="relative z-10">
+                        <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
+                          TOTAL
+                        </div>
+                        <div className="text-5xl font-bold mb-2">
+                          {complaintAnalytics.issuesReported.toLocaleString()}
+                        </div>
+                        <div className="text-lg font-medium mb-4">
+                          Issues Reported
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <AlertCircle className="h-6 w-6 opacity-80" />
+                          <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resolved */}
+                    <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
+                      <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
+                      <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
+                      <div className="relative z-10">
+                        <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
+                          COMPLETED
+                        </div>
+                        <div className="text-5xl font-bold mb-2">
+                          {complaintAnalytics.resolved.toLocaleString()}
+                        </div>
+                        <div className="text-lg font-medium mb-4">Resolved</div>
+                        <div className="flex items-center justify-between">
+                          <CheckCircle2 className="h-6 w-6 opacity-80" />
+                          <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Satisfaction % */}
+                    <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
+                      <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
+                      <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
+                      <div className="relative z-10">
+                        <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
+                          RATING
+                        </div>
+                        <div className="text-5xl font-bold mb-2">
+                          {complaintAnalytics.satisfactionPercent}%
+                        </div>
+                        <div className="text-lg font-medium mb-4">
+                          Satisfaction
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Smile className="h-6 w-6 opacity-80" />
+                          <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Processing */}
+                    <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
+                      <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
+                      <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
+                      <div className="relative z-10">
+                        <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
+                          ACTIVE
+                        </div>
+                        <div className="text-5xl font-bold mb-2">
+                          {complaintAnalytics.processing.toLocaleString()}
+                        </div>
+                        <div className="text-lg font-medium mb-4">
+                          Processing
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Clock className="h-6 w-6 opacity-80" />
+                          <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side - Department Circle */}
+                <div className="lg:col-span-2">
+                  <div className="relative w-full max-w-2xl aspect-square">
+                    <svg viewBox="0 0 600 600" className="w-full h-full">
+                      {/* Draw departments as segments in a circle */}
+                      {/* <circle cx="300" cy="300" r="270" fill="none" stroke="#e5e7eb" strokeWidth="2" /> */}
+
+                      {/* Center emblem circle */}
+                      <circle
+                        cx="300"
+                        cy="300"
+                        r="90"
+                        fill="#0d47a1"
+                        opacity="0.1"
+                      />
+                      <circle cx="300" cy="300" r="80" fill="white" />
+                      <circle cx="300" cy="300" r="70" fill="#0d47a1" />
+                      <text
+                        x="300"
+                        y="300"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fill="white"
+                        fontSize="28"
+                        fontWeight="bold"
                       >
-                        {getDepartmentDisplayName(dept)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                        DC
+                      </text>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Side - Analytics Cards */}
-            <div className="lg:col-span-1 flex items-center justify-center px-4">
-              <div className="grid grid-cols-2 gap-6">
-                {/* Issues Reported */}
-                <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
-                  <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
-                  <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
-                  <div className="relative z-10">
-                    <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
-                      TOTAL
-                    </div>
-                    <div className="text-5xl font-bold mb-2">
-                      {complaintAnalytics.issuesReported.toLocaleString()}
-                    </div>
-                    <div className="text-lg font-medium mb-4">
-                      Issues Reported
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <AlertCircle className="h-6 w-6 opacity-80" />
-                      <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                </div>
+                      {/* Department segments */}
+                      {mainDepartments.map((dept, index) => {
+                        const angle = (360 / mainDepartments.length) * index;
+                        const startAngle = (angle - 18) * (Math.PI / 180);
+                        const endAngle = (angle + 18) * (Math.PI / 180);
 
-                {/* Resolved */}
-                <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
-                  <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
-                  <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
-                  <div className="relative z-10">
-                    <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
-                      COMPLETED
-                    </div>
-                    <div className="text-5xl font-bold mb-2">
-                      {complaintAnalytics.resolved.toLocaleString()}
-                    </div>
-                    <div className="text-lg font-medium mb-4">Resolved</div>
-                    <div className="flex items-center justify-between">
-                      <CheckCircle2 className="h-6 w-6 opacity-80" />
-                      <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                </div>
+                        // Make selected segment larger
+                        const isSelected = selectedDepartment === dept.dept;
+                        const baseRadius = 220;
+                        const baseInnerRadius = 100;
+                        const radius = isSelected
+                          ? baseRadius + 30
+                          : baseRadius; // Selected extends outward
+                        const innerRadius = baseInnerRadius; // Keep inner radius same for padding
 
-                {/* Satisfaction % */}
-                <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
-                  <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
-                  <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
-                  <div className="relative z-10">
-                    <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
-                      RATING
-                    </div>
-                    <div className="text-5xl font-bold mb-2">
-                      {complaintAnalytics.satisfactionPercent}%
-                    </div>
-                    <div className="text-lg font-medium mb-4">Satisfaction</div>
-                    <div className="flex items-center justify-between">
-                      <Smile className="h-6 w-6 opacity-80" />
-                      <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                </div>
+                        const x1 = 300 + Math.cos(startAngle) * innerRadius;
+                        const y1 = 300 + Math.sin(startAngle) * innerRadius;
+                        const x2 = 300 + Math.cos(startAngle) * radius;
+                        const y2 = 300 + Math.sin(startAngle) * radius;
+                        const x3 = 300 + Math.cos(endAngle) * radius;
+                        const y3 = 300 + Math.sin(endAngle) * radius;
+                        const x4 = 300 + Math.cos(endAngle) * innerRadius;
+                        const y4 = 300 + Math.sin(endAngle) * innerRadius;
 
-                {/* Processing */}
-                <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 text-white relative overflow-hidden group cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl">
-                  <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mb-16"></div>
-                  <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
-                  <div className="relative z-10">
-                    <div className="text-xs font-semibold uppercase tracking-wider mb-2 opacity-90">
-                      ACTIVE
-                    </div>
-                    <div className="text-5xl font-bold mb-2">
-                      {complaintAnalytics.processing.toLocaleString()}
-                    </div>
-                    <div className="text-lg font-medium mb-4">Processing</div>
-                    <div className="flex items-center justify-between">
-                      <Clock className="h-6 w-6 opacity-80" />
-                      <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                        const largeArc =
+                          endAngle - startAngle > Math.PI ? 1 : 0;
 
-            {/* Right Side - Department Circle */}
-            <div className="lg:col-span-2">
-              <div className="relative w-full max-w-2xl aspect-square">
-                <svg viewBox="0 0 600 600" className="w-full h-full">
-                  {/* Draw departments as segments in a circle */}
-                  {/* <circle cx="300" cy="300" r="270" fill="none" stroke="#e5e7eb" strokeWidth="2" /> */}
-
-                  {/* Center emblem circle */}
-                  <circle
-                    cx="300"
-                    cy="300"
-                    r="90"
-                    fill="#0d47a1"
-                    opacity="0.1"
-                  />
-                  <circle cx="300" cy="300" r="80" fill="white" />
-                  <circle cx="300" cy="300" r="70" fill="#0d47a1" />
-                  <text
-                    x="300"
-                    y="300"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill="white"
-                    fontSize="28"
-                    fontWeight="bold"
-                  >
-                    DC
-                  </text>
-
-                  {/* Department segments */}
-                  {mainDepartments.map((dept, index) => {
-                    const angle = (360 / mainDepartments.length) * index;
-                    const startAngle = (angle - 18) * (Math.PI / 180);
-                    const endAngle = (angle + 18) * (Math.PI / 180);
-
-                    // Make selected segment larger
-                    const isSelected = selectedDepartment === dept.dept;
-                    const baseRadius = 220;
-                    const baseInnerRadius = 100;
-                    const radius = isSelected ? baseRadius + 30 : baseRadius; // Selected extends outward
-                    const innerRadius = baseInnerRadius; // Keep inner radius same for padding
-
-                    const x1 = 300 + Math.cos(startAngle) * innerRadius;
-                    const y1 = 300 + Math.sin(startAngle) * innerRadius;
-                    const x2 = 300 + Math.cos(startAngle) * radius;
-                    const y2 = 300 + Math.sin(startAngle) * radius;
-                    const x3 = 300 + Math.cos(endAngle) * radius;
-                    const y3 = 300 + Math.sin(endAngle) * radius;
-                    const x4 = 300 + Math.cos(endAngle) * innerRadius;
-                    const y4 = 300 + Math.sin(endAngle) * innerRadius;
-
-                    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-
-                    const pathData = `
+                        const pathData = `
                       M ${x1} ${y1}
                       L ${x2} ${y2}
                       A ${radius} ${radius} 0 ${largeArc} 1 ${x3} ${y3}
@@ -753,306 +772,349 @@ const CustomerPage: React.FC = () => {
                       Z
                     `;
 
-                    // Position for text inside the segment (with padding)
-                    const textRadius = (radius + innerRadius) / 2;
-                    const textAngle = (startAngle + endAngle) / 2;
-                    const textX = 300 + Math.cos(textAngle) * textRadius;
-                    const textY = 300 + Math.sin(textAngle) * textRadius;
+                        // Position for text inside the segment (with padding)
+                        const textRadius = (radius + innerRadius) / 2;
+                        const textAngle = (startAngle + endAngle) / 2;
+                        const textX = 300 + Math.cos(textAngle) * textRadius;
+                        const textY = 300 + Math.sin(textAngle) * textRadius;
 
-                    // Get short name for display
-                    const fullName = getDepartmentDisplayName(dept.dept);
-                    const shortName = fullName.split(" ")[0]; // Use first word
+                        // Get short name for display
+                        const fullName = getDepartmentDisplayName(dept.dept);
+                        const shortName = fullName.split(" ")[0]; // Use first word
 
-                    return (
-                      <g key={dept.dept}>
-                        <path
-                          d={pathData}
-                          fill={dept.color}
-                          opacity={isSelected ? 1 : 0.75}
-                          stroke={isSelected ? "rgba(255,255,255,0.6)" : "none"}
-                          strokeWidth={isSelected ? "2" : "0"}
-                          className="cursor-pointer hover:opacity-100 transition-all duration-300"
-                          onClick={() => {
-                            setSelectedDepartment(dept.dept);
-                            setComplaintAnalytics(
-                              getDepartmentAnalytics(dept.dept)
-                            );
-                          }}
-                          style={{
-                            filter: isSelected
-                              ? "drop-shadow(0 0 15px rgba(0,0,0,0.3))"
-                              : "none",
-                            transformOrigin: "300px 300px",
-                          }}
-                        />
-                        {/* Department name inside segment */}
-                        <text
-                          x={textX}
-                          y={textY}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fill="white"
-                          fontSize="16"
-                          fontWeight="bold"
-                          className="pointer-events-none"
-                          style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.7)" }}
-                        >
-                          {shortName}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Our Services
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              An integrated platform to report issues, track progress, and
-              inspire action towards better governance
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div
-              onClick={handleCreateComplaint}
-              className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group"
-            >
-              <div className="bg-blue-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <PlusCircle className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Create Complaint
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Report issues in your community quickly and easily with our
-                streamlined complaint system.
-              </p>
-              <div className="flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform">
-                Get Started <ArrowRight className="ml-2 h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="bg-green-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <TrendingUp className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Track Progress
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Monitor the status of your complaints in real-time and get
-                updates from departments.
-              </p>
-              <div className="flex items-center text-green-600 font-semibold group-hover:translate-x-2 transition-transform">
-                Learn More <ArrowRight className="ml-2 h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="bg-purple-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Award className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Best Practices
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Explore successful case studies and initiatives from across
-                different sectors.
-              </p>
-              <div className="flex items-center text-purple-600 font-semibold group-hover:translate-x-2 transition-transform">
-                Explore <ArrowRight className="ml-2 h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="bg-orange-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <FileText className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Policy Repository
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Access comprehensive policy documents, schemes, and regulations.
-              </p>
-              <div className="flex items-center text-orange-600 font-semibold group-hover:translate-x-2 transition-transform">
-                Browse <ArrowRight className="ml-2 h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="bg-cyan-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Database className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Data Insights
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Visualize key trends and insights at various administrative
-                levels.
-              </p>
-              <div className="flex items-center text-cyan-600 font-semibold group-hover:translate-x-2 transition-transform">
-                View Data <ArrowRight className="ml-2 h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="bg-red-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <CheckCircle className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Resolution Status
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Check resolved complaints and provide feedback on department
-                performance.
-              </p>
-              <div className="flex items-center text-red-600 font-semibold group-hover:translate-x-2 transition-transform">
-                Check Status <ArrowRight className="ml-2 h-5 w-5" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-[#0d47a1] to-[#1565c0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to Report an Issue?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of citizens who have successfully reported and
-            resolved issues in their communities.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={handleCreateComplaint}
-              className="bg-white text-[#0d47a1] px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center mx-auto sm:mx-0"
-            >
-              Create Complaint
-              <PlusCircle className="ml-2 h-5 w-5" />
-            </button>
-            <Link
-              to="/officer-login"
-              className="border-2 border-white text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-white/10 transition-colors"
-            >
-              Track Complaint
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="bg-white w-10 h-10 rounded flex items-center justify-center mr-3">
-                  <div className="w-6 h-6 border-2 border-gray-800 rounded-full"></div>
+                        return (
+                          <g key={dept.dept}>
+                            <path
+                              d={pathData}
+                              fill={dept.color}
+                              opacity={isSelected ? 1 : 0.75}
+                              stroke={
+                                isSelected ? "rgba(255,255,255,0.6)" : "none"
+                              }
+                              strokeWidth={isSelected ? "2" : "0"}
+                              className="cursor-pointer hover:opacity-100 transition-all duration-300"
+                              onClick={() => {
+                                setSelectedDepartment(dept.dept);
+                                setComplaintAnalytics(
+                                  getDepartmentAnalytics(dept.dept)
+                                );
+                              }}
+                              style={{
+                                filter: isSelected
+                                  ? "drop-shadow(0 0 15px rgba(0,0,0,0.3))"
+                                  : "none",
+                                transformOrigin: "300px 300px",
+                              }}
+                            />
+                            {/* Department name inside segment */}
+                            <text
+                              x={textX}
+                              y={textY}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fill="white"
+                              fontSize="16"
+                              fontWeight="bold"
+                              className="pointer-events-none"
+                              style={{
+                                textShadow: "2px 2px 4px rgba(0,0,0,0.7)",
+                              }}
+                            >
+                              {shortName}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
                 </div>
-                <span className="text-xl font-bold">NITI Aayog</span>
               </div>
-              <p className="text-gray-400">
-                An integrated platform to learn, share, and inspire action
-                towards better governance.
-              </p>
             </div>
+          </section>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Report Issues</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Infrastructure
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Public Services
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Environment
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Safety & Security
-                  </a>
-                </li>
-              </ul>
-            </div>
+          {/* Features Section */}
+          <section className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  Our Services
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  An integrated platform to report issues, track progress, and
+                  inspire action towards better governance
+                </p>
+              </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Contact Us
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    FAQ
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Privacy Policy
-                  </a>
-                </li>
-              </ul>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div
+                  onClick={handleCreateComplaint}
+                  className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group"
+                >
+                  <div className="bg-blue-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <PlusCircle className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    Create Complaint
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Report issues in your community quickly and easily with our
+                    streamlined complaint system.
+                  </p>
+                  <div className="flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform">
+                    Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                  </div>
+                </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="bg-green-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    Track Progress
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Monitor the status of your complaints in real-time and get
+                    updates from departments.
+                  </p>
+                  <div className="flex items-center text-green-600 font-semibold group-hover:translate-x-2 transition-transform">
+                    Learn More <ArrowRight className="ml-2 h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="bg-purple-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Award className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
                     Best Practices
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Policies
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Datasets
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Starter Kits
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Explore successful case studies and initiatives from across
+                    different sectors.
+                  </p>
+                  <div className="flex items-center text-purple-600 font-semibold group-hover:translate-x-2 transition-transform">
+                    Explore <ArrowRight className="ml-2 h-5 w-5" />
+                  </div>
+                </div>
 
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 NITI Aayog. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="bg-orange-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <FileText className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    Policy Repository
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Access comprehensive policy documents, schemes, and
+                    regulations.
+                  </p>
+                  <div className="flex items-center text-orange-600 font-semibold group-hover:translate-x-2 transition-transform">
+                    Browse <ArrowRight className="ml-2 h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="bg-cyan-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Database className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    Data Insights
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Visualize key trends and insights at various administrative
+                    levels.
+                  </p>
+                  <div className="flex items-center text-cyan-600 font-semibold group-hover:translate-x-2 transition-transform">
+                    View Data <ArrowRight className="ml-2 h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-8 hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="bg-red-600 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <CheckCircle className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    Resolution Status
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Check resolved complaints and provide feedback on department
+                    performance.
+                  </p>
+                  <div className="flex items-center text-red-600 font-semibold group-hover:translate-x-2 transition-transform">
+                    Check Status <ArrowRight className="ml-2 h-5 w-5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section className="py-20 bg-gradient-to-r from-[#0d47a1] to-[#1565c0]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h2 className="text-4xl font-bold text-white mb-4">
+                Ready to Report an Issue?
+              </h2>
+              <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+                Join thousands of citizens who have successfully reported and
+                resolved issues in their communities.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={handleCreateComplaint}
+                  className="bg-white text-[#0d47a1] px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center mx-auto sm:mx-0"
+                >
+                  Create Complaint
+                  <PlusCircle className="ml-2 h-5 w-5" />
+                </button>
+                <Link
+                  to="/officer-login"
+                  className="border-2 border-white text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-white/10 transition-colors"
+                >
+                  Track Complaint
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer className="bg-gray-900 text-white py-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                  <div className="flex items-center mb-4">
+                    <div className="bg-white w-10 h-10 rounded flex items-center justify-center mr-3">
+                      <div className="w-6 h-6 border-2 border-gray-800 rounded-full"></div>
+                    </div>
+                    <span className="text-xl font-bold">NITI Aayog</span>
+                  </div>
+                  <p className="text-gray-400">
+                    An integrated platform to learn, share, and inspire action
+                    towards better governance.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Report Issues</h3>
+                  <ul className="space-y-2 text-gray-400">
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Infrastructure
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Public Services
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Environment
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Safety & Security
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Support</h3>
+                  <ul className="space-y-2 text-gray-400">
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Help Center
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Contact Us
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        FAQ
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Privacy Policy
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Resources</h3>
+                  <ul className="space-y-2 text-gray-400">
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Best Practices
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Policies
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Datasets
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        className="hover:text-white transition-colors"
+                      >
+                        Starter Kits
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 NITI Aayog. All rights reserved.</p>
+              </div>
+            </div>
+          </footer>
+        </>
+      )}
 
       {/* Complaint Modal */}
       {showComplaintModal && (
