@@ -1,28 +1,28 @@
 import React from "react";
 import {
+  Navigate,
+  Route,
   BrowserRouter as Router,
   Routes,
-  Route,
-  Navigate,
 } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import Layout from "./components/layout/Layout";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LoginForm from "./components/auth/LoginForm";
-import SignUpForm from "./components/auth/SignUpForm";
 import OtpVerification from "./components/auth/OtpVerification";
-import Home from "./pages/Home";
-import CitizenHome from "./pages/CitizenHome";
-import Profile from "./pages/Profile";
-import AdminApproveOfficers from "./pages/AdminApproveOfficers";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
-import Officer from "./pages/Officer";
-import OfficerDashboard from "./pages/OfficerDashboard";
-import Dashboard from "./pages/Dashboard";
+import SignUpForm from "./components/auth/SignUpForm";
 import ComplaintList from "./components/complaints/ComplaintList";
 import CreateComplaint from "./components/complaints/CreateComplaint";
+import Layout from "./components/layout/Layout";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import AdminApproveOfficers from "./pages/AdminApproveOfficers";
+import CitizenHome from "./pages/CitizenHome";
 import ComplaintDetail from "./pages/ComplaintDetail";
 import CustomerPage from "./pages/CustomerPage";
+import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
+import Officer from "./pages/Officer";
+import OfficerDashboard from "./pages/OfficerDashboard";
+import Profile from "./pages/Profile";
 
 // Main App Routes
 const AppRoutes: React.FC = () => {
@@ -30,7 +30,8 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<CustomerPage />} />
+      <Route path="/" element={<CitizenHome />} />
+      {/* <Route path="/" element={<CustomerPage />} /> */}
       <Route path="/customer" element={<CustomerPage />} />
       <Route path="/officer-login" element={<Officer />} />
       <Route path="/customer2" element={<Home />} />
