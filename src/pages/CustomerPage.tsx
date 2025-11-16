@@ -274,8 +274,9 @@ const CustomerPage: React.FC = () => {
   };
 
   const handleCreateComplaint = () => {
+    // Citizens must be authenticated to create complaints
     if (!isAuthenticated) {
-      navigate("/officer-login", { state: { from: "/customer" } });
+      navigate("/login");
       return;
     }
     setShowComplaintModal(true);
@@ -1070,7 +1071,10 @@ const CustomerPage: React.FC = () => {
               </button>
             </div>
             <div className="p-6">
-              <CreateComplaint onSuccess={() => setShowComplaintModal(false)} />
+              <CreateComplaint
+                onSuccess={() => setShowComplaintModal(false)}
+                isCitizenMode={true}
+              />
             </div>
           </div>
         </div>

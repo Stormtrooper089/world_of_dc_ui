@@ -2,27 +2,37 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { complaintService } from "../../services/complaintService";
 import { useAuth } from "../../contexts/AuthContext";
-import { ComplaintPriority, Department } from "../../types";
+import { ComplaintPriority, Department, UserRole } from "../../types";
 import { getDepartmentDisplayName } from "../../utils/departmentUtils";
 
 interface CreateComplaintData {
   subject: string;
   description: string;
-  priority: ComplaintPriority;
+  priority?: ComplaintPriority;
   location?: string;
   department?: Department;
   files?: FileList;
+  mobileNumber?: string; // For citizen complaints
 }
 
 interface CreateComplaintProps {
   onSuccess?: () => void;
+  isCitizenMode?: boolean; // If true, show citizen form (limited fields)
 }
 
-const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
+const CreateComplaint: React.FC<CreateComplaintProps> = ({
+  onSuccess,
+  isCitizenMode = false,
+}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [error, setError] = useState("");
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
+  // Determine if this is a citizen complaint
+  const isCitizen =
+    isCitizenMode ||
+    (user && (user.role === UserRole.CUSTOMER || !user.employeeId));
 
   // Hardcoded citizen for officer to create complaints on behalf of
   const HARDCODED_CITIZEN_MOBILE = "9876543210";
@@ -42,14 +52,39 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
 
       // Create form data for file uploads
       const formData = new FormData();
-      formData.append("mobileNumber", HARDCODED_CITIZEN_MOBILE); // Use hardcoded citizen
+
+      // For authenticated citizens, don't send mobile number (backend will use their ID from token)
+      // For officers creating complaints on behalf of citizens, send mobile number
+      if (isCitizen && isAuthenticated && user) {
+        // Authenticated citizen - backend will use their ID from JWT token
+        // Don't send mobile number
+      } else if (!isCitizen) {
+        // Officer creating complaint on behalf of citizen - must provide mobile number
+        const mobileNumber = data.mobileNumber || HARDCODED_CITIZEN_MOBILE;
+
+        if (!mobileNumber) {
+          setError(
+            "Mobile number is required when creating complaint on behalf of citizen"
+          );
+          setIsSubmitting(false);
+          return;
+        }
+
+        formData.append("mobileNumber", mobileNumber);
+      }
       formData.append("subject", data.subject);
       formData.append("description", data.description);
-      formData.append("priority", data.priority);
+
+      // Priority and department only for officer complaints
+      if (!isCitizen && data.priority) {
+        formData.append("priority", data.priority);
+      }
+
       if (data.location) {
         formData.append("location", data.location);
       }
-      if (data.department) {
+
+      if (!isCitizen && data.department) {
         formData.append("department", data.department);
       }
 
@@ -94,10 +129,12 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Create New Complaint
           </h1>
-          <p className="text-sm text-gray-600 mb-6">
-            Creating complaint on behalf of citizen:{" "}
-            <span className="font-medium">{HARDCODED_CITIZEN_MOBILE}</span>
-          </p>
+          {!isCitizen && (
+            <p className="text-sm text-gray-600 mb-6">
+              Creating complaint on behalf of citizen:{" "}
+              <span className="font-medium">{HARDCODED_CITIZEN_MOBILE}</span>
+            </p>
+          )}
 
           {error && (
             <div className="mb-4 rounded-md bg-red-50 p-4">
@@ -112,6 +149,56 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Mobile Number - Only for officers creating complaints on behalf of citizens */}
+            {!isCitizen && (
+              <div>
+                <label
+                  htmlFor="mobileNumber"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Citizen Mobile Number *
+                </label>
+                <input
+                  {...register("mobileNumber", {
+                    required: !isCitizen
+                      ? "Citizen mobile number is required"
+                      : false,
+                    pattern: {
+                      value: /^[6-9]\d{9}$/,
+                      message: "Please enter a valid 10-digit mobile number",
+                    },
+                  })}
+                  type="tel"
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                    errors.mobileNumber ? "border-red-500" : ""
+                  }`}
+                  placeholder="9000000000"
+                  defaultValue={HARDCODED_CITIZEN_MOBILE}
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Enter the mobile number of the citizen you're creating this
+                  complaint for
+                </p>
+                {errors.mobileNumber && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.mobileNumber.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Show logged-in citizen info */}
+            {isCitizen && isAuthenticated && user && (
+              <div className="mb-4 rounded-md bg-blue-50 p-4">
+                <p className="text-sm text-blue-700">
+                  Creating complaint as:{" "}
+                  <span className="font-medium">
+                    {user.name || user.mobileNumber || user.id}
+                  </span>
+                </p>
+              </div>
+            )}
+
             {/* Subject */}
             <div>
               <label
@@ -135,32 +222,36 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
               )}
             </div>
 
-            {/* Priority */}
-            <div>
-              <label
-                htmlFor="priority"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Priority *
-              </label>
-              <select
-                {...register("priority", { required: "Priority is required" })}
-                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                  errors.priority ? "border-red-500" : ""
-                }`}
-                defaultValue={ComplaintPriority.MEDIUM}
-              >
-                <option value={ComplaintPriority.LOW}>Low</option>
-                <option value={ComplaintPriority.MEDIUM}>Medium</option>
-                <option value={ComplaintPriority.HIGH}>High</option>
-                <option value={ComplaintPriority.URGENT}>Urgent</option>
-              </select>
-              {errors.priority && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.priority.message}
-                </p>
-              )}
-            </div>
+            {/* Priority - Only for officer complaints */}
+            {!isCitizen && (
+              <div>
+                <label
+                  htmlFor="priority"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Priority *
+                </label>
+                <select
+                  {...register("priority", {
+                    required: "Priority is required",
+                  })}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                    errors.priority ? "border-red-500" : ""
+                  }`}
+                  defaultValue={ComplaintPriority.MEDIUM}
+                >
+                  <option value={ComplaintPriority.LOW}>Low</option>
+                  <option value={ComplaintPriority.MEDIUM}>Medium</option>
+                  <option value={ComplaintPriority.HIGH}>High</option>
+                  <option value={ComplaintPriority.URGENT}>Urgent</option>
+                </select>
+                {errors.priority && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.priority.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Location */}
             <div>
@@ -178,26 +269,28 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
               />
             </div>
 
-            {/* Department */}
-            <div>
-              <label
-                htmlFor="department"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Department
-              </label>
-              <select
-                {...register("department")}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">Select Department (optional)</option>
-                {Object.values(Department).map((dept) => (
-                  <option key={dept} value={dept}>
-                    {getDepartmentDisplayName(dept)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Department - Only for officer complaints */}
+            {!isCitizen && (
+              <div>
+                <label
+                  htmlFor="department"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Department
+                </label>
+                <select
+                  {...register("department")}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">Select Department (optional)</option>
+                  {Object.values(Department).map((dept) => (
+                    <option key={dept} value={dept}>
+                      {getDepartmentDisplayName(dept)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Description */}
             <div>
@@ -211,8 +304,10 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({ onSuccess }) => {
                 {...register("description", {
                   required: "Description is required",
                   minLength: {
-                    value: 20,
-                    message: "Description must be at least 20 characters",
+                    value: isCitizen ? 10 : 20,
+                    message: isCitizen
+                      ? "Description must be at least 10 characters"
+                      : "Description must be at least 20 characters",
                   },
                 })}
                 rows={4}
