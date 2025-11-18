@@ -19,11 +19,23 @@ import {
   Youtube,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "../services/authService";
+import { useAuth } from "../contexts/AuthContext";
 
 const CitizenHome: React.FC = () => {
+  const navigate = useNavigate();
+  const { setAuth, isAuthenticated, user, logout } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isHeroHovered, setIsHeroHovered] = useState(false); // 2) pause on hover
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const slides = [
     {
@@ -128,6 +140,140 @@ const CitizenHome: React.FC = () => {
     return () => clearInterval(id);
   }, [isHeroHovered, slides.length]);
 
+  const handleSendOtp = async () => {
+    if (!mobileNumber.trim() || mobileNumber.trim().length < 10) {
+      setError("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
+    try {
+      setError("");
+      setIsLoading(true);
+      const response = await authService.sendOtp(mobileNumber.trim());
+
+      // Only show OTP field if API call was successful
+      if (response?.success) {
+        setOtpSent(true);
+        setOtp("");
+      } else {
+        setError(
+          response?.message || "Failed to send login OTP. Please try again."
+        );
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to send login OTP. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp.trim() || otp.trim().length < 4) {
+      setError("Please enter a valid OTP");
+      return;
+    }
+
+    try {
+      setError("");
+      setIsLoading(true);
+      const res = await authService.verifyOtp(mobileNumber.trim(), otp.trim());
+
+      if (res?.success && res.data?.token) {
+        const token = res.data.token;
+
+        // Decode minimal user info from JWT payload
+        const decodePayload = (jwt: string) => {
+          try {
+            const parts = jwt.split(".");
+            if (parts.length !== 3) return null;
+            const payload = parts[1];
+            const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = base64.padEnd(
+              base64.length + ((4 - (base64.length % 4)) % 4),
+              "="
+            );
+            const decoded = atob(padded);
+            return JSON.parse(decoded);
+          } catch (e) {
+            return null;
+          }
+        };
+
+        const payload = decodePayload(token) as any;
+        const minimalUser = {
+          id: payload?.sub || payload?.citizenId || "",
+          email: payload?.email || "",
+          name: payload?.name || "",
+          role: payload?.role || "CUSTOMER",
+          mobileNumber: mobileNumber.trim(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        // Store in localStorage first to ensure persistence
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(minimalUser));
+
+        // Set auth in context
+        setAuth({ token, user: minimalUser as any });
+
+        // Close modal and stay on the same page (no navigation)
+        setTimeout(() => {
+          closeLoginModal();
+        }, 100);
+      } else {
+        setError(res?.message || "OTP verification failed.");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "OTP verification failed. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      setError("");
+      setIsLoading(true);
+      const response = await authService.sendOtp(mobileNumber.trim());
+
+      if (response?.success) {
+        setOtp("");
+        // Show success message briefly
+        setError("");
+      } else {
+        setError(
+          response?.message || "Failed to resend OTP. Please try again."
+        );
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || "Failed to resend OTP. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openLoginModal = () => {
+    setIsLoginModalOpen(true);
+    setMobileMenuOpen(false); // Close mobile menu if open
+  };
+
+  const closeLoginModal = () => {
+    setIsLoginModalOpen(false);
+    setMobileNumber("");
+    setOtp("");
+    setOtpSent(false);
+    setError("");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -184,9 +330,22 @@ const CitizenHome: React.FC = () => {
                 <Globe className="h-4 w-4" />
                 <span className="text-sm">EN</span>
               </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hidden sm:block">
-                Login
-              </button>
+              {isAuthenticated ? (
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hidden sm:flex items-center space-x-2"
+                >
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </button>
+              ) : (
+                <button
+                  onClick={openLoginModal}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hidden sm:block"
+                >
+                  Login
+                </button>
+              )}
 
               {/* Mobile Menu Button */}
               <button
@@ -232,9 +391,22 @@ const CitizenHome: React.FC = () => {
                 >
                   About
                 </a>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full">
-                  Login
-                </button>
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => setIsProfileModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full flex items-center justify-center space-x-2"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={openLoginModal}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full"
+                  >
+                    Login
+                  </button>
+                )}
               </nav>
             </div>
           )}
@@ -323,6 +495,14 @@ const CitizenHome: React.FC = () => {
             {quickServices.map((service, index) => (
               <button
                 key={index}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    openLoginModal();
+                  } else {
+                    // TODO: Link to respective pages later
+                    console.log(`Navigate to ${service.name}`);
+                  }
+                }}
                 className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 flex flex-col items-center justify-center space-y-3"
               >
                 <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center ring-1 ring-black/5">
@@ -560,6 +740,248 @@ const CitizenHome: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Login Modal */}
+      {isLoginModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={closeLoginModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {otpSent ? "Enter OTP" : "Citizen Login"}
+              </h2>
+              <p className="text-sm text-gray-600">
+                {otpSent
+                  ? `We sent an OTP to ${mobileNumber}`
+                  : "Enter your mobile number to receive an OTP for login"}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {!otpSent ? (
+                <>
+                  <div>
+                    <label
+                      htmlFor="mobile"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Mobile Number
+                    </label>
+                    <input
+                      id="mobile"
+                      type="tel"
+                      value={mobileNumber}
+                      onChange={(e) => {
+                        setMobileNumber(e.target.value);
+                        setError("");
+                      }}
+                      placeholder="9000000000"
+                      maxLength={10}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && !isLoading) {
+                          handleSendOtp();
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={closeLoginModal}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSendOtp}
+                      disabled={isLoading || mobileNumber.trim().length < 10}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? "Sending..." : "Send OTP"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label
+                      htmlFor="otp"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Enter OTP
+                    </label>
+                    <input
+                      id="otp"
+                      type="text"
+                      value={otp}
+                      onChange={(e) => {
+                        setOtp(e.target.value);
+                        setError("");
+                      }}
+                      placeholder="123456"
+                      maxLength={6}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && !isLoading) {
+                          handleVerifyOtp();
+                        }
+                      }}
+                      autoFocus
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setOtpSent(false);
+                        setOtp("");
+                        setError("");
+                      }}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      disabled={isLoading}
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleVerifyOtp}
+                      disabled={isLoading || otp.trim().length < 4}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? "Verifying..." : "Verify OTP"}
+                    </button>
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <button
+                      onClick={handleResendOtp}
+                      disabled={isLoading}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                    >
+                      {isLoading ? "Sending..." : "Resend OTP"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {isProfileModalOpen && user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setIsProfileModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="mb-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {user.name || "Citizen"}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    {user.mobileNumber || user.email || "User"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-t pt-4">
+                <div className="space-y-3">
+                  {user.name && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Name:
+                      </span>
+                      <span className="text-sm text-gray-900">{user.name}</span>
+                    </div>
+                  )}
+                  {user.email && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Email:
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {user.email}
+                      </span>
+                    </div>
+                  )}
+                  {user.mobileNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Mobile:
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {user.mobileNumber}
+                      </span>
+                    </div>
+                  )}
+                  {user.role && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Role:
+                      </span>
+                      <span className="text-sm text-gray-900">{user.role}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setIsProfileModalOpen(false);
+                    // TODO: Navigate to full profile page later
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  View Full Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setIsProfileModalOpen(false);
+                    logout();
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
