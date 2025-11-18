@@ -17,6 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeTab, onTabChan
     { id: 'my-complaints', label: 'My Complaints', icon: '📋' },
     ...(isAdmin ? [{ id: 'admin-approvals', label: 'Admin Approvals', icon: '👥' }] : []),
     { id: 'profile', label: 'Profile', icon: '👤' },
+    { id: 'complaint-board', label: 'Complaint Board', icon: '🗂️' },
   ];
 
   return (
