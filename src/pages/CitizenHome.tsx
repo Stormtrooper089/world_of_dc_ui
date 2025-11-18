@@ -25,11 +25,12 @@ import { useAuth } from "../contexts/AuthContext";
 
 const CitizenHome: React.FC = () => {
   const navigate = useNavigate();
-  const { setAuth } = useAuth();
+  const { setAuth, isAuthenticated, user, logout } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isHeroHovered, setIsHeroHovered] = useState(false); // 2) pause on hover
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -219,10 +220,9 @@ const CitizenHome: React.FC = () => {
         // Set auth in context
         setAuth({ token, user: minimalUser as any });
 
-        // Close modal and navigate to customer dashboard after a short delay to allow state to update
+        // Close modal and stay on the same page (no navigation)
         setTimeout(() => {
           closeLoginModal();
-          navigate("/customer");
         }, 100);
       } else {
         setError(res?.message || "OTP verification failed.");
@@ -330,12 +330,22 @@ const CitizenHome: React.FC = () => {
                 <Globe className="h-4 w-4" />
                 <span className="text-sm">EN</span>
               </button>
-              <button
-                onClick={openLoginModal}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hidden sm:block"
-              >
-                Login
-              </button>
+              {isAuthenticated ? (
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hidden sm:flex items-center space-x-2"
+                >
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </button>
+              ) : (
+                <button
+                  onClick={openLoginModal}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hidden sm:block"
+                >
+                  Login
+                </button>
+              )}
 
               {/* Mobile Menu Button */}
               <button
@@ -381,12 +391,22 @@ const CitizenHome: React.FC = () => {
                 >
                   About
                 </a>
-                <button
-                  onClick={openLoginModal}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full"
-                >
-                  Login
-                </button>
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => setIsProfileModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full flex items-center justify-center space-x-2"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={openLoginModal}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full"
+                  >
+                    Login
+                  </button>
+                )}
               </nav>
             </div>
           )}
@@ -475,6 +495,14 @@ const CitizenHome: React.FC = () => {
             {quickServices.map((service, index) => (
               <button
                 key={index}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    openLoginModal();
+                  } else {
+                    // TODO: Link to respective pages later
+                    console.log(`Navigate to ${service.name}`);
+                  }
+                }}
                 className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 flex flex-col items-center justify-center space-y-3"
               >
                 <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center ring-1 ring-black/5">
@@ -787,21 +815,6 @@ const CitizenHome: React.FC = () => {
                       {isLoading ? "Sending..." : "Send OTP"}
                     </button>
                   </div>
-
-                  <div className="text-center pt-4 border-t">
-                    <p className="text-sm text-gray-600">
-                      Don't have an account?{" "}
-                      <button
-                        onClick={() => {
-                          closeLoginModal();
-                          navigate("/signup");
-                        }}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Sign up
-                      </button>
-                    </p>
-                  </div>
                 </>
               ) : (
                 <>
@@ -870,6 +883,101 @@ const CitizenHome: React.FC = () => {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {isProfileModalOpen && user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setIsProfileModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="mb-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {user.name || "Citizen"}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    {user.mobileNumber || user.email || "User"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-t pt-4">
+                <div className="space-y-3">
+                  {user.name && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Name:
+                      </span>
+                      <span className="text-sm text-gray-900">{user.name}</span>
+                    </div>
+                  )}
+                  {user.email && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Email:
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {user.email}
+                      </span>
+                    </div>
+                  )}
+                  {user.mobileNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Mobile:
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {user.mobileNumber}
+                      </span>
+                    </div>
+                  )}
+                  {user.role && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Role:
+                      </span>
+                      <span className="text-sm text-gray-900">{user.role}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setIsProfileModalOpen(false);
+                    // TODO: Navigate to full profile page later
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  View Full Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setIsProfileModalOpen(false);
+                    logout();
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </div>
