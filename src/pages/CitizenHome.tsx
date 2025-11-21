@@ -20,7 +20,11 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+import {
+  authService,
+  CarouselSlide,
+  PortalStatistics,
+} from "../services/authService";
 import { useAuth } from "../contexts/AuthContext";
 import { Citizen, CitizenUpdateData } from "../types";
 
@@ -48,56 +52,39 @@ const CitizenHome: React.FC = () => {
     address: "",
     pincode: "",
   });
-
-  const slides = [
-    {
-      title: "Digital Assam Initiative",
-      description:
-        "Empowering citizens through digital governance and e-services",
-      bg: "bg-gradient-to-r from-blue-600 to-blue-800",
-    },
-    {
-      title: "Quick Grievance Resolution",
-      description: "File and track your complaints seamlessly online",
-      bg: "bg-gradient-to-r from-green-600 to-green-800",
-    },
-    {
-      title: "Citizen-Centric Services",
-      description: "Access government schemes and programs with ease",
-      bg: "bg-gradient-to-r from-purple-600 to-purple-800",
-    },
-  ];
-
-  const analyticsData = [
+  const [slides, setSlides] = useState<CarouselSlide[]>([]);
+  const [analyticsData, setAnalyticsData] = useState([
     {
       label: "Grievances Filed",
-      value: "12,456",
+      value: "0",
       icon: FileText,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
       label: "Resolved",
-      value: "10,234",
+      value: "0",
       icon: FileCheck,
       color: "text-green-600",
       bg: "bg-green-50",
     },
     {
       label: "Avg Resolution Time",
-      value: "5.2 Days",
+      value: "0 Days",
       icon: Clock,
       color: "text-orange-600",
       bg: "bg-orange-50",
     },
     {
       label: "Satisfaction Rate",
-      value: "92%",
+      value: "0%",
       icon: TrendingUp,
       color: "text-purple-600",
       bg: "bg-purple-50",
     },
-  ];
+  ]);
+  const [isLoadingCarousel, setIsLoadingCarousel] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const quickServices = [
     { name: "File Grievance", icon: Plus },
@@ -139,13 +126,44 @@ const CitizenHome: React.FC = () => {
     },
   ];
 
+  // Map color names to Tailwind gradient classes
+  // Supports simple color names (e.g., "blue", "yellow") and converts them to gradient classes
+  const getGradientClass = (colorName: string | null | undefined): string => {
+    if (!colorName) {
+      return "bg-gradient-to-r from-blue-600 to-blue-800";
+    }
+
+    const color = colorName.toLowerCase().trim();
+
+    // If it's already a Tailwind class (legacy support), use it directly
+    if (color.startsWith("bg-gradient")) {
+      return colorName;
+    }
+
+    // Map simple color names to gradient classes
+    const gradientMap: Record<string, string> = {
+      blue: "bg-gradient-to-r from-blue-600 to-blue-800",
+      green: "bg-gradient-to-r from-green-600 to-green-800",
+      yellow: "bg-gradient-to-r from-yellow-600 to-yellow-800",
+      red: "bg-gradient-to-r from-red-600 to-red-800",
+      purple: "bg-gradient-to-r from-purple-600 to-purple-800",
+      orange: "bg-gradient-to-r from-orange-600 to-orange-800",
+      pink: "bg-gradient-to-r from-pink-600 to-pink-800",
+      indigo: "bg-gradient-to-r from-indigo-600 to-indigo-800",
+      teal: "bg-gradient-to-r from-teal-600 to-teal-800",
+      cyan: "bg-gradient-to-r from-cyan-600 to-cyan-800",
+    };
+
+    return gradientMap[color] || "bg-gradient-to-r from-blue-600 to-blue-800";
+  };
+
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
   const prevSlide = () =>
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
 
   // 2) Auto-rotate hero every 5s (pause on hover)
   useEffect(() => {
-    if (isHeroHovered) return;
+    if (isHeroHovered || slides.length === 0) return;
     const id = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
@@ -286,12 +304,83 @@ const CitizenHome: React.FC = () => {
     setError("");
   };
 
+  // Fetch carousel slides on component mount
+  useEffect(() => {
+    fetchCarouselSlides();
+  }, []);
+
+  // Fetch portal statistics on component mount
+  useEffect(() => {
+    fetchPortalStatistics();
+  }, []);
+
   // Fetch citizen profile when modal opens
   useEffect(() => {
     if (isProfileModalOpen && isAuthenticated && user) {
       fetchCitizenProfile();
     }
   }, [isProfileModalOpen, isAuthenticated]);
+
+  const fetchCarouselSlides = async () => {
+    try {
+      setIsLoadingCarousel(true);
+      const response = await authService.getCarouselSlides();
+      if (response.success && response.data) {
+        setSlides(response.data);
+      } else {
+        setSlides([]);
+      }
+    } catch (error) {
+      console.error("Error fetching carousel slides:", error);
+      setSlides([]);
+    } finally {
+      setIsLoadingCarousel(false);
+    }
+  };
+
+  const fetchPortalStatistics = async () => {
+    try {
+      setIsLoadingStats(true);
+      const response = await authService.getPortalStatistics();
+      if (response.success && response.data) {
+        const stats = response.data;
+        setAnalyticsData([
+          {
+            label: "Grievances Filed",
+            value: stats.grievancesFiled.toLocaleString(),
+            icon: FileText,
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+          },
+          {
+            label: "Resolved",
+            value: stats.resolved.toLocaleString(),
+            icon: FileCheck,
+            color: "text-green-600",
+            bg: "bg-green-50",
+          },
+          {
+            label: "Avg Resolution Time",
+            value: stats.avgResolutionTime,
+            icon: Clock,
+            color: "text-orange-600",
+            bg: "bg-orange-50",
+          },
+          {
+            label: "Satisfaction Rate",
+            value: stats.satisfactionRate,
+            icon: TrendingUp,
+            color: "text-purple-600",
+            bg: "bg-purple-50",
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching portal statistics:", error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
   const fetchCitizenProfile = async () => {
     try {
@@ -534,30 +623,58 @@ const CitizenHome: React.FC = () => {
         <div className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -right-20 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
 
-        {slides.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              index === currentSlide ? "opacity-100" : "opacity-0"
-            } ${slide.bg}`}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`${index + 1} of ${slides.length}`}
-          >
-            {/* Radial overlay for better contrast */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),rgba(0,0,0,0.25))]" />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-              <div className="text-white max-w-2xl">
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-sm">
-                  {slide.title}
-                </h2>
-                <p className="text-lg sm:text-xl/7 opacity-95">
-                  {slide.description}
-                </p>
-              </div>
-            </div>
+        {isLoadingCarousel ? (
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
           </div>
-        ))}
+        ) : (
+          slides.map((slide, index) => {
+            // Determine background style: use image if available, otherwise use color/gradient
+            const hasBackgroundImage =
+              slide.backgroundImage &&
+              typeof slide.backgroundImage === "string" &&
+              slide.backgroundImage.trim() !== "";
+
+            const backgroundStyle = hasBackgroundImage
+              ? {
+                  backgroundImage: `url(${slide.backgroundImage})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : {};
+
+            // Convert color name to Tailwind gradient class
+            const backgroundClass = hasBackgroundImage
+              ? ""
+              : getGradientClass(slide.backgroundColor);
+
+            return (
+              <div
+                key={index}
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  index === currentSlide ? "opacity-100" : "opacity-0"
+                } ${backgroundClass}`}
+                style={backgroundStyle}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`${index + 1} of ${slides.length}`}
+              >
+                {/* Radial overlay for better contrast */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),rgba(0,0,0,0.25))]" />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+                  <div className="text-white max-w-2xl">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-sm">
+                      {slide.title}
+                    </h2>
+                    <p className="text-lg sm:text-xl/7 opacity-95">
+                      {slide.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
 
         {/* Carousel Controls */}
         <button
@@ -628,24 +745,37 @@ const CitizenHome: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             Portal Statistics
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {analyticsData.map((item, index) => (
-              <div
-                key={index}
-                className="group bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md hover:-translate-y-0.5 transition-all"
-              >
+          {isLoadingStats ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[1, 2, 3, 4].map((index) => (
                 <div
-                  className={`w-12 h-12 ${item.bg} rounded-lg flex items-center justify-center mb-4 ring-1 ring-black/5`}
+                  key={index}
+                  className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex items-center justify-center"
                 >
-                  <item.icon className={`h-6 w-6 ${item.color}`} />
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
-                <p className="text-gray-600 text-sm mb-1">{item.label}</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {analyticsData.map((item, index) => (
+                <div
+                  key={index}
+                  className="group bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                >
+                  <div
+                    className={`w-12 h-12 ${item.bg} rounded-lg flex items-center justify-center mb-4 ring-1 ring-black/5`}
+                  >
+                    <item.icon className={`h-6 w-6 ${item.color}`} />
+                  </div>
+                  <p className="text-gray-600 text-sm mb-1">{item.label}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Two Column Layout - News & Schemes */}

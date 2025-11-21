@@ -167,4 +167,35 @@ export const authService = {
     const response = await api.get<ApiResponse<Complaint[]>>("/complaints");
     return response.data.data;
   },
+
+  // Get carousel slides for citizen home page
+  async getCarouselSlides(): Promise<ApiResponse<CarouselSlide[]>> {
+    const response = await api.get<ApiResponse<CarouselSlide[]>>(
+      "/citizen/carousel"
+    );
+    return response.data;
+  },
+
+  // Get portal statistics for citizen home page
+  async getPortalStatistics(): Promise<ApiResponse<PortalStatistics>> {
+    const response = await api.get<ApiResponse<PortalStatistics>>(
+      "/citizen/portal-stats"
+    );
+    return response.data;
+  },
 };
+
+// Types for carousel and portal statistics
+export interface CarouselSlide {
+  title: string;
+  description: string;
+  backgroundImage?: string | null; // URL or path to image
+  backgroundColor?: string | null; // Simple color name (e.g., "blue", "green", "yellow") - frontend converts to gradient
+}
+
+export interface PortalStatistics {
+  grievancesFiled: number;
+  resolved: number;
+  avgResolutionTime: string;
+  satisfactionRate: string;
+}
