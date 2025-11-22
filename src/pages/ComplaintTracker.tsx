@@ -4,7 +4,7 @@ import {
   Filter, RefreshCw, Search, LayoutList, Kanban, 
   Clock, AlertCircle, CheckCircle, MoreHorizontal, ChevronRight,
   ArrowUpRight, SlidersHorizontal, MapPin, Phone, Upload,
-  Edit2, Save, Check, FileText, Loader2, Trash2
+  Edit2, Save, FileText, Loader2, Trash2, CalendarDays
 } from 'lucide-react';
 import { useAuth } from "../contexts/AuthContext";
 import { complaintService } from "../services/complaintService";
@@ -300,14 +300,20 @@ export default function ComplaintCockpitBoard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
   // Drawer Editing States
-  const [editingField, setEditingField] = useState(null); // 'STATUS', 'DEPT', 'OFFICER'
-  const [tempChanges, setTempChanges] = useState({}); // Store inline edits before save
+  const [editingField, setEditingField] = useState(null);
+  const [tempChanges, setTempChanges] = useState({});
   const [commentText, setCommentText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef(null); // For drawer file upload
+  const fileInputRef = useRef(null);
 
+  // -- UPDATED FILTER STATE --
   const [activeFilters, setActiveFilters] = useState({
-    priority: [], status: [], department: []
+    priority: [], 
+    status: [], 
+    department: [],
+    officer: [], // Added Officer Filter
+    location: [], // Added Location Filter
+    dateRange: { start: '', end: '' } // Added Date Range Filter
   });
 
   const { user } = useAuth();
@@ -333,8 +339,105 @@ export default function ComplaintCockpitBoard() {
     setIsCreateModalOpen(false);
   };
 
-  // --- DRAWER ACTIONS ---
+  // --- FILTER LOGIC ---
 
+  // 1. Calculate Facets (Counts for all filter types)
+  const facets = useMemo(() => {
+    const counts = { 
+      priority: {}, 
+      status: {}, 
+      department: {},
+      officer: {},
+      location: {}
+    };
+    
+    complaints.forEach(c => {
+      // Priority
+      counts.priority[c.priority] = (counts.priority[c.priority] || 0) + 1;
+      
+      // Status
+      counts.status[c.status] = (counts.status[c.status] || 0) + 1;
+      
+      // Department
+      const dept = c.assignedDepartment || 'Unassigned';
+      counts.department[dept] = (counts.department[dept] || 0) + 1;
+
+      // Officer
+      const officerId = c.assignedToId || 'Unassigned';
+      const officerName = MOCK_OFFICERS.find(o => o.id === officerId)?.name || 'Unassigned';
+      counts.officer[officerName] = (counts.officer[officerName] || 0) + 1;
+
+      // Location
+      const loc = c.location || 'Unknown';
+      counts.location[loc] = (counts.location[loc] || 0) + 1;
+    });
+    return counts;
+  }, [complaints]);
+
+  // 2. Filter Data Logic
+  const filteredData = useMemo(() => {
+    return complaints.filter(item => {
+      // Text Search
+      const matchesSearch = !searchQuery || 
+        item.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.complaintNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Checkboxes
+      const matchesPriority = activeFilters.priority.length === 0 || activeFilters.priority.includes(item.priority);
+      const matchesStatus = activeFilters.status.length === 0 || activeFilters.status.includes(item.status);
+      const matchesDept = activeFilters.department.length === 0 || activeFilters.department.includes(item.assignedDepartment || 'Unassigned');
+      
+      // Officer Filter
+      const officerName = MOCK_OFFICERS.find(o => o.id === item.assignedToId)?.name || 'Unassigned';
+      const matchesOfficer = activeFilters.officer.length === 0 || activeFilters.officer.includes(officerName);
+
+      // Location Filter
+      const locationName = item.location || 'Unknown';
+      const matchesLocation = activeFilters.location.length === 0 || activeFilters.location.includes(locationName);
+
+      // Date Range Filter
+      let matchesDate = true;
+      if (activeFilters.dateRange.start) {
+        matchesDate = matchesDate && new Date(item.createdAt) >= new Date(activeFilters.dateRange.start);
+      }
+      if (activeFilters.dateRange.end) {
+        // Add 1 day to end date to include the end date fully
+        const endDate = new Date(activeFilters.dateRange.end);
+        endDate.setHours(23, 59, 59);
+        matchesDate = matchesDate && new Date(item.createdAt) <= endDate;
+      }
+
+      return matchesSearch && matchesPriority && matchesStatus && matchesDept && matchesOfficer && matchesLocation && matchesDate;
+    });
+  }, [complaints, searchQuery, activeFilters]);
+
+  // 3. Stats
+  const stats = useMemo(() => {
+    return {
+      total: complaints.length,
+      critical: complaints.filter(c => c.priority === 'HIGH' || c.priority === 'URGENT').length,
+      pending: complaints.filter(c => c.status !== 'RESOLVED' && c.status !== 'REJECTED').length,
+      today: complaints.filter(c => new Date(c.createdAt).toDateString() === new Date().toDateString()).length
+    };
+  }, [complaints]);
+
+  // 4. Filter Toggle Handlers
+  const toggleFilter = (category, value) => {
+    setActiveFilters(prev => {
+      const current = prev[category];
+      const updated = current.includes(value) ? current.filter(item => item !== value) : [...current, value];
+      return { ...prev, [category]: updated };
+    });
+  };
+
+  const handleDateChange = (field, value) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      dateRange: { ...prev.dateRange, [field]: value }
+    }));
+  };
+
+  // --- DRAWER & SAVING LOGIC ---
   const startEditing = (field, currentValue) => {
     setEditingField(field);
     setTempChanges(prev => ({ ...prev, [field]: currentValue }));
@@ -352,7 +455,6 @@ export default function ComplaintCockpitBoard() {
   const handleDrawerFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Simulate file upload immediately for UX
       const newDoc = {
         id: Date.now(),
         fileName: file.name,
@@ -371,16 +473,13 @@ export default function ComplaintCockpitBoard() {
     if (!selectedTicketId) return;
     setIsSaving(true);
     
-    // Merge temp changes
     const updates = { ...tempChanges };
     const originalTicket = complaints.find(c => c.id === selectedTicketId);
     
-    // Add Officer details if officer ID changed
     if (updates.assignedToId && updates.assignedToId !== originalTicket.assignedToId) {
-       updates.status = 'ASSIGNED'; // Auto-status update
+       updates.status = 'ASSIGNED'; 
     }
 
-    // Add Comment if exists
     let newComments = [...(originalTicket.comments || [])];
     if (commentText.trim()) {
        newComments.push({
@@ -392,12 +491,10 @@ export default function ComplaintCockpitBoard() {
     }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 600)); // Mock API delay
-      
+      await new Promise(resolve => setTimeout(resolve, 600)); 
       setComplaints(prev => prev.map(c => 
         c.id === selectedTicketId ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
       ));
-      
       setEditingField(null);
       setTempChanges({});
       setCommentText('');
@@ -408,46 +505,12 @@ export default function ComplaintCockpitBoard() {
     }
   };
 
-  // --- FILTER & DATA ---
-  const facets = useMemo(() => {
-    const counts = { priority: {}, status: {}, department: {} };
-    complaints.forEach(c => {
-      counts.priority[c.priority] = (counts.priority[c.priority] || 0) + 1;
-      counts.status[c.status] = (counts.status[c.status] || 0) + 1;
-      const dept = c.assignedDepartment || 'Unassigned';
-      counts.department[dept] = (counts.department[dept] || 0) + 1;
-    });
-    return counts;
-  }, [complaints]);
-
-  const filteredData = useMemo(() => {
-    return complaints.filter(item => {
-      const matchesSearch = !searchQuery || 
-        item.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.complaintNumber.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesPriority = activeFilters.priority.length === 0 || activeFilters.priority.includes(item.priority);
-      const matchesStatus = activeFilters.status.length === 0 || activeFilters.status.includes(item.status);
-      const matchesDept = activeFilters.department.length === 0 || activeFilters.department.includes(item.assignedDepartment || 'Unassigned');
-      return matchesSearch && matchesPriority && matchesStatus && matchesDept;
-    });
-  }, [complaints, searchQuery, activeFilters]);
-
-  const toggleFilter = (category, value) => {
-    setActiveFilters(prev => {
-      const current = prev[category];
-      const updated = current.includes(value) ? current.filter(item => item !== value) : [...current, value];
-      return { ...prev, [category]: updated };
-    });
-  };
-
   const selectedTicket = useMemo(() => {
     if (!selectedTicketId) return null;
     const ticket = complaints.find(c => c.id === selectedTicketId);
-    // Overlay temp changes for the view so it looks responsive before saving
     return { ...ticket, ...tempChanges };
   }, [complaints, selectedTicketId, tempChanges]);
 
-  // Derived display values for officer
   const assignedOfficerName = useMemo(() => {
     if (!selectedTicket) return 'Unassigned';
     const officer = MOCK_OFFICERS.find(o => o.id === selectedTicket.assignedToId);
@@ -476,19 +539,94 @@ export default function ComplaintCockpitBoard() {
         </button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden px-6 pb-6 gap-4 mt-6">
+      {/* TOP METRICS - Updated to show status breakdown as requested */}
+      <div className="px-6 py-4 grid grid-cols-5 gap-4 shrink-0">
+        <MetricCard title="Total" value={stats.total} trend="All Tickets" type="neutral" />
+        <MetricCard title="New" value={facets.status.CREATED || 0} trend="Unattended" type="warning" />
+        <MetricCard title="In Progress" value={facets.status.IN_PROGRESS || 0} trend="Active" type="neutral" />
+        <MetricCard title="Critical" value={stats.critical} trend="High/Urgent" type="danger" />
+        <MetricCard title="Resolved" value={facets.status.RESOLVED || 0} trend="Completed" type="success" /> 
+      </div>
+
+      <div className="flex flex-1 overflow-hidden px-6 pb-6 gap-4 mt-2">
         
         {/* SIDEBAR */}
         {showFilters && (
-          <aside className="w-60 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col shrink-0 overflow-hidden">
+          <aside className="w-64 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col shrink-0 overflow-hidden">
              <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wider">Filters</h3>
-               <button onClick={() => setActiveFilters({ priority: [], status: [], department: [] })} className="text-xs text-blue-600 hover:text-blue-800">Reset</button>
+               <button onClick={() => {
+                 setActiveFilters({ priority: [], status: [], department: [], officer: [], location: [], dateRange: { start: '', end: '' } });
+                 setSearchQuery('');
+               }} className="text-xs text-blue-600 hover:text-blue-800">Reset</button>
              </div>
+             
              <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                <div><h4 className="text-sm font-semibold text-gray-900 mb-2">Status</h4>{Object.keys(STATUS_CONFIG).map(key => (<FacetedFilterCheckbox key={key} label={STATUS_CONFIG[key].label} count={facets.status[key] || 0} checked={activeFilters.status.includes(key)} onChange={() => toggleFilter('status', key)} />))}</div>
+                
+                {/* Date Range Filter */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-gray-400" /> Date Range
+                  </h4>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">From</label>
+                      <input 
+                        type="date" 
+                        className="w-full text-xs p-2 border border-gray-200 rounded"
+                        value={activeFilters.dateRange.start}
+                        onChange={(e) => handleDateChange('start', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">To</label>
+                      <input 
+                        type="date" 
+                        className="w-full text-xs p-2 border border-gray-200 rounded"
+                        value={activeFilters.dateRange.end}
+                        onChange={(e) => handleDateChange('end', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
                 <hr className="border-gray-100" />
-                <div><h4 className="text-sm font-semibold text-gray-900 mb-2">Priority</h4>{['URGENT', 'HIGH', 'MEDIUM', 'LOW'].map(prio => (<FacetedFilterCheckbox key={prio} label={prio.charAt(0) + prio.slice(1).toLowerCase()} count={facets.priority[prio] || 0} checked={activeFilters.priority.includes(prio)} onChange={() => toggleFilter('priority', prio)} />))}</div>
+
+                {/* Status Filter */}
+                <div><h4 className="text-sm font-semibold text-gray-900 mb-2">Status</h4>{Object.keys(STATUS_CONFIG).map(key => (<FacetedFilterCheckbox key={key} label={STATUS_CONFIG[key].label} count={facets.status[key] || 0} checked={activeFilters.status.includes(key)} onChange={() => toggleFilter('status', key)} />))}</div>
+                
+                <hr className="border-gray-100" />
+                
+                {/* Department Filter */}
+                <div><h4 className="text-sm font-semibold text-gray-900 mb-2">Department</h4>{Object.keys(facets.department).map(dept => (<FacetedFilterCheckbox key={dept} label={dept} count={facets.department[dept]} checked={activeFilters.department.includes(dept)} onChange={() => toggleFilter('department', dept)} />))}</div>
+
+                <hr className="border-gray-100" />
+
+                {/* Officer Filter (New) */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Officer</h4>
+                  {Object.keys(facets.officer).length === 0 ? (
+                    <p className="text-xs text-gray-400">No data available</p>
+                  ) : (
+                    Object.keys(facets.officer).map(officer => (
+                      <FacetedFilterCheckbox key={officer} label={officer} count={facets.officer[officer]} checked={activeFilters.officer.includes(officer)} onChange={() => toggleFilter('officer', officer)} />
+                    ))
+                  )}
+                </div>
+
+                <hr className="border-gray-100" />
+
+                {/* Location Filter (New) */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Location</h4>
+                  {Object.keys(facets.location).length === 0 ? (
+                     <p className="text-xs text-gray-400">No data available</p>
+                  ) : (
+                    Object.keys(facets.location).map(loc => (
+                      <FacetedFilterCheckbox key={loc} label={loc} count={facets.location[loc]} checked={activeFilters.location.includes(loc)} onChange={() => toggleFilter('location', loc)} />
+                    ))
+                  )}
+                </div>
              </div>
           </aside>
         )}
@@ -513,6 +651,8 @@ export default function ComplaintCockpitBoard() {
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px]">Status</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px]">Priority</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[150px]">Department</th>
+                    {/* NEW Created Date Column */}
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px]">Created Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -523,6 +663,8 @@ export default function ComplaintCockpitBoard() {
                       <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[complaint.status]?.color}`}>{STATUS_CONFIG[complaint.status]?.label || complaint.status}</span></td>
                       <td className="px-4 py-3"><div className={`flex items-center gap-1.5 text-xs font-medium ${PRIORITY_STYLES[complaint.priority].text}`}>{complaint.priority}</div></td>
                       <td className="px-4 py-3"><span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{complaint.assignedDepartment || 'Unassigned'}</span></td>
+                      {/* RENDER Date */}
+                      <td className="px-4 py-3"><span className="text-xs text-gray-600">{new Date(complaint.createdAt).toLocaleDateString()}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -565,7 +707,6 @@ export default function ComplaintCockpitBoard() {
               {/* DETAILS GRID WITH EDITABLE FIELDS */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 
-                {/* 1. Status (Editable) */}
                 <EditableDetailRow 
                   label="Status" 
                   value={STATUS_CONFIG[selectedTicket.status]?.label}
@@ -582,7 +723,6 @@ export default function ComplaintCockpitBoard() {
                   </select>
                 </EditableDetailRow>
 
-                {/* 2. Department (Editable) */}
                 <EditableDetailRow 
                   label="Department" 
                   value={selectedTicket.assignedDepartment}
@@ -601,7 +741,6 @@ export default function ComplaintCockpitBoard() {
                   </select>
                 </EditableDetailRow>
 
-                {/* 3. Assigned Officer (Editable) */}
                 <EditableDetailRow 
                   label="Assigned Officer" 
                   displayValue={assignedOfficerName}
@@ -621,7 +760,6 @@ export default function ComplaintCockpitBoard() {
                   </select>
                 </EditableDetailRow>
 
-                {/* 4. Read Only Fields */}
                 <div className="h-12">
                    <span className="text-xs text-gray-400 block mb-1">Location</span>
                    <span className="text-sm font-medium text-gray-800 truncate block">{selectedTicket.location || 'N/A'}</span>
@@ -637,7 +775,7 @@ export default function ComplaintCockpitBoard() {
 
               </div>
 
-              {/* ATTACHMENTS SECTION */}
+              {/* ATTACHMENTS & COMMENTS (Unchanged from previous optimized version) */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Attachments</h3>
@@ -669,10 +807,8 @@ export default function ComplaintCockpitBoard() {
                 </div>
               </div>
 
-              {/* COMMENTS SECTION */}
               <div className="border-t border-gray-100 pt-4">
                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">Activity Log</h3>
-                 
                  <div className="space-y-4 mb-4">
                    {selectedTicket.comments?.map((c, i) => (
                      <div key={i} className="flex gap-3">
@@ -684,7 +820,6 @@ export default function ComplaintCockpitBoard() {
                      </div>
                    ))}
                  </div>
-                 
                  <div className="relative">
                    <input 
                      type="text" 
@@ -694,12 +829,7 @@ export default function ComplaintCockpitBoard() {
                      className="w-full text-xs pl-3 pr-10 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none"
                      onKeyDown={(e) => e.key === 'Enter' && handleSaveChanges()}
                    />
-                   <button 
-                     onClick={handleSaveChanges}
-                     className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800"
-                   >
-                     <ArrowUpRight className="w-4 h-4" />
-                   </button>
+                   <button onClick={handleSaveChanges} className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800"><ArrowUpRight className="w-4 h-4" /></button>
                  </div>
               </div>
 
