@@ -20,8 +20,10 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+import DialogBox from "../components/common/DialogBox";
 import { useAuth } from "../contexts/AuthContext";
+import { authService } from "../services/authService";
+import FileGForm from "./FileGrievances/FileGForm";
 
 const CitizenHome: React.FC = () => {
   const navigate = useNavigate();
@@ -36,6 +38,9 @@ const CitizenHome: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isFileGrievanceDialogOpen, setIsFileGrievanceDialogOpen] =
+    useState(false);
+  const [grievanceSubmitMessage, setGrievanceSubmitMessage] = useState("");
 
   const slides = [
     {
@@ -274,6 +279,43 @@ const CitizenHome: React.FC = () => {
     setError("");
   };
 
+  // File Grievance Dialog Handlers
+  const openFileGrievanceDialog = () => {
+    setIsFileGrievanceDialogOpen(true);
+    setGrievanceSubmitMessage("");
+  };
+
+  const closeFileGrievanceDialog = () => {
+    setIsFileGrievanceDialogOpen(false);
+    setGrievanceSubmitMessage("");
+  };
+
+  const handleGrievanceSubmit = async (data: any) => {
+    try {
+      // TODO: Integrate with your backend API here
+      console.log("Grievance submitted with data:", data);
+
+      // Simulate API call
+      // const response = await grievanceService.createGrievance(data);
+
+      // Show success message
+      setGrievanceSubmitMessage(
+        "Grievance submitted successfully! We will process your request shortly."
+      );
+
+      // Close dialog after 2 seconds
+      setTimeout(() => {
+        closeFileGrievanceDialog();
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error submitting grievance:", error);
+      setGrievanceSubmitMessage(
+        error.response?.data?.message ||
+          "Failed to submit grievance. Please try again."
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -499,8 +541,12 @@ const CitizenHome: React.FC = () => {
                   if (!isAuthenticated) {
                     openLoginModal();
                   } else {
-                    // TODO: Link to respective pages later
-                    console.log(`Navigate to ${service.name}`);
+                    if (service.name === "File Grievance") {
+                      openFileGrievanceDialog();
+                    } else {
+                      // TODO: Link to respective pages later
+                      console.log(`Navigate to ${service.name}`);
+                    }
                   }
                 }}
                 className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 flex flex-col items-center justify-center space-y-3"
@@ -982,6 +1028,42 @@ const CitizenHome: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* File Grievance Dialog */}
+      <DialogBox
+        isOpen={isFileGrievanceDialogOpen}
+        onClose={closeFileGrievanceDialog}
+        title="File a Grievance"
+        maxWidth="4xl"
+      >
+        {grievanceSubmitMessage ? (
+          <div className="text-center py-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+              <svg
+                className="h-8 w-8 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <p className="text-lg text-green-700 font-medium">
+              {grievanceSubmitMessage}
+            </p>
+          </div>
+        ) : (
+          <FileGForm
+            onSubmit={handleGrievanceSubmit}
+            onCancel={closeFileGrievanceDialog}
+          />
+        )}
+      </DialogBox>
     </div>
   );
 };
