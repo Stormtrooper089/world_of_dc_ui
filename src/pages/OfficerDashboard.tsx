@@ -6,17 +6,8 @@ import MyComplaints from "../components/complaints/MyComplaints";
 import AdminApproveOfficers from "./AdminApproveOfficers";
 import Profile from "./Profile";
 import Sidebar from "../components/layout/Sidebar";
-import { Complaint, Officer, OfficerUpdateData } from "../types";
-import {
-  Designation,
-  Department,
-  getDesignationLabel,
-  getDepartmentLabel,
-  canAssignRole,
-  isAdminRole,
-} from "../constants/enums";
+import { ComplaintStatus, Complaint } from "../types";
 import ComplaintKanbanBoard from "./ComplaintTracker";
-import { User, X } from "lucide-react";
 
 const OfficerDashboard: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
@@ -175,6 +166,8 @@ const OfficerDashboard: React.FC = () => {
         return <AdminApproveOfficers />;
       case "profile":
         return <Profile />;
+      case "complaint-board":
+        return <ComplaintKanbanBoard />;
       default:
         return <DashboardContent isAdmin={isAdmin} user={user} />;
     }
@@ -241,6 +234,7 @@ const OfficerDashboard: React.FC = () => {
                 {activeTab === "my-complaints" && "My Complaints"}
                 {activeTab === "admin-approvals" && "Admin Approvals"}
                 {activeTab === "profile" && "Profile"}
+                {activeTab === "complaint-board" && "Complaint Board"}
               </h1>
               <p className="text-sm text-gray-600">
                 Welcome back, {user?.name || "User"}

@@ -12,11 +12,12 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeTab, onTabChange, user, isAdmin }) => {
   const navigationItems = [
+    { id: 'complaint-board', label: 'Complaint Board', icon: '🗂️' },
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'create-complaint', label: 'Create Complaint', icon: '➕' },
     { id: 'my-complaints', label: 'My Complaints', icon: '📋' },
     ...(isAdmin ? [{ id: 'admin-approvals', label: 'Admin Approvals', icon: '👥' }] : []),
-    { id: 'profile', label: 'Profile', icon: '👤' },
+    { id: 'profile', label: 'Profile', icon: '👤' }
   ];
 
   return (
