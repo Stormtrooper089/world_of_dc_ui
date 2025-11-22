@@ -6,8 +6,17 @@ import MyComplaints from "../components/complaints/MyComplaints";
 import AdminApproveOfficers from "./AdminApproveOfficers";
 import Profile from "./Profile";
 import Sidebar from "../components/layout/Sidebar";
-import { ComplaintStatus, Complaint } from "../types";
+import { Complaint, Officer, OfficerUpdateData } from "../types";
+import {
+  Designation,
+  Department,
+  getDesignationLabel,
+  getDepartmentLabel,
+  canAssignRole,
+  isAdminRole,
+} from "../constants/enums";
 import ComplaintKanbanBoard from "./ComplaintTracker";
+import { User, X } from "lucide-react";
 
 const OfficerDashboard: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
