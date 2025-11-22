@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, MessageSquare, Paperclip, Calendar, User, Plus, Filter, RefreshCw, Search } from 'lucide-react';
 import { complaintService } from "../services/complaintService";
-import { Complaint, ComplaintStatus, UserRole, Officer, ComplaintPriority, Department } from "../types";
+import { Complaint, Officer } from "../types";
+import { ComplaintStatus, UserRole } from "../constants/enums";
 import { useAuth } from "../contexts/AuthContext";
 import { useForm } from 'react-hook-form';
 
@@ -31,16 +32,6 @@ const departmentNames = {
   HEALTHCARE: 'Healthcare',
   EDUCATION: 'Education'
 };
-
-interface CreateComplaintData {
-  subject: string;
-  description: string;
-  priority?: ComplaintPriority;
-  location?: string;
-  department?: Department;
-  files?: FileList;
-  mobileNumber?: string; // For citizen complaints
-}
 
 // Edit Complaint Modal Component
 const EditComplaintModal = ({ complaint, onClose, onUpdate }) => {
