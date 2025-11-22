@@ -144,6 +144,18 @@ export const authService = {
     return response.data;
   },
 
+  // Get current citizen profile
+  async getCitizenProfile(): Promise<ApiResponse<any>> {
+    const response = await api.get<ApiResponse<any>>("/citizen/profile");
+    return response.data;
+  },
+
+  // Update citizen profile
+  async updateCitizenProfile(data: any): Promise<ApiResponse<any>> {
+    const response = await api.put<ApiResponse<any>>("/citizen/profile", data);
+    return response.data;
+  },
+
   // Dashboard methods
   async getComplaints(): Promise<Complaint[]> {
     const response = await api.get<ApiResponse<Complaint[]>>("/complaints");

@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  AlertCircle, 
-  CheckCircle, 
-  Clock, 
+import React, { useState, useEffect } from "react";
+import {
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Clock,
   TrendingUp,
   Users,
-  Activity
-} from 'lucide-react';
-import { Complaint, ComplaintStatus } from '../types';
-import { complaintService } from '../services/complaintService';
+  Activity,
+} from "lucide-react";
+import { Complaint } from "../types";
+import { ComplaintStatus } from "../constants/enums";
+import { complaintService } from "../services/complaintService";
 
 const Dashboard: React.FC = () => {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
@@ -31,17 +32,25 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       const response = await complaintService.getComplaints(1, 10);
       setComplaints(response.data);
-      
+
       // Calculate stats
       const total = response.data.length;
-      const open = response.data.filter(c => c.status === ComplaintStatus.OPEN).length;
-      const inProgress = response.data.filter(c => c.status === ComplaintStatus.IN_PROGRESS).length;
-      const resolved = response.data.filter(c => c.status === ComplaintStatus.RESOLVED).length;
-      const closed = response.data.filter(c => c.status === ComplaintStatus.CLOSED).length;
-      
+      const open = response.data.filter(
+        (c) => c.status === ComplaintStatus.OPEN
+      ).length;
+      const inProgress = response.data.filter(
+        (c) => c.status === ComplaintStatus.IN_PROGRESS
+      ).length;
+      const resolved = response.data.filter(
+        (c) => c.status === ComplaintStatus.RESOLVED
+      ).length;
+      const closed = response.data.filter(
+        (c) => c.status === ComplaintStatus.CLOSED
+      ).length;
+
       setStats({ total, open, inProgress, resolved, closed });
     } catch (error) {
-      console.error('Error loading complaints:', error);
+      console.error("Error loading complaints:", error);
     } finally {
       setLoading(false);
     }
@@ -49,32 +58,32 @@ const Dashboard: React.FC = () => {
 
   const statCards = [
     {
-      name: 'Total Complaints',
+      name: "Total Complaints",
       value: stats.total,
       icon: FileText,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
     },
     {
-      name: 'Open',
+      name: "Open",
       value: stats.open,
       icon: AlertCircle,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: "text-green-600",
+      bgColor: "bg-green-50",
     },
     {
-      name: 'In Progress',
+      name: "In Progress",
       value: stats.inProgress,
       icon: Clock,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
     },
     {
-      name: 'Resolved',
+      name: "Resolved",
       value: stats.resolved,
       icon: CheckCircle,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
     },
   ];
 
@@ -93,7 +102,9 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600">Monitor and manage citizen complaints across all departments</p>
+        <p className="text-gray-600">
+          Monitor and manage citizen complaints across all departments
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -101,14 +112,21 @@ const Dashboard: React.FC = () => {
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.name} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div
+              key={stat.name}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
               <div className="flex items-center">
                 <div className={`p-3 rounded-full ${stat.bgColor}`}>
                   <Icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    {stat.name}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stat.value}
+                  </p>
                 </div>
               </div>
             </div>
@@ -121,15 +139,22 @@ const Dashboard: React.FC = () => {
         {/* Recent Complaints */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Citizen Complaints</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Recent Citizen Complaints
+            </h3>
           </div>
           <div className="p-6">
             {recentComplaints.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No citizen complaints yet</p>
+              <p className="text-gray-500 text-center py-4">
+                No citizen complaints yet
+              </p>
             ) : (
               <div className="space-y-4">
                 {recentComplaints.map((complaint) => (
-                  <div key={complaint.id} className="flex items-center space-x-3">
+                  <div
+                    key={complaint.id}
+                    className="flex items-center space-x-3"
+                  >
                     <div className="flex-shrink-0">
                       <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                     </div>
@@ -142,12 +167,17 @@ const Dashboard: React.FC = () => {
                       </p>
                     </div>
                     <div className="flex-shrink-0">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        complaint.status === ComplaintStatus.OPEN ? 'bg-green-100 text-green-800' :
-                        complaint.status === ComplaintStatus.IN_PROGRESS ? 'bg-yellow-100 text-yellow-800' :
-                        complaint.status === ComplaintStatus.RESOLVED ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          complaint.status === ComplaintStatus.OPEN
+                            ? "bg-green-100 text-green-800"
+                            : complaint.status === ComplaintStatus.IN_PROGRESS
+                            ? "bg-yellow-100 text-yellow-800"
+                            : complaint.status === ComplaintStatus.RESOLVED
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {complaint.status}
                       </span>
                     </div>
@@ -161,7 +191,9 @@ const Dashboard: React.FC = () => {
         {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Quick Actions
+            </h3>
           </div>
           <div className="p-6">
             <div className="space-y-4">

@@ -2,15 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { complaintService } from "../../services/complaintService";
 import { officerService } from "../../services/officerService";
+import { Complaint, ComplaintUpdateRequest, Officer } from "../../types";
 import {
-  Complaint,
   ComplaintStatus,
   ComplaintPriority,
   Department,
-  ComplaintUpdateRequest,
   UserRole,
-  Officer,
-} from "../../types";
+} from "../../constants/enums";
 import { getDepartmentDisplayName } from "../../utils/departmentUtils";
 import { getAllowedNextStatuses, statusDisplay } from "../../utils/statusUtils";
 import Toast from "../common/Toast";

@@ -1,5 +1,6 @@
 import React from "react";
-import { Complaint, ComplaintStatus, ComplaintPriority } from "../../types";
+import { Complaint } from "../../types";
+import { ComplaintStatus, ComplaintPriority } from "../../constants/enums";
 import {
   Calendar,
   User,

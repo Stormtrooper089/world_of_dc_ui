@@ -6,13 +6,37 @@ import MyComplaints from "../components/complaints/MyComplaints";
 import AdminApproveOfficers from "./AdminApproveOfficers";
 import Profile from "./Profile";
 import Sidebar from "../components/layout/Sidebar";
-import { ComplaintStatus, Complaint } from "../types";
+import { Complaint, Officer, OfficerUpdateData } from "../types";
+import {
+  Designation,
+  Department,
+  getDesignationLabel,
+  getDepartmentLabel,
+  canAssignRole,
+  isAdminRole,
+} from "../constants/enums";
+import ComplaintKanbanBoard from "./ComplaintTracker";
+import { User, X } from "lucide-react";
 
 const OfficerDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [officerProfile, setOfficerProfile] = useState<Officer | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [formData, setFormData] = useState<OfficerUpdateData>({
+    name: "",
+    email: "",
+    mobileNumber: "",
+    designation: Designation.OTHER,
+    department: Department.OTHER,
+  });
 
   useEffect(() => {
     // Check if user is admin or district commissioner
@@ -25,6 +49,120 @@ const OfficerDashboard: React.FC = () => {
   const handleLogout = () => {
     logout();
     window.location.href = "/";
+  };
+
+  // Fetch officer profile when modal opens
+  useEffect(() => {
+    if (isProfileModalOpen && user) {
+      fetchOfficerProfile();
+    }
+  }, [isProfileModalOpen, user]);
+
+  const fetchOfficerProfile = async () => {
+    try {
+      setIsLoadingProfile(true);
+      setProfileError("");
+      const response = await authService.getOfficerProfile();
+      if (response.success && response.data) {
+        setOfficerProfile(response.data);
+        setFormData({
+          name: response.data.name || "",
+          email: response.data.email || "",
+          mobileNumber: response.data.mobileNumber || "",
+          designation: Object.values(Designation).includes(
+            response.data.designation as Designation
+          )
+            ? (response.data.designation as Designation)
+            : Designation.OTHER,
+          department: Object.values(Department).includes(
+            response.data.department as Department
+          )
+            ? (response.data.department as Department)
+            : Department.OTHER,
+        });
+      } else {
+        setProfileError("Failed to load profile data");
+      }
+    } catch (err: any) {
+      console.error("Error fetching profile:", err);
+      setProfileError(
+        err.response?.data?.message || "Failed to load profile data"
+      );
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+    setProfileError("");
+    setProfileSuccess("");
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+    setProfileError("");
+    setProfileSuccess("");
+    // Reset form to original data
+    if (officerProfile) {
+      setFormData({
+        name: officerProfile.name || "",
+        email: officerProfile.email || "",
+        mobileNumber: officerProfile.mobileNumber || "",
+        designation: Object.values(Designation).includes(
+          officerProfile.designation as Designation
+        )
+          ? (officerProfile.designation as Designation)
+          : Designation.OTHER,
+        department: Object.values(Department).includes(
+          officerProfile.department as Department
+        )
+          ? (officerProfile.department as Department)
+          : Department.OTHER,
+      });
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      setIsUpdatingProfile(true);
+      setProfileError("");
+      setProfileSuccess("");
+
+      const response = await authService.updateOfficerProfile(formData);
+      if (response.success && response.data) {
+        setOfficerProfile(response.data);
+        setProfileSuccess("Profile updated successfully!");
+        setIsEditingProfile(false);
+
+        // Update user context with new data
+        updateUser({
+          name: response.data.name,
+          email: response.data.email,
+        });
+
+        // Clear success message after 3 seconds
+        setTimeout(() => setProfileSuccess(""), 3000);
+      } else {
+        setProfileError(response.message || "Failed to update profile");
+      }
+    } catch (err: any) {
+      console.error("Error updating profile:", err);
+      setProfileError(
+        err.response?.data?.message ||
+          "Failed to update profile. Please try again."
+      );
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  const closeProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setIsEditingProfile(false);
+    setProfileError("");
+    setProfileSuccess("");
+    setOfficerProfile(null);
   };
 
   const renderContent = () => {
@@ -81,16 +219,13 @@ const OfficerDashboard: React.FC = () => {
               DC Office
             </span>
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <button
+                onClick={() => setIsProfileModalOpen(true)}
+                className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors"
+              >
                 <span className="text-blue-600 font-semibold text-sm">
                   {user?.name?.charAt(0) || "U"}
                 </span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                Logout
               </button>
             </div>
           </div>
@@ -121,10 +256,11 @@ const OfficerDashboard: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={() => setIsProfileModalOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center space-x-2"
               >
-                Logout
+                <User className="h-4 w-4" />
+                <span>Profile</span>
               </button>
             </div>
           </div>
@@ -133,6 +269,328 @@ const OfficerDashboard: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 p-6">{renderContent()}</main>
       </div>
+
+      {/* Profile Modal */}
+      {isProfileModalOpen && user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <button
+              onClick={closeProfileModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="mb-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {officerProfile?.name || user.name || "Officer"}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    {officerProfile?.employeeId ||
+                      user.employeeId ||
+                      "Employee"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {isLoadingProfile ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {profileError && (
+                  <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+                    <p className="text-sm text-red-700">{profileError}</p>
+                  </div>
+                )}
+
+                {profileSuccess && (
+                  <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+                    <p className="text-sm text-green-700">{profileSuccess}</p>
+                  </div>
+                )}
+
+                {isEditingProfile ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleUpdateProfile();
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Name
+                      </label>
+                      <input
+                        id="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Email
+                      </label>
+                      <input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="mobileNumber"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Mobile Number
+                      </label>
+                      <input
+                        id="mobileNumber"
+                        type="tel"
+                        value={formData.mobileNumber}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            mobileNumber: e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 10),
+                          })
+                        }
+                        required
+                        maxLength={10}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="designation"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Designation
+                      </label>
+                      <select
+                        id="designation"
+                        value={formData.designation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            designation: e.target.value as Designation,
+                          })
+                        }
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {Object.values(Designation)
+                          .filter((designation) => {
+                            // Prevent non-admin users from selecting admin-level designations
+                            const currentUserRole = user?.role;
+                            if (!currentUserRole) return true;
+
+                            // Admin users can select any designation
+                            if (
+                              isAdminRole(
+                                currentUserRole as import("../constants/enums").UserRole
+                              )
+                            ) {
+                              return true;
+                            }
+
+                            // Non-admin users cannot select admin-level designations
+                            const adminDesignations = [
+                              Designation.DISTRICT_COLLECTOR,
+                              Designation.ADDITIONAL_DISTRICT_COLLECTOR,
+                              Designation.DISTRICT_MAGISTRATE,
+                              Designation.DISTRICT_COMMISSIONER,
+                            ];
+
+                            return !adminDesignations.includes(designation);
+                          })
+                          .map((designation) => (
+                            <option key={designation} value={designation}>
+                              {getDesignationLabel(designation)}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="department"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Department
+                      </label>
+                      <select
+                        id="department"
+                        value={formData.department}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            department: e.target.value as Department,
+                          })
+                        }
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {Object.values(Department).map((department) => (
+                          <option key={department} value={department}>
+                            {getDepartmentLabel(department)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex gap-3 pt-4 border-t">
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        disabled={isUpdatingProfile}
+                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isUpdatingProfile}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUpdatingProfile ? "Updating..." : "Update Profile"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="border-t pt-4">
+                      <div className="space-y-3">
+                        {officerProfile?.name && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Name:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {officerProfile.name}
+                            </span>
+                          </div>
+                        )}
+                        {officerProfile?.employeeId && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Employee ID:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {officerProfile.employeeId}
+                            </span>
+                          </div>
+                        )}
+                        {officerProfile?.email && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Email:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {officerProfile.email}
+                            </span>
+                          </div>
+                        )}
+                        {officerProfile?.mobileNumber && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Mobile:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {officerProfile.mobileNumber}
+                            </span>
+                          </div>
+                        )}
+                        {officerProfile?.designation && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Designation:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {getDesignationLabel(
+                                officerProfile.designation as Designation
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {officerProfile?.department && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Department:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {getDepartmentLabel(
+                                officerProfile.department as Department
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {officerProfile?.role && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Role:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {officerProfile.role}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-4 border-t">
+                      <button
+                        onClick={handleEditProfile}
+                        className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Edit Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          closeProfileModal();
+                          handleLogout();
+                        }}
+                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

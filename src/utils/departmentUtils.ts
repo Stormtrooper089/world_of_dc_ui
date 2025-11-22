@@ -1,4 +1,4 @@
-import { Department } from "../types";
+import { Department } from "../constants/enums";
 
 export const getDepartmentDisplayName = (department: Department): string => {
   const displayNames: Record<Department, string> = {
@@ -78,4 +78,3 @@ export const getDepartmentDescription = (department: Department): string => {
 
   return descriptions[department] || "";
 };
-

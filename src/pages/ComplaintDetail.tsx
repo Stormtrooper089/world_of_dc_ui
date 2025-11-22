@@ -3,12 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { complaintService } from "../services/complaintService";
 import { officerService } from "../services/officerService";
-import {
-  Complaint,
-  ComplaintStatus,
-  ComplaintPriority,
-  Officer,
-} from "../types";
+import { Complaint, Officer } from "../types";
+import { ComplaintStatus, ComplaintPriority } from "../constants/enums";
 import ComplaintEditModal from "../components/complaints/ComplaintEditModal";
 import CommentSection from "../components/complaints/CommentSection";
 import {

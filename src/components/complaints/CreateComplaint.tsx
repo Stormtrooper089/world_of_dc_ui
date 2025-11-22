@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { complaintService } from "../../services/complaintService";
 import { useAuth } from "../../contexts/AuthContext";
-import { ComplaintPriority, Department, UserRole } from "../../types";
+import { ComplaintPriority, Department, UserRole } from "../../constants/enums";
 import { getDepartmentDisplayName } from "../../utils/departmentUtils";
 
 interface CreateComplaintData {

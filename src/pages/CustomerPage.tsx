@@ -21,7 +21,7 @@ import {
   Smile,
   Clock,
 } from "lucide-react";
-import { Department } from "../types";
+import { Department } from "../constants/enums";
 import { getDepartmentDisplayName } from "../utils/departmentUtils";
 import CreateComplaint from "../components/complaints/CreateComplaint";
 

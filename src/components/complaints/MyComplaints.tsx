@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { complaintService } from "../../services/complaintService";
 import { officerService } from "../../services/officerService";
-import { Complaint, ComplaintStatus, UserRole, Officer } from "../../types";
+import { Complaint, Officer } from "../../types";
+import { ComplaintStatus, UserRole } from "../../constants/enums";
 import ComplaintEditModal from "./ComplaintEditModal";
 import { getDepartmentDisplayName } from "../../utils/departmentUtils";
 

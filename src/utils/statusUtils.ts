@@ -1,4 +1,4 @@
-import { ComplaintStatus } from "../types";
+import { ComplaintStatus } from "../constants/enums";
 
 const transitions: Record<ComplaintStatus, ComplaintStatus[]> = {
   [ComplaintStatus.CREATED]: [

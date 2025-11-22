@@ -16,22 +16,18 @@ export interface Citizen {
   name: string;
   email?: string;
   address?: string;
+  pincode?: string;
   aadharNumber?: string;
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export enum UserRole {
-  ADMIN = "ADMIN",
-  MANAGER = "MANAGER",
-  EMPLOYEE = "EMPLOYEE",
-  CUSTOMER = "CUSTOMER",
-  OFFICER = "OFFICER",
-  DISTRICT_COMMISSIONER = "DISTRICT_COMMISSIONER",
-  ADDITIONAL_DISTRICT_COMMISSIONER = "ADDITIONAL_DISTRICT_COMMISSIONER",
-  BLOCK_DEVELOPMENT_OFFICER = "BLOCK_DEVELOPMENT_OFFICER",
-  GRAM_PANCHAYAT_OFFICER = "GRAM_PANCHAYAT_OFFICER",
+export interface CitizenUpdateData {
+  name: string;
+  email?: string;
+  address?: string;
+  pincode?: string;
 }
 
 export interface LoginCredentials {
@@ -89,8 +85,8 @@ export interface OfficerUpdateData {
   name: string;
   email: string;
   mobileNumber: string;
-  designation: string;
-  department: string;
+  designation: import("../constants/enums").Designation;
+  department: import("../constants/enums").Department;
 }
 
 // Complaint Types
@@ -149,86 +145,7 @@ export interface ComplaintHistory {
   updatedAt: string;
 }
 
-export enum ComplaintCategory {
-  WATER_SUPPLY = "WATER_SUPPLY",
-  ELECTRICITY = "ELECTRICITY",
-  ROADS_INFRASTRUCTURE = "ROADS_INFRASTRUCTURE",
-  HEALTH_SERVICES = "HEALTH_SERVICES",
-  EDUCATION = "EDUCATION",
-  SANITATION = "SANITATION",
-  PUBLIC_DISTRIBUTION_SYSTEM = "PUBLIC_DISTRIBUTION_SYSTEM",
-  REVENUE_SERVICES = "REVENUE_SERVICES",
-  POLICE_SERVICES = "POLICE_SERVICES",
-  CORRUPTION = "CORRUPTION",
-  ENVIRONMENTAL_ISSUES = "ENVIRONMENTAL_ISSUES",
-  AGRICULTURE = "AGRICULTURE",
-  PENSION_SERVICES = "PENSION_SERVICES",
-  BIRTH_DEATH_CERTIFICATE = "BIRTH_DEATH_CERTIFICATE",
-  OTHER = "OTHER",
-}
-
-export enum ComplaintStatus {
-  CREATED = "CREATED",
-  ASSIGNED = "ASSIGNED",
-  IN_PROGRESS = "IN_PROGRESS",
-  BLOCKED = "BLOCKED",
-  RESOLVED = "RESOLVED",
-  CLOSED = "CLOSED",
-  REJECTED = "REJECTED",
-  DUPLICATE = "DUPLICATE",
-}
-
-export enum ComplaintPriority {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
-  URGENT = "URGENT",
-}
-
-export enum Department {
-  // Core Administrative Departments
-  DISTRICT_ADMINISTRATION = "DISTRICT_ADMINISTRATION",
-  REVENUE_DEPARTMENT = "REVENUE_DEPARTMENT",
-  COLLECTORATE = "COLLECTORATE",
-
-  // Infrastructure Departments
-  PUBLIC_WORKS_DEPARTMENT = "PUBLIC_WORKS_DEPARTMENT",
-  WATER_RESOURCES = "WATER_RESOURCES",
-  ELECTRICITY_DEPARTMENT = "ELECTRICITY_DEPARTMENT",
-
-  // Social Services
-  HEALTH_DEPARTMENT = "HEALTH_DEPARTMENT",
-  EDUCATION_DEPARTMENT = "EDUCATION_DEPARTMENT",
-  SOCIAL_WELFARE = "SOCIAL_WELFARE",
-
-  // Public Services
-  POLICE_DEPARTMENT = "POLICE_DEPARTMENT",
-  FIRE_SERVICES = "FIRE_SERVICES",
-  TRANSPORT_DEPARTMENT = "TRANSPORT_DEPARTMENT",
-
-  // Development and Planning
-  RURAL_DEVELOPMENT = "RURAL_DEVELOPMENT",
-  URBAN_DEVELOPMENT = "URBAN_DEVELOPMENT",
-  AGRICULTURE_DEPARTMENT = "AGRICULTURE_DEPARTMENT",
-
-  // Environmental and Utilities
-  ENVIRONMENT_DEPARTMENT = "ENVIRONMENT_DEPARTMENT",
-  SANITATION_DEPARTMENT = "SANITATION_DEPARTMENT",
-  FOREST_DEPARTMENT = "FOREST_DEPARTMENT",
-
-  // Specialized Services
-  FOOD_AND_SUPPLIES = "FOOD_AND_SUPPLIES",
-  LABOUR_DEPARTMENT = "LABOUR_DEPARTMENT",
-  WOMEN_AND_CHILD_DEVELOPMENT = "WOMEN_AND_CHILD_DEVELOPMENT",
-
-  // Technical Departments
-  INFORMATION_TECHNOLOGY = "INFORMATION_TECHNOLOGY",
-  STATISTICS_DEPARTMENT = "STATISTICS_DEPARTMENT",
-
-  // Other
-  OTHER = "OTHER",
-  UNASSIGNED = "UNASSIGNED",
-}
+// Enums are now imported from constants/enums.ts
 
 export interface CreateComplaintData {
   mobileNumber: string;

@@ -4,8 +4,6 @@ import {
   CreateComplaintData,
   UpdateComplaintData,
   PaginatedResponse,
-  ComplaintStatus,
-  ComplaintPriority,
   ApiResponse,
   ComplaintHistory,
   ComplaintDocument,
@@ -14,6 +12,7 @@ import {
   Comment,
   CommentUpdateRequest,
 } from "../types";
+import { ComplaintStatus, ComplaintPriority } from "../constants/enums";
 
 export const complaintService = {
   async getComplaints(

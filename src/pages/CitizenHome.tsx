@@ -22,10 +22,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import { useAuth } from "../contexts/AuthContext";
+import { Citizen, CitizenUpdateData } from "../types";
 
 const CitizenHome: React.FC = () => {
   const navigate = useNavigate();
-  const { setAuth, isAuthenticated, user, logout } = useAuth();
+  const { setAuth, isAuthenticated, user, logout, updateUser } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isHeroHovered, setIsHeroHovered] = useState(false); // 2) pause on hover
@@ -36,6 +37,17 @@ const CitizenHome: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [citizenProfile, setCitizenProfile] = useState<Citizen | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [formData, setFormData] = useState<CitizenUpdateData>({
+    name: "",
+    email: "",
+    address: "",
+    pincode: "",
+  });
 
   const slides = [
     {
@@ -272,6 +284,102 @@ const CitizenHome: React.FC = () => {
     setOtp("");
     setOtpSent(false);
     setError("");
+  };
+
+  // Fetch citizen profile when modal opens
+  useEffect(() => {
+    if (isProfileModalOpen && isAuthenticated && user) {
+      fetchCitizenProfile();
+    }
+  }, [isProfileModalOpen, isAuthenticated]);
+
+  const fetchCitizenProfile = async () => {
+    try {
+      setIsLoadingProfile(true);
+      setProfileError("");
+      const response = await authService.getCitizenProfile();
+      if (response.success && response.data) {
+        setCitizenProfile(response.data);
+        setFormData({
+          name: response.data.name || "",
+          email: response.data.email || "",
+          address: response.data.address || "",
+          pincode: response.data.pincode || "",
+        });
+      } else {
+        setProfileError("Failed to load profile data");
+      }
+    } catch (err: any) {
+      console.error("Error fetching profile:", err);
+      setProfileError(
+        err.response?.data?.message || "Failed to load profile data"
+      );
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+    setProfileError("");
+    setProfileSuccess("");
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+    setProfileError("");
+    setProfileSuccess("");
+    // Reset form to original data
+    if (citizenProfile) {
+      setFormData({
+        name: citizenProfile.name || "",
+        email: citizenProfile.email || "",
+        address: citizenProfile.address || "",
+        pincode: citizenProfile.pincode || "",
+      });
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      setIsLoading(true);
+      setProfileError("");
+      setProfileSuccess("");
+
+      const response = await authService.updateCitizenProfile(formData);
+      if (response.success && response.data) {
+        setCitizenProfile(response.data);
+        setProfileSuccess("Profile updated successfully!");
+        setIsEditingProfile(false);
+
+        // Update user context with new data
+        updateUser({
+          name: response.data.name,
+          email: response.data.email,
+        });
+
+        // Clear success message after 3 seconds
+        setTimeout(() => setProfileSuccess(""), 3000);
+      } else {
+        setProfileError(response.message || "Failed to update profile");
+      }
+    } catch (err: any) {
+      console.error("Error updating profile:", err);
+      setProfileError(
+        err.response?.data?.message ||
+          "Failed to update profile. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const closeProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setIsEditingProfile(false);
+    setProfileError("");
+    setProfileSuccess("");
+    setCitizenProfile(null);
   };
 
   return (
@@ -893,7 +1001,7 @@ const CitizenHome: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
             <button
-              onClick={() => setIsProfileModalOpen(false)}
+              onClick={closeProfileModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
               aria-label="Close modal"
             >
@@ -907,78 +1015,220 @@ const CitizenHome: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {user.name || "Citizen"}
+                    {citizenProfile?.name || user.name || "Citizen"}
                   </h2>
                   <p className="text-sm text-gray-600">
-                    {user.mobileNumber || user.email || "User"}
+                    {citizenProfile?.mobileNumber ||
+                      user.mobileNumber ||
+                      user.email ||
+                      "User"}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="border-t pt-4">
-                <div className="space-y-3">
-                  {user.name && (
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-700">
-                        Name:
-                      </span>
-                      <span className="text-sm text-gray-900">{user.name}</span>
-                    </div>
-                  )}
-                  {user.email && (
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-700">
-                        Email:
-                      </span>
-                      <span className="text-sm text-gray-900">
-                        {user.email}
-                      </span>
-                    </div>
-                  )}
-                  {user.mobileNumber && (
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-700">
-                        Mobile:
-                      </span>
-                      <span className="text-sm text-gray-900">
-                        {user.mobileNumber}
-                      </span>
-                    </div>
-                  )}
-                  {user.role && (
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-700">
-                        Role:
-                      </span>
-                      <span className="text-sm text-gray-900">{user.role}</span>
-                    </div>
-                  )}
-                </div>
+            {isLoadingProfile ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
+            ) : (
+              <div className="space-y-4">
+                {profileError && (
+                  <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+                    <p className="text-sm text-red-700">{profileError}</p>
+                  </div>
+                )}
 
-              <div className="flex gap-3 pt-4 border-t">
-                <button
-                  onClick={() => {
-                    setIsProfileModalOpen(false);
-                    // TODO: Navigate to full profile page later
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  View Full Profile
-                </button>
-                <button
-                  onClick={() => {
-                    setIsProfileModalOpen(false);
-                    logout();
-                  }}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Logout
-                </button>
+                {profileSuccess && (
+                  <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+                    <p className="text-sm text-green-700">{profileSuccess}</p>
+                  </div>
+                )}
+
+                {isEditingProfile ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleUpdateProfile();
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Name
+                      </label>
+                      <input
+                        id="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Email
+                      </label>
+                      <input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="address"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Address
+                      </label>
+                      <textarea
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
+                        rows={3}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="pincode"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Pincode
+                      </label>
+                      <input
+                        id="pincode"
+                        type="text"
+                        value={formData.pincode}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            pincode: e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 6),
+                          })
+                        }
+                        maxLength={6}
+                        placeholder="6 digits"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="flex gap-3 pt-4 border-t">
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        disabled={isLoading}
+                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? "Updating..." : "Update Profile"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="border-t pt-4">
+                      <div className="space-y-3">
+                        {citizenProfile?.name && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Name:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {citizenProfile.name}
+                            </span>
+                          </div>
+                        )}
+                        {citizenProfile?.email && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Email:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {citizenProfile.email}
+                            </span>
+                          </div>
+                        )}
+                        {citizenProfile?.address && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Address:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {citizenProfile.address}
+                            </span>
+                          </div>
+                        )}
+                        {citizenProfile?.pincode && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Pincode:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {citizenProfile.pincode}
+                            </span>
+                          </div>
+                        )}
+                        {citizenProfile?.mobileNumber && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">
+                              Mobile:
+                            </span>
+                            <span className="text-sm text-gray-900">
+                              {citizenProfile.mobileNumber}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-4 border-t">
+                      <button
+                        onClick={handleEditProfile}
+                        className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Edit Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          closeProfileModal();
+                          logout();
+                        }}
+                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
