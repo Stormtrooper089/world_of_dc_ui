@@ -1263,9 +1263,11 @@ const CitizenHome: React.FC = () => {
         >
           <GrievanceForm
             onSubmit={(data) => {
-              console.log("Grievance submitted:", data);
-              // TODO: Add API call here
-              setIsGrievanceDialogOpen(false);
+              // Form already shows success message internally
+              // Close dialog after a delay to show success message
+              setTimeout(() => {
+                setIsGrievanceDialogOpen(false);
+              }, 2000);
             }}
             onCancel={() => setIsGrievanceDialogOpen(false)}
           />
