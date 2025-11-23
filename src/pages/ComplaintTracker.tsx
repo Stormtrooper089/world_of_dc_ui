@@ -1,250 +1,126 @@
-import React, { useState, useEffect } from 'react';
-import { X, MessageSquare, Paperclip, Calendar, User, Plus, Filter, RefreshCw, Search } from 'lucide-react';
-import { complaintService } from "../services/complaintService";
-import { Complaint, Officer } from "../types";
-import { ComplaintStatus, UserRole } from "../constants/enums";
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { 
+  X, MessageSquare, Paperclip, Calendar, User, Plus, 
+  Filter, RefreshCw, Search, LayoutList, Kanban, 
+  Clock, AlertCircle, CheckCircle, MoreHorizontal, ChevronRight,
+  ArrowUpRight, SlidersHorizontal, MapPin, Phone, Upload,
+  Edit2, Save, FileText, Loader2, Trash2, CalendarDays
+} from 'lucide-react';
 import { useAuth } from "../contexts/AuthContext";
-import { useForm } from 'react-hook-form';
+import { complaintService } from "../services/complaintService";
+import { UserRole } from "../constants/enums"; // Assuming you have this
+import { ComplaintUpdateRequest } from '../types';
 
+// --- CONSTANTS & CONFIG ---
 
-const statusColumns = [
-  { id: 'CREATED', title: 'Created', color: 'bg-blue-500' },
-//   { id: 'IN_PROGRESS', title: 'In Progress', color: 'bg-yellow-500' },
-//   { id: 'UNDER_REVIEW', title: 'Under Review', color: 'bg-purple-500' },
-//   { id: 'RESOLVED', title: 'Resolved', color: 'bg-green-500' },
-{ id: 'ASSIGNED', title: 'Assigned', color: 'bg-green-500' },
-  { id: 'REJECTED', title: 'Rejected', color: 'bg-red-500' }
-  
-];
-
-const priorityColors = {
-  HIGH: 'bg-red-100 text-red-800 border-red-300',
-  MEDIUM: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  LOW: 'bg-green-100 text-green-800 border-green-300',
-  URGENT: 'bg-orange-100 text-orange-800 border-orange-300'
+const PRIORITY_STYLES = {
+  HIGH: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', icon: AlertCircle },
+  URGENT: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300', icon: AlertCircle },
+  MEDIUM: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', icon: Clock },
+  LOW: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', icon: CheckCircle },
 };
 
-const departmentNames = {
+const STATUS_CONFIG = {
+  CREATED: { label: 'New', color: 'bg-blue-100 text-blue-700' },
+  ASSIGNED: { label: 'Assigned', color: 'bg-purple-100 text-purple-700' },
+  IN_PROGRESS: { label: 'In Progress', color: 'bg-amber-100 text-amber-700' },
+  RESOLVED: { label: 'Resolved', color: 'bg-emerald-100 text-emerald-700' },
+  REJECTED: { label: 'Rejected', color: 'bg-gray-100 text-gray-700' },
+};
+
+const DEPARTMENT_NAMES = {
   WATER_RESOURCES: 'Water Resources',
   ELECTRICITY: 'Electricity',
   ROADS: 'Roads',
   SANITATION: 'Sanitation',
   HEALTHCARE: 'Healthcare',
-  EDUCATION: 'Education'
+  EDUCATION: 'Education',
+  OTHER: 'Other'
 };
 
-// Edit Complaint Modal Component
-const EditComplaintModal = ({ complaint, onClose, onUpdate }) => {
-  const [formData, setFormData] = useState({
-    subject: complaint.subject || '',
-    description: complaint.description || '',
-    priority: complaint.priority || 'MEDIUM',
-    status: complaint.status || 'CREATED',
-    location: complaint.location || '',
-    assignedDepartment: complaint.assignedDepartment || '',
-    assignedToId: complaint.assignedToId || ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
-  
-  const isDistrictCommissioner = user.role === UserRole.DISTRICT_COMMISSIONER;
-  const canEdit = isDistrictCommissioner || 
-                  complaint.createdById === user.id || 
-                  complaint.assignedToId === user.id;
+const MOCK_OFFICERS = [
+  { id: 'OFF-101', name: 'Ashish', dept: 'ELECTRICITY' },
+  { id: 'OFF-102', name: 'Mervej', dept: 'SANITATION' },
+  { id: 'OFF-103', name: 'Akshay', dept: 'ROADS' },
+  { id: 'OFF-104', name: 'Ohm', dept: 'HEALTHCARE' },
+];
 
-  if (!canEdit) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Access Denied</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          <p className="text-gray-600">You don't have permission to edit this complaint.</p>
-          <button
-            onClick={onClose}
-            className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
+// --- SUB-COMPONENTS ---
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      const updatedComplaint = {
-        ...complaint,
-        ...formData,
-        updatedAt: new Date().toISOString(),
-        history: [
-          ...complaint.history,
-          {
-            officerId: user.id,
-            newStatus: formData.status,
-            remarks: `Complaint updated by ${user.name}`,
-            timestamp: new Date().toISOString()
-          }
-        ]
-      };
-
-      setIsSubmitting(false);
-      onUpdate(updatedComplaint);
-      onClose();
-    }, 1000);
+const MetricCard = ({ title, value, trend, type = 'neutral' }) => {
+  const colors = {
+    neutral: 'border-l-blue-500',
+    danger: 'border-l-red-500',
+    success: 'border-l-green-500',
+    warning: 'border-l-orange-500',
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Edit Complaint</h2>
-            <p className="text-sm text-gray-500 mt-1">{complaint.complaintNumber}</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Subject *
-            </label>
-            <input
-              type="text"
-              value={formData.subject}
-              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Priority *
-              </label>
-              <select
-                value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="URGENT">Urgent</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status *
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {statusColumns.map(status => (
-                  <option key={status.id} value={status.id}>{status.title}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location
-            </label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Department
-            </label>
-            <select
-              value={formData.assignedDepartment}
-              onChange={(e) => setFormData({ ...formData, assignedDepartment: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Unassigned</option>
-              {Object.entries(departmentNames).map(([key, name]) => (
-                <option key={key} value={key}>{name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Assigned To (Officer ID)
-            </label>
-            <input
-              type="text"
-              value={formData.assignedToId}
-              onChange={(e) => setFormData({ ...formData, assignedToId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter officer ID"
-            />
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Changing the status will automatically update the complaint history.
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
+    <div className={`bg-white p-3 rounded-lg shadow-sm border border-gray-100 border-l-4 ${colors[type]} flex-1 min-w-[150px]`}>
+      <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{title}</p>
+      <div className="flex items-end justify-between mt-1">
+        <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+        {trend && <span className="text-xs font-medium text-gray-400">{trend}</span>}
       </div>
     </div>
   );
 };
 
-// Create Complaint Form Component
-const CreateComplaintForm = ({ onClose, onSuccess }) => {
+const FacetedFilterCheckbox = ({ label, count, checked, onChange }) => (
+  <label className="flex items-center justify-between py-1.5 cursor-pointer group hover:bg-gray-50 px-2 -mx-2 rounded">
+    <div className="flex items-center gap-2">
+      <input 
+        type="checkbox" 
+        checked={checked} 
+        onChange={onChange}
+        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+      />
+      <span className={`text-sm ${checked ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>{label}</span>
+    </div>
+    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full group-hover:bg-white">{count}</span>
+  </label>
+);
+
+// Helper Component for Inline Editing
+const EditableDetailRow = ({ label, value, isEditing, onEditStart, onEditCancel, children, displayValue }) => {
+  return (
+    <div className="group h-12"> 
+      <span className="text-xs text-gray-400 block mb-1">{label}</span>
+      {isEditing ? (
+        <div className="flex items-center gap-2 animate-in fade-in duration-200">
+          <div className="flex-1">
+            {children}
+          </div>
+          <button 
+            onClick={onEditCancel}
+            className="p-1.5 hover:bg-red-50 text-red-500 rounded transition-colors"
+            title="Cancel"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-800 truncate max-w-[180px]">
+            {displayValue || value || 'N/A'}
+          </span>
+          <button 
+            onClick={onEditStart}
+            className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-blue-50 text-blue-600 rounded"
+            title="Edit Field"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- CREATE MODAL COMPONENT ---
+
+const CreateComplaintModal = ({ onClose, onSuccess, user }) => {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
@@ -253,169 +129,160 @@ const CreateComplaintForm = ({ onClose, onSuccess }) => {
     department: '',
     mobileNumber: '9876543210'
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
+  const [attachment, setAttachment] = useState(null);
+
   const isCitizen = user.role === 'CUSTOMER';
-  const [submitMessage, setSubmitMessage] = useState("");
-  const [error, setError] = useState("");
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setAttachment(e.target.files[0]);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-  try {
-    // Convert formData object to FormData instance
-    const formDataToSend = new FormData();
-    formDataToSend.append('subject', formData.subject);
-    formDataToSend.append('description', formData.description);
-    formDataToSend.append('priority', formData.priority);
-    formDataToSend.append('location', formData.location);
-    formDataToSend.append('department', formData.department);
-    formDataToSend.append('mobileNumber', formData.mobileNumber);
-
-    const response = await complaintService.createComplaint(formDataToSend);
-
-      if (response.success) {
-        setSubmitMessage(
-          `Complaint created successfully! Complaint Number: ${response.data.complaintNumber}`
-        );
-        // reset();
-        // Call onSuccess callback if provided
-        if (onSuccess) {
-          setTimeout(() => {
-            onSuccess();
-          }, 2000); // Wait 2 seconds to show success message
-        }
-      } else {
-        setError(response.message || "Failed to create complaint");
+    setLoading(true);
+    try {
+      const formDataToSend = new FormData();
+      Object.keys(formData).forEach(key => {
+        formDataToSend.append(key, formData[key]);
+      });
+      if (attachment) {
+        formDataToSend.append('attachment', attachment);
       }
-    } catch (err: any) {
-      console.error("Error creating complaint:", err);
-      setError(
-        err.response?.data?.message ||
-          "Failed to create complaint. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
 
+      const response = await complaintService.createComplaint(formDataToSend);
+      if (response.success) {
+        onSuccess(response.data);
+      } else {
+        alert(response.message || "Failed to create");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error creating complaint");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Create New Complaint</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">New Complaint</h2>
+            <p className="text-xs text-gray-500">Enter the details of the issue below.</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 text-gray-400 transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
           {!isCitizen && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Citizen Mobile Number *
-              </label>
-              <input
-                type="tel"
-                value={formData.mobileNumber}
-                onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                pattern="[6-9]\d{9}"
-              />
+               <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Citizen Contact</label>
+               <input 
+                  type="tel"
+                  required 
+                  value={formData.mobileNumber}
+                  onChange={e => setFormData({...formData, mobileNumber: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Mobile Number"
+               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Subject *
-            </label>
-            <input
-              type="text"
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Subject</label>
+            <input 
+              type="text" 
+              required
               value={formData.subject}
-              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
+              onChange={e => setFormData({...formData, subject: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="e.g. Street light broken on Main St"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          {!isCitizen && (
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Priority *
-              </label>
-              <select
-                value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="URGENT">Urgent</option>
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location
-            </label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {!isCitizen && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Department
-              </label>
-              <select
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Department</label>
+              <select 
                 value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={e => setFormData({...formData, department: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
               >
-                <option value="">Select Department (optional)</option>
-                {Object.entries(departmentNames).map(([key, name]) => (
-                  <option key={key} value={key}>{name}</option>
+                <option value="">Select Dept...</option>
+                {Object.entries(DEPARTMENT_NAMES).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
                 ))}
               </select>
             </div>
-          )}
+            {!isCitizen && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Priority</label>
+                <select 
+                  value={formData.priority}
+                  onChange={e => setFormData({...formData, priority: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </div>
+            )}
+          </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Complaint'}
-            </button>
+          {/* Location Field */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Location</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input 
+                type="text" 
+                value={formData.location}
+                onChange={e => setFormData({...formData, location: e.target.value})}
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Address or landmark"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Description</label>
+            <textarea 
+              required
+              rows={4}
+              value={formData.description}
+              onChange={e => setFormData({...formData, description: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              placeholder="Provide details about the issue..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Attachment</label>
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 transition-colors text-center cursor-pointer">
+              <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+              <div className="flex flex-col items-center gap-1">
+                {attachment ? (
+                  <span className="text-sm font-medium text-blue-600">{attachment.name}</span>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-500">Click to upload file</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50">Cancel</button>
+            <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-70">{loading ? 'Creating...' : 'Create Ticket'}</button>
           </div>
         </form>
       </div>
@@ -423,537 +290,629 @@ const CreateComplaintForm = ({ onClose, onSuccess }) => {
   );
 };
 
-// Main Component
-export default function ComplaintKanbanBoard() {
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
+// --- MAIN COMPONENT ---
+
+export default function ComplaintCockpitBoard() {
+  const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [draggedItem, setDraggedItem] = useState(null);
-  const [newComment, setNewComment] = useState('');
-  const [filterPriority, setFilterPriority] = useState('ALL');
-  const [filterDepartment, setFilterDepartment] = useState('ALL');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingComplaint, setEditingComplaint] = useState(null);
+  const [viewMode, setViewMode] = useState('LIST');
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { user } = useAuth();
+  const [showFilters, setShowFilters] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // Drawer Editing States
+  const [editingField, setEditingField] = useState(null);
+  const [tempChanges, setTempChanges] = useState({});
+  const [commentText, setCommentText] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const departments = ['ALL', ...new Set(complaints
-    .filter(c => c.assignedDepartment)
-    .map(c => c.assignedDepartment))
-  ];
-
-  // Enhanced filtering with search
-  const filteredComplaints = complaints.filter(complaint => {
-    const priorityMatch = filterPriority === 'ALL' || complaint.priority === filterPriority;
-    const departmentMatch = filterDepartment === 'ALL' || complaint.assignedDepartment === filterDepartment;
-    
-    const searchMatch = !searchQuery || 
-      complaint.complaintNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      complaint.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      complaint.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      complaint.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      complaint.citizenId?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return priorityMatch && departmentMatch && searchMatch;
+  // -- UPDATED FILTER STATE --
+  const [activeFilters, setActiveFilters] = useState({
+    priority: [], 
+    status: [], 
+    department: [],
+    officer: [], // Added Officer Filter
+    location: [], // Added Location Filter
+    dateRange: { start: '', end: '' } // Added Date Range Filter
   });
 
-  
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchComplaints();
+  }, [user?.id]);
+
   const fetchComplaints = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError("");
       const data = await complaintService.getMyComplaints();
       setComplaints(data);
-      console.log("====complaint data ====", data);
-    } catch (err: any) {
-      console.error("Error fetching complaints:", err);
-      setError(err.response?.data?.message || "Failed to fetch complaints");
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchComplaints();
+  const handleNewTicketCreated = (newTicket) => {
+    setComplaints(prev => [newTicket, ...prev]);
+    setIsCreateModalOpen(false);
+  };
+
+  // --- FILTER LOGIC ---
+
+  // 1. Calculate Facets (Counts for all filter types)
+  const facets = useMemo(() => {
+    const counts = { 
+      priority: {}, 
+      status: {}, 
+      department: {},
+      officer: {},
+      location: {}
+    };
+    
+    complaints.forEach(c => {
+      // Priority
+      counts.priority[c.priority] = (counts.priority[c.priority] || 0) + 1;
+      
+      // Status
+      counts.status[c.status] = (counts.status[c.status] || 0) + 1;
+      
+      // Department
+      const dept = c.assignedDepartment || 'Unassigned';
+      counts.department[dept] = (counts.department[dept] || 0) + 1;
+
+      // Officer
+      const officerId = c.assignedToId || 'Unassigned';
+      const officerName = MOCK_OFFICERS.find(o => o.id === officerId)?.name || 'Unassigned';
+      counts.officer[officerName] = (counts.officer[officerName] || 0) + 1;
+
+      // Location
+      const loc = c.location || 'Unknown';
+      counts.location[loc] = (counts.location[loc] || 0) + 1;
+    });
+    return counts;
+  }, [complaints]);
+
+  // 2. Filter Data Logic
+  const filteredData = useMemo(() => {
+    return complaints.filter(item => {
+      // Text Search
+      const matchesSearch = !searchQuery || 
+        item.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.complaintNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Checkboxes
+      const matchesPriority = activeFilters.priority.length === 0 || activeFilters.priority.includes(item.priority);
+      const matchesStatus = activeFilters.status.length === 0 || activeFilters.status.includes(item.status);
+      const matchesDept = activeFilters.department.length === 0 || activeFilters.department.includes(item.assignedDepartment || 'Unassigned');
+      
+      // Officer Filter
+      const officerName = MOCK_OFFICERS.find(o => o.id === item.assignedToId)?.name || 'Unassigned';
+      const matchesOfficer = activeFilters.officer.length === 0 || activeFilters.officer.includes(officerName);
+
+      // Location Filter
+      const locationName = item.location || 'Unknown';
+      const matchesLocation = activeFilters.location.length === 0 || activeFilters.location.includes(locationName);
+
+      // Date Range Filter
+      let matchesDate = true;
+      if (activeFilters.dateRange.start) {
+        matchesDate = matchesDate && new Date(item.createdAt) >= new Date(activeFilters.dateRange.start);
+      }
+      if (activeFilters.dateRange.end) {
+        // Add 1 day to end date to include the end date fully
+        const endDate = new Date(activeFilters.dateRange.end);
+        endDate.setHours(23, 59, 59);
+        matchesDate = matchesDate && new Date(item.createdAt) <= endDate;
+      }
+
+      return matchesSearch && matchesPriority && matchesStatus && matchesDept && matchesOfficer && matchesLocation && matchesDate;
+    });
+  }, [complaints, searchQuery, activeFilters]);
+
+  // 3. Stats
+  const stats = useMemo(() => {
+    return {
+      total: complaints.length,
+      critical: complaints.filter(c => c.priority === 'HIGH' || c.priority === 'URGENT').length,
+      pending: complaints.filter(c => c.status !== 'RESOLVED' && c.status !== 'REJECTED').length,
+      today: complaints.filter(c => new Date(c.createdAt).toDateString() === new Date().toDateString()).length
+    };
+  }, [complaints]);
+
+  // 4. Filter Toggle Handlers
+  const toggleFilter = (category, value) => {
+    setActiveFilters(prev => {
+      const current = prev[category];
+      const updated = current.includes(value) ? current.filter(item => item !== value) : [...current, value];
+      return { ...prev, [category]: updated };
+    });
+  };
+
+  const handleDateChange = (field, value) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      dateRange: { ...prev.dateRange, [field]: value }
+    }));
+  };
+
+  // --- DRAWER & SAVING LOGIC ---
+  const startEditing = (field, currentValue) => {
+    setEditingField(field);
+    setTempChanges(prev => ({ ...prev, [field]: currentValue }));
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setTempChanges({});
+  };
+
+  const handleTempChange = (field, value) => {
+    setTempChanges(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDrawerFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const newDoc = {
+        id: Date.now(),
+        fileName: file.name,
+        fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+        uploadedAt: new Date().toISOString()
+      };
+      setComplaints(prev => prev.map(c => 
+        c.id === selectedTicketId 
+          ? { ...c, documents: [...(c.documents || []), newDoc] } 
+          : c
+      ));
     }
-  }, [user?.id]);
-
-  const handleDragStart = (e, complaint) => {
-    setDraggedItem(complaint);
-    e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
+ const handleSaveChanges = async () => {
+    // 1. Safety Check
+    if (!selectedTicketId || !selectedTicket) return;
 
-  const handleDrop = (e, newStatus) => {
-    e.preventDefault();
-    if (draggedItem && draggedItem.status !== newStatus) {
-      // Update complaint status
-      setComplaints(complaints.map(c => 
-        c.id === draggedItem.id 
+    // 2. Permission Check
+    // Adjust 'DISTRICT_COMMISSIONER' to match your UserRole enum exactly
+    const isAdminRole = user?.role === 'DISTRICT_COMMISSIONER' || user?.role === 'ADMIN';
+    const isAssignedOfficer = selectedTicket.assignedToId === user?.id;
+    
+    // Allow edit if Admin, Assigned Officer, or if the ticket is unassigned (optional)
+    const canEdit = isAdminRole || isAssignedOfficer || (!selectedTicket.assignedToId && isAdminRole);
+
+    if (!canEdit) {
+      alert({ 
+        message: "You don't have permission to edit this complaint", 
+        type: 'error' 
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // 3. Prepare the Data
+      // Merge original ticket with any inline changes made in the drawer
+      const currentData = { ...selectedTicket, ...tempChanges };
+
+      // 4. Construct the Request Payload
+      // We map the UI state to the `ComplaintUpdateRequest` type expected by the API
+      const updateRequest = {
+        complaintId: selectedTicket.complaintId, 
+        subject: currentData.subject,
+        description: currentData.description,
+        location: currentData.location,
+        priority: currentData.priority,
+        status: currentData.status,
+        assignedDepartment: currentData.assignedDepartment,
+        assignedToId: currentData.assignedToId,
+        
+        // Include new comment/note if typed
+        // Note: Since your service doesn't have createComment, we send it as part of the update
+        ...(commentText.trim() && { actionRemarks: commentText }),
+
+        // Logic: Only include Department if Admin AND it changed
+        ...(isAdminRole && 
+           tempChanges.assignedDepartment && 
+           tempChanges.assignedDepartment !== selectedTicket.assignedDepartment && {
+            assignedDepartment: tempChanges.assignedDepartment,
+            // If the user typed a comment, use that as remarks, otherwise default
+            departmentRemarks: commentText || "Department reassigned by Admin",
+        }),
+
+        // Logic: Only include Officer if it changed
+        ...(tempChanges.assignedToId && 
+           tempChanges.assignedToId !== selectedTicket.assignedToId && {
+            assignedToId: tempChanges.assignedToId,
+        }),
+      };
+
+      // 5. API Call
+      // Using the unified update method from your service
+      const updatedComplaint = await complaintService.updateComplaint(updateRequest);
+
+      // 6. Update Local State
+      // We update the list immediately so the UI reflects changes without a full refresh
+      setComplaints(prev => prev.map(c => 
+        c.id === selectedTicketId 
           ? { 
               ...c, 
-              status: newStatus,
-              updatedAt: new Date().toISOString(),
-              history: [
-                ...c.history,
-                {
-                  officerId: user.id,
-                  newStatus: newStatus,
-                  remarks: `Status changed to ${statusColumns.find(s => s.id === newStatus)?.title}`,
-                  timestamp: new Date().toISOString()
-                }
-              ]
+              ...updatedComplaint,
+              // If we added a comment, optimistic update the comments list too
+              ...(commentText.trim() && {
+                comments: [
+                  ...(c.comments || []),
+                  {
+                    id: 'temp-' + Date.now(),
+                    officerId: user.id, // or user.name
+                    comment: commentText,
+                    timestamp: new Date().toISOString()
+                  }
+                ]
+              })
             } 
           : c
       ));
+
+      // 7. Success Feedback
+      alert("Complaint updated successfully!");
+
+      // 8. Reset Drawer State
+      setEditingField(null);
+      setTempChanges({});
+      setCommentText('');
+
+    } catch (err) {
+      console.error(err);
+      // Extract error message safely
+      const errorMessage = err.response?.data?.message || err.message || "Failed to update complaint";
       
-      // Update selected complaint if it's the one being dragged
-      if (selectedComplaint?.id === draggedItem.id) {
-        setSelectedComplaint({
-          ...draggedItem,
-          status: newStatus,
-          updatedAt: new Date().toISOString()
-        });
-      }
-      
-      setDraggedItem(null);
+      alert({ 
+        message: errorMessage, 
+        type: 'error' 
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const addComment = () => {
-    if (!newComment.trim() || !selectedComplaint) return;
+  const selectedTicket = useMemo(() => {
+    if (!selectedTicketId) return null;
+    const ticket = complaints.find(c => c.id === selectedTicketId);
+    return { ...ticket, ...tempChanges };
+  }, [complaints, selectedTicketId, tempChanges]);
 
-    const newCommentObj = {
-      id: Date.now().toString(),
-      officerId: user.id,
-      comment: newComment,
-      timestamp: new Date().toISOString()
-    };
-
-    setComplaints(complaints.map(c => 
-      c.id === selectedComplaint.id 
-        ? { ...c, comments: [...c.comments, newCommentObj], updatedAt: new Date().toISOString() }
-        : c
-    ));
-
-    setSelectedComplaint({
-      ...selectedComplaint,
-      comments: [...selectedComplaint.comments, newCommentObj]
-    });
-
-    setNewComment('');
-  };
-
-  const handleFileUpload = (e) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !selectedComplaint) return;
-
-    const newDocuments = Array.from(files).map(file => ({
-      id: Date.now().toString() + Math.random(),
-      fileName: file.name,
-      fileSize: `${(file.size / 1024).toFixed(2)} KB`,
-      uploadedAt: new Date().toISOString()
-    }));
-
-    setComplaints(complaints.map(c => 
-      c.id === selectedComplaint.id 
-        ? { ...c, documents: [...c.documents, ...newDocuments], updatedAt: new Date().toISOString() }
-        : c
-    ));
-
-    setSelectedComplaint({
-      ...selectedComplaint,
-      documents: [...selectedComplaint.documents, ...newDocuments]
-    });
-  };
-
-  const handleCreateSuccess = (newComplaint) => {
-    setComplaints([newComplaint, ...complaints]);
-    setShowCreateModal(false);
-    alert(`Complaint created successfully! Number: ${newComplaint.complaintNumber}`);
-  };
-
-  const handleEditComplaint = (complaint) => {
-    setEditingComplaint(complaint);
-    setShowEditModal(true);
-    setSelectedComplaint(null); // Close detail modal when opening edit
-  };
-
-  const handleComplaintUpdate = (updatedComplaint) => {
-    setComplaints(complaints.map(c => 
-      c.id === updatedComplaint.id ? updatedComplaint : c
-    ));
-    
-    // Update selected complaint if it's being viewed
-    if (selectedComplaint?.id === updatedComplaint.id) {
-      setSelectedComplaint(updatedComplaint);
-    }
-    
-    setShowEditModal(false);
-    setEditingComplaint(null);
-  };
-
-  const handleCloseEditModal = () => {
-    setShowEditModal(false);
-    setEditingComplaint(null);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-IN', { 
-      year: 'numeric', month: 'short', day: 'numeric' 
-    });
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-IN', { 
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
+  const assignedOfficerName = useMemo(() => {
+    if (!selectedTicket) return 'Unassigned';
+    const officer = MOCK_OFFICERS.find(o => o.id === selectedTicket.assignedToId);
+    return officer ? `${officer.name} (${officer.dept})` : 'Unassigned';
+  }, [selectedTicket]);
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-gray-900">DC Office Complaint Tracking Board</h1>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Create Complaint
-              </button>
-              <button
-                onClick={() => setComplaints([...complaints])}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by complaint number, subject, description, location, or citizen ID..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-4">
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="ALL">All Priorities</option>
-              <option value="HIGH">High Priority</option>
-              <option value="MEDIUM">Medium Priority</option>
-              <option value="LOW">Low Priority</option>
-              <option value="URGENT">Urgent</option>
-            </select>
-            
-            <select
-              value={filterDepartment}
-              onChange={(e) => setFilterDepartment(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="ALL">All Departments</option>
-              {departments.filter(d => d !== 'ALL').map(dept => (
-                <option key={dept} value={dept}>
-                  {departmentNames[dept] || dept}
-                </option>
-              ))}
-            </select>
-
-            {(filterPriority !== 'ALL' || filterDepartment !== 'ALL' || searchQuery) && (
-              <button
-                onClick={() => {
-                  setFilterPriority('ALL');
-                  setFilterDepartment('ALL');
-                  setSearchQuery('');
-                }}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 underline"
-              >
-                Clear All Filters
-              </button>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div className="flex gap-4 text-md">
-            {statusColumns.map(status => (
-              <div key={status.id} className="flex items-center gap-2">
-                <div className={`w-3 h-3 ${status.color} rounded`}></div>
-                <span className="text-gray-600">
-                  {status.title}: {filteredComplaints.filter(c => c.status === status.id).length}
-                </span>
-              </div>
-            ))}
-          </div>
+    <div className="h-screen flex flex-col bg-slate-50 text-slate-900 font-sans relative">
+      <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 z-20">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">DO</div>
+          <h1 className="font-semibold text-gray-800">Admin Console</h1>
         </div>
+        <div className="flex-1 max-w-xl mx-8 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search tickets by subject or ticket number..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+          />
+        </div>
+        <button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+          <Plus className="w-4 h-4" /> New Ticket
+        </button>
+      </header>
+
+      {/* TOP METRICS - Updated to show status breakdown as requested */}
+      <div className="px-6 py-4 grid grid-cols-5 gap-4 shrink-0">
+        <MetricCard title="Total" value={stats.total} trend="All Tickets" type="neutral" />
+        <MetricCard title="New" value={facets.status.CREATED || 0} trend="Unattended" type="warning" />
+        <MetricCard title="In Progress" value={facets.status.IN_PROGRESS || 0} trend="Active" type="neutral" />
+        <MetricCard title="Critical" value={stats.critical} trend="High/Urgent" type="danger" />
+        <MetricCard title="Resolved" value={facets.status.RESOLVED || 0} trend="Completed" type="success" /> 
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto p-6">
-        <div className="flex gap-4 h-full min-w-max">
-          {statusColumns.map(column => (
-            <div
-              key={column.id}
-              className="flex-shrink-0 w-80 bg-gray-100 rounded-lg"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              <div className={`${column.color} text-white px-4 py-3 rounded-t-lg flex items-center justify-between`}>
-                <h3 className="font-semibold">{column.title}</h3>
-                <span className="bg-white bg-opacity-30 px-2 py-1 rounded text-sm">
-                  {filteredComplaints.filter(c => c.status === column.id).length}
-                </span>
+      <div className="flex flex-1 overflow-hidden px-6 pb-6 gap-4 mt-2">
+        
+        {/* SIDEBAR */}
+        {showFilters && (
+          <aside className="w-64 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col shrink-0 overflow-hidden">
+             <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+               <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wider">Filters</h3>
+               <button onClick={() => {
+                 setActiveFilters({ priority: [], status: [], department: [], officer: [], location: [], dateRange: { start: '', end: '' } });
+                 setSearchQuery('');
+               }} className="text-xs text-blue-600 hover:text-blue-800">Reset</button>
+             </div>
+             
+             <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                
+                {/* Date Range Filter */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-gray-400" /> Date Range
+                  </h4>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">From</label>
+                      <input 
+                        type="date" 
+                        className="w-full text-xs p-2 border border-gray-200 rounded"
+                        value={activeFilters.dateRange.start}
+                        onChange={(e) => handleDateChange('start', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">To</label>
+                      <input 
+                        type="date" 
+                        className="w-full text-xs p-2 border border-gray-200 rounded"
+                        value={activeFilters.dateRange.end}
+                        onChange={(e) => handleDateChange('end', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <hr className="border-gray-100" />
+
+                {/* Status Filter */}
+                <div><h4 className="text-sm font-semibold text-gray-900 mb-2">Status</h4>{Object.keys(STATUS_CONFIG).map(key => (<FacetedFilterCheckbox key={key} label={STATUS_CONFIG[key].label} count={facets.status[key] || 0} checked={activeFilters.status.includes(key)} onChange={() => toggleFilter('status', key)} />))}</div>
+                
+                <hr className="border-gray-100" />
+                
+                {/* Department Filter */}
+                <div><h4 className="text-sm font-semibold text-gray-900 mb-2">Department</h4>{Object.keys(facets.department).map(dept => (<FacetedFilterCheckbox key={dept} label={dept} count={facets.department[dept]} checked={activeFilters.department.includes(dept)} onChange={() => toggleFilter('department', dept)} />))}</div>
+
+                <hr className="border-gray-100" />
+
+                {/* Officer Filter (New) */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Officer</h4>
+                  {Object.keys(facets.officer).length === 0 ? (
+                    <p className="text-xs text-gray-400">No data available</p>
+                  ) : (
+                    Object.keys(facets.officer).map(officer => (
+                      <FacetedFilterCheckbox key={officer} label={officer} count={facets.officer[officer]} checked={activeFilters.officer.includes(officer)} onChange={() => toggleFilter('officer', officer)} />
+                    ))
+                  )}
+                </div>
+
+                <hr className="border-gray-100" />
+
+                {/* Location Filter (New) */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Location</h4>
+                  {Object.keys(facets.location).length === 0 ? (
+                     <p className="text-xs text-gray-400">No data available</p>
+                  ) : (
+                    Object.keys(facets.location).map(loc => (
+                      <FacetedFilterCheckbox key={loc} label={loc} count={facets.location[loc]} checked={activeFilters.location.includes(loc)} onChange={() => toggleFilter('location', loc)} />
+                    ))
+                  )}
+                </div>
+             </div>
+          </aside>
+        )}
+
+        {/* DATA GRID */}
+        <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
+           <div className="p-3 border-b border-gray-100 flex justify-between items-center">
+             <div className="flex items-center gap-2">
+               <button onClick={() => setShowFilters(!showFilters)} className={`p-2 rounded hover:bg-gray-100 ${showFilters ? 'text-blue-600' : 'text-gray-400'}`}><SlidersHorizontal className="w-4 h-4" /></button>
+               <span className="text-sm text-gray-500 font-medium pl-2 border-l border-gray-200">Showing {filteredData.length} tickets</span>
+             </div>
+             {/* <div className="flex bg-gray-100 p-1 rounded-lg">
+                <button onClick={() => setViewMode('LIST')} className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-2 transition-all ${viewMode === 'LIST' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}><LayoutList className="w-3.5 h-3.5" /> List</button>
+             </div> */}
+           </div>
+           <div className="overflow-auto flex-1">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[100px]">ID</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Subject</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px]">Status</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px]">Priority</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[150px]">Department</th>
+                    {/* NEW Created Date Column */}
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[120px]">Created Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredData.map(complaint => (
+                    <tr key={complaint.id} onClick={() => { setSelectedTicketId(complaint.id); setCommentText(''); setEditingField(null); }} className={`hover:bg-blue-50 cursor-pointer transition-colors group ${selectedTicketId === complaint.id ? 'bg-blue-50/60' : ''}`}>
+                      <td className="px-4 py-3"><span className="font-mono text-xs text-gray-500 group-hover:text-blue-600 font-medium">#{complaint.complaintNumber.slice(-6)}</span></td>
+                      <td className="px-4 py-3"><p className="text-sm font-medium text-gray-900 truncate max-w-[300px]">{complaint.subject}</p></td>
+                      <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[complaint.status]?.color}`}>{STATUS_CONFIG[complaint.status]?.label || complaint.status}</span></td>
+                      {/* <td className="px-4 py-3"><div className={`flex items-center gap-1.5 text-xs font-medium ${PRIORITY_STYLES[complaint.priority].text}`}>{complaint.priority}</div></td> */}
+                      <td className="px-4 py-3"><span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{complaint.assignedDepartment || 'Unassigned'}</span></td>
+                      {/* RENDER Date */}
+                      <td className="px-4 py-3"><span className="text-xs text-gray-600">{new Date(complaint.createdAt).toLocaleDateString()}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+           </div>
+        </div>
+        
+        {/* RIGHT DRAWER */}
+        {selectedTicket && (
+          <div className="w-[480px] bg-white rounded-xl shadow-xl border border-gray-200 flex flex-col shrink-0 animate-in slide-in-from-right duration-200">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-100 flex justify-between items-start bg-gray-50/50">
+               <div className="flex-1 mr-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-sm text-gray-500">#{selectedTicket.complaintNumber}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase border ${PRIORITY_STYLES[selectedTicket.priority].bg} ${PRIORITY_STYLES[selectedTicket.priority].text} ${PRIORITY_STYLES[selectedTicket.priority].border}`}>{selectedTicket.priority}</span>
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900 leading-tight">{selectedTicket.subject}</h2>
+               </div>
+               <div className="flex items-center gap-2">
+                 <button 
+                   onClick={handleSaveChanges} 
+                   disabled={isSaving}
+                   className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm disabled:opacity-70"
+                 >
+                   {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                   {isSaving ? 'Saving' : 'Save'}
+                 </button>
+                 <button onClick={() => setSelectedTicketId(null)} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+               </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h3>
+                <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded border border-gray-100">{selectedTicket.description}</p>
               </div>
-              <div className="p-3 space-y-3 overflow-y-auto max-h-[calc(100vh-280px)]">
-                {filteredComplaints
-                  .filter(complaint => complaint.status === column.id)
-                  .map(complaint => (
-                    <div
-                      key={complaint.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, complaint)}
-                      onClick={() => setSelectedComplaint(complaint)}
-                      className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-move hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
-                            {complaint.subject}
-                          </h4>
-                          <p className="text-xs text-gray-500">{complaint.complaintNumber}</p>
-                        </div>
-                        <span className={`px-2 py-1 rounded text-xs font-medium border ${priorityColors[complaint.priority]}`}>
-                          {complaint.priority}
-                        </span>
+              
+              {/* DETAILS GRID WITH EDITABLE FIELDS */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                
+                <EditableDetailRow 
+                  label="Status" 
+                  value={STATUS_CONFIG[selectedTicket.status]?.label}
+                  isEditing={editingField === 'STATUS'}
+                  onEditStart={() => startEditing('STATUS', selectedTicket.status)}
+                  onEditCancel={cancelEditing}
+                >
+                  <select 
+                    className="w-full text-sm p-1 border border-blue-500 rounded focus:ring-2 focus:ring-blue-100 outline-none"
+                    value={tempChanges.status || selectedTicket.status}
+                    onChange={(e) => handleTempChange('status', e.target.value)}
+                  >
+                    {Object.keys(STATUS_CONFIG).map(s => (<option key={s} value={s}>{STATUS_CONFIG[s].label}</option>))}
+                  </select>
+                </EditableDetailRow>
+
+                <EditableDetailRow 
+                  label="Department" 
+                  value={selectedTicket.assignedDepartment}
+                  displayValue={DEPARTMENT_NAMES[selectedTicket.assignedDepartment] || selectedTicket.assignedDepartment}
+                  isEditing={editingField === 'DEPT'}
+                  onEditStart={() => startEditing('DEPT', selectedTicket.assignedDepartment)}
+                  onEditCancel={cancelEditing}
+                >
+                  <select 
+                    className="w-full text-sm p-1 border border-blue-500 rounded focus:ring-2 focus:ring-blue-100 outline-none"
+                    value={tempChanges.assignedDepartment || selectedTicket.assignedDepartment || ''}
+                    onChange={(e) => handleTempChange('assignedDepartment', e.target.value)}
+                  >
+                    <option value="">Unassigned</option>
+                    {Object.entries(DEPARTMENT_NAMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </EditableDetailRow>
+
+                <EditableDetailRow 
+                  label="Assigned Officer" 
+                  displayValue={assignedOfficerName}
+                  isEditing={editingField === 'OFFICER'}
+                  onEditStart={() => startEditing('OFFICER', selectedTicket.assignedToId)}
+                  onEditCancel={cancelEditing}
+                >
+                  <select 
+                    className="w-full text-sm p-1 border border-blue-500 rounded focus:ring-2 focus:ring-blue-100 outline-none"
+                    value={tempChanges.assignedToId || selectedTicket.assignedToId || ''}
+                    onChange={(e) => handleTempChange('assignedToId', e.target.value)}
+                  >
+                    <option value="">Select Officer...</option>
+                    {MOCK_OFFICERS.map(o => (
+                      <option key={o.id} value={o.id}>{o.name} ({o.dept})</option>
+                    ))}
+                  </select>
+                </EditableDetailRow>
+
+                <div className="h-12">
+                   <span className="text-xs text-gray-400 block mb-1">Location</span>
+                   <span className="text-sm font-medium text-gray-800 truncate block">{selectedTicket.location || 'N/A'}</span>
+                </div>
+                <div className="h-12">
+                   <span className="text-xs text-gray-400 block mb-1">Citizen Contact</span>
+                   <span className="text-sm font-medium text-gray-800 truncate block">{selectedTicket.mobileNumber || 'N/A'}</span>
+                </div>
+                <div className="h-12">
+                   <span className="text-xs text-gray-400 block mb-1">Created At</span>
+                   <span className="text-sm font-medium text-gray-800 truncate block">{new Date(selectedTicket.createdAt).toLocaleDateString()}</span>
+                </div>
+
+              </div>
+
+              {/* ATTACHMENTS & COMMENTS (Unchanged from previous optimized version) */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Attachments</h3>
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add File
+                  </button>
+                  <input type="file" className="hidden" ref={fileInputRef} onChange={handleDrawerFileUpload} />
+                </div>
+                
+                <div className="space-y-2">
+                  {(!selectedTicket.documents || selectedTicket.documents.length === 0) && (
+                     <div className="p-3 bg-gray-50 border border-dashed border-gray-200 rounded text-center text-xs text-gray-400">No attachments yet</div>
+                  )}
+                  {selectedTicket.documents?.map((doc, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 bg-white border border-gray-200 rounded-lg group">
+                      <div className="bg-blue-50 p-1.5 rounded text-blue-600">
+                        <FileText className="w-4 h-4" />
                       </div>
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{complaint.description}</p>
-                      
-                      {complaint.assignedDepartment && (
-                        <div className="mb-2">
-                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                            {departmentNames[complaint.assignedDepartment]}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(complaint.createdAt)}
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            {complaint.comments?.length || 0}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Paperclip className="w-3 h-3" />
-                            {complaint.documents?.length || 0}
-                          </div>
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{doc.fileName}</p>
+                        <p className="text-[10px] text-gray-400">{doc.fileSize} • {new Date(doc.uploadedAt).toLocaleDateString()}</p>
                       </div>
+                      <button className="text-gray-400 hover:text-blue-600 p-1"><ArrowUpRight className="w-4 h-4" /></button>
                     </div>
                   ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Complaint Detail Modal */}
-      {selectedComplaint && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-start justify-between p-6 border-b">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedComplaint.subject}</h2>
-                <p className="text-sm text-gray-500 mb-2">{selectedComplaint.complaintNumber}</p>
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded text-sm font-medium border ${priorityColors[selectedComplaint.priority]}`}>
-                    {selectedComplaint.priority}
-                  </span>
-                  {selectedComplaint.assignedDepartment && (
-                    <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded">
-                      {departmentNames[selectedComplaint.assignedDepartment]}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 ml-4">
-                <button
-                  onClick={() => handleEditComplaint(selectedComplaint)}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                >
-                  Edit
-                </button>
-                <button onClick={() => setSelectedComplaint(null)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Details */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Complaint Details</h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <p className="text-gray-700">{selectedComplaint.description}</p>
-                  <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
-                    <div>
-                      <p className="text-xs text-gray-500">Status</p>
-                      <p className="text-sm font-medium">{statusColumns.find(s => s.id === selectedComplaint.status)?.title}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Location</p>
-                      <p className="text-sm font-medium">{selectedComplaint.location || 'Not specified'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Created</p>
-                      <p className="text-sm font-medium">{formatDateTime(selectedComplaint.createdAt)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Last Updated</p>
-                      <p className="text-sm font-medium">{formatDateTime(selectedComplaint.updatedAt)}</p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              {/* History */}
-              {selectedComplaint.history?.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">History</h3>
-                  <div className="space-y-2">
-                    {selectedComplaint.history.map((item, i) => (
-                      <div key={i} className="bg-gray-50 rounded-lg p-3 text-sm">
-                        <div className="flex justify-between mb-1">
-                          <span className="font-medium">{item.newStatus}</span>
-                          <span className="text-xs text-gray-500">{formatDateTime(item.timestamp)}</span>
-                        </div>
-                        <p className="text-gray-600 text-xs">{item.remarks}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Attachments */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">Attachments ({selectedComplaint.documents?.length || 0})</h3>
-                  <label className="cursor-pointer px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                    <Paperclip className="w-4 h-4" />
-                    Upload
-                    <input type="file" multiple onChange={handleFileUpload} className="hidden" />
-                  </label>
-                </div>
-                <div className="space-y-2">
-                  {selectedComplaint.documents?.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg">No attachments</p>
-                  ) : (
-                    selectedComplaint.documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <Paperclip className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <p className="text-sm font-medium">{doc.fileName}</p>
-                          <p className="text-xs text-gray-500">{doc.fileSize}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+              <div className="border-t border-gray-100 pt-4">
+                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">Activity Log</h3>
+                 <div className="space-y-4 mb-4">
+                   {selectedTicket.comments?.map((c, i) => (
+                     <div key={i} className="flex gap-3">
+                       <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shrink-0">AD</div>
+                       <div className="flex-1">
+                         <div className="flex justify-between items-baseline"><span className="text-xs font-medium text-gray-900">Admin</span><span className="text-[10px] text-gray-400">{new Date(c.timestamp).toLocaleTimeString()}</span></div>
+                         <p className="text-xs text-gray-600 mt-0.5">{c.comment}</p>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+                 <div className="relative">
+                   <input 
+                     type="text" 
+                     value={commentText}
+                     onChange={(e) => setCommentText(e.target.value)}
+                     placeholder="Type a note or reply..." 
+                     className="w-full text-xs pl-3 pr-10 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none"
+                     onKeyDown={(e) => e.key === 'Enter' && handleSaveChanges()}
+                   />
+                   <button onClick={handleSaveChanges} className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800"><ArrowUpRight className="w-4 h-4" /></button>
+                 </div>
               </div>
 
-              {/* Comments */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Comments ({selectedComplaint.comments?.length || 0})</h3>
-                <div className="space-y-3 mb-4">
-                  {selectedComplaint.comments?.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg">No comments</p>
-                  ) : (
-                    selectedComplaint.comments.map((comment) => (
-                      <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-baseline gap-2 mb-1">
-                              <span className="font-medium text-sm text-gray-900">{comment.officerId}</span>
-                              <span className="text-xs text-gray-500">{formatDateTime(comment.timestamp)}</span>
-                            </div>
-                            <p className="text-sm text-gray-700">{comment.comment}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addComment()}
-                    placeholder="Add a comment..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={addComment}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                  >
-                    Post
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Create Complaint Modal */}
-      {showCreateModal && (
-        <CreateComplaintForm
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={handleCreateSuccess}
-        />
-      )}
-
-      {/* Edit Complaint Modal */}
-      {showEditModal && editingComplaint && (
-        <EditComplaintModal
-          complaint={editingComplaint}
-          onClose={handleCloseEditModal}
-          onUpdate={handleComplaintUpdate}
-        />
-      )}
+      {isCreateModalOpen && <CreateComplaintModal onClose={() => setIsCreateModalOpen(false)} onSuccess={handleNewTicketCreated} user={user} />}
     </div>
   );
 }

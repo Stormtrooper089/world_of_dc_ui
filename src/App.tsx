@@ -23,6 +23,7 @@ import Home from "./pages/Home";
 import Officer from "./pages/Officer";
 import OfficerDashboard from "./pages/OfficerDashboard";
 import Profile from "./pages/Profile";
+import AppShell from "./components/layout/AppShell";
 
 // Main App Routes
 const AppRoutes: React.FC = () => {
@@ -60,7 +61,7 @@ const AppRoutes: React.FC = () => {
         path="/officer-dashboard"
         element={
           <ProtectedRoute>
-            <OfficerDashboard />
+            <AppShell />
           </ProtectedRoute>
         }
       />

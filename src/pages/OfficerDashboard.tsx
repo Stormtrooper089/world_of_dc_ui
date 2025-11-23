@@ -5,7 +5,7 @@ import CreateComplaint from "../components/complaints/CreateComplaint";
 import MyComplaints from "../components/complaints/MyComplaints";
 import AdminApproveOfficers from "./AdminApproveOfficers";
 import Profile from "./Profile";
-import Sidebar from "../components/layout/Sidebar";
+import AppShell from "../components/layout/AppShell";
 import { Complaint, Officer, OfficerUpdateData } from "../types";
 import {
   Designation,
@@ -185,7 +185,7 @@ const OfficerDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <Sidebar
+      <AppShell
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         activeTab={activeTab}
