@@ -289,6 +289,10 @@ const CitizenHome: React.FC = () => {
     setError("");
   };
 
+  const handleOfficerLogin = () => {
+    navigate("/officer-login");
+  };
+
   // Fetch citizen profile when modal opens
   useEffect(() => {
     if (isProfileModalOpen && isAuthenticated && user) {
@@ -468,12 +472,20 @@ const CitizenHome: React.FC = () => {
                   <span>Profile</span>
                 </button>
               ) : (
-                <button
-                  onClick={openLoginModal}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hidden sm:block"
-                >
-                  Login
-                </button>
+                <div className="hidden sm:flex items-center space-x-2">
+                  <button
+                    onClick={openLoginModal}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={handleOfficerLogin}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+                  >
+                    Officer Login
+                  </button>
+                </div>
               )}
 
               {/* Mobile Menu Button */}
@@ -529,12 +541,20 @@ const CitizenHome: React.FC = () => {
                     <span>Profile</span>
                   </button>
                 ) : (
-                  <button
-                    onClick={openLoginModal}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full"
-                  >
-                    Login
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      onClick={openLoginModal}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={handleOfficerLogin}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors w-full"
+                    >
+                      Officer Login
+                    </button>
+                  </div>
                 )}
               </nav>
             </div>
@@ -1263,11 +1283,9 @@ const CitizenHome: React.FC = () => {
         >
           <GrievanceForm
             onSubmit={(data) => {
-              // Form already shows success message internally
-              // Close dialog after a delay to show success message
-              setTimeout(() => {
-                setIsGrievanceDialogOpen(false);
-              }, 2000);
+              console.log("Grievance submitted:", data);
+              // TODO: Add API call here
+              setIsGrievanceDialogOpen(false);
             }}
             onCancel={() => setIsGrievanceDialogOpen(false)}
           />
