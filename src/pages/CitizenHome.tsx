@@ -20,9 +20,11 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+import DialogBox from "../components/common/DialogBox";
 import { useAuth } from "../contexts/AuthContext";
+import { authService } from "../services/authService";
 import { Citizen, CitizenUpdateData } from "../types";
+import GrievanceForm from "./GrievanceFile/GrievanceForm";
 
 const CitizenHome: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +50,7 @@ const CitizenHome: React.FC = () => {
     address: "",
     pincode: "",
   });
+  const [isGrievanceDialogOpen, setIsGrievanceDialogOpen] = useState(false);
 
   const slides = [
     {
@@ -381,6 +384,24 @@ const CitizenHome: React.FC = () => {
     setProfileSuccess("");
     setCitizenProfile(null);
   };
+  const handleNavigateToService = (serviceName: string) => {
+    switch (serviceName) {
+      case "File Grievance":
+        if (!isAuthenticated) {
+          console.log("isAuthenticated", isAuthenticated);
+          openLoginModal();
+        } else {
+          console.log("setIsGrievanceDialogOpen", setIsGrievanceDialogOpen);
+          setIsGrievanceDialogOpen(true); // Set state to open dialog
+        }
+        break;
+      case "Track Status":
+        console.log("Track Status");
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -607,8 +628,7 @@ const CitizenHome: React.FC = () => {
                   if (!isAuthenticated) {
                     openLoginModal();
                   } else {
-                    // TODO: Link to respective pages later
-                    console.log(`Navigate to ${service.name}`);
+                    handleNavigateToService(service.name);
                   }
                 }}
                 className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 flex flex-col items-center justify-center space-y-3"
@@ -1231,6 +1251,25 @@ const CitizenHome: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Grievance Form Dialog */}
+      {isGrievanceDialogOpen && (
+        <DialogBox
+          isOpen={isGrievanceDialogOpen}
+          onClose={() => setIsGrievanceDialogOpen(false)}
+          title="Create Grievance"
+          size="lg"
+        >
+          <GrievanceForm
+            onSubmit={(data) => {
+              console.log("Grievance submitted:", data);
+              // TODO: Add API call here
+              setIsGrievanceDialogOpen(false);
+            }}
+            onCancel={() => setIsGrievanceDialogOpen(false)}
+          />
+        </DialogBox>
       )}
     </div>
   );
