@@ -9,7 +9,8 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { complaintService } from "../services/complaintService";
 import { UserRole } from "../constants/enums"; // Assuming you have this
-import { ComplaintUpdateRequest } from '../types';
+import { ComplaintUpdateRequest, Officer } from '../types';
+import { officerService } from "../services/officerService";
 
 // --- CONSTANTS & CONFIG ---
 
@@ -37,13 +38,6 @@ const DEPARTMENT_NAMES = {
   EDUCATION: 'Education',
   OTHER: 'Other'
 };
-
-const MOCK_OFFICERS = [
-  { id: 'OFF-101', name: 'Ashish', dept: 'ELECTRICITY' },
-  { id: 'OFF-102', name: 'Mervej', dept: 'SANITATION' },
-  { id: 'OFF-103', name: 'Akshay', dept: 'ROADS' },
-  { id: 'OFF-104', name: 'Ohm', dept: 'HEALTHCARE' },
-];
 
 // --- SUB-COMPONENTS ---
 
@@ -300,6 +294,8 @@ export default function ComplaintCockpitBoard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const [filteredOfficers, setFilteredOfficers] = useState<Officer[]>([]);
   
   // Drawer Editing States
   const [editingField, setEditingField] = useState(null);
@@ -322,6 +318,7 @@ export default function ComplaintCockpitBoard() {
 
   useEffect(() => {
     fetchComplaints();
+    fetchOfficers();
   }, [user?.id]);
 
   const fetchComplaints = async () => {
@@ -333,6 +330,30 @@ export default function ComplaintCockpitBoard() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch officers list when modal opens
+  const fetchOfficers = async () => {
+    try {
+      const officersList = await officerService.getAllOfficers();
+      const approvedOfficers = officersList.filter((o) => o.isApproved);
+      setFilteredOfficers(approvedOfficers);
+
+      // If there's an assigned officer, ensure they're in the list
+      // If not found, we might need to fetch them individually (though they should be in the list if approved)
+      if (selectedTicketId.assignedToId) {
+        const assignedOfficer = approvedOfficers.find(
+          (o) => o.id === selectedTicketId.assignedToId
+        );
+        if (!assignedOfficer) {
+          console.warn(
+            `Assigned officer ${selectedTicketId.assignedToId} not found in approved officers list`
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch officers:", err);
     }
   };
 
@@ -366,7 +387,7 @@ export default function ComplaintCockpitBoard() {
 
       // Officer
       const officerId = c.assignedToId || 'Unassigned';
-      const officerName = MOCK_OFFICERS.find(o => o.id === officerId)?.name || 'Unassigned';
+      const officerName = filteredOfficers.find(o => o.id === officerId)?.name || 'Unassigned';
       counts.officer[officerName] = (counts.officer[officerName] || 0) + 1;
 
       // Location
@@ -390,7 +411,7 @@ export default function ComplaintCockpitBoard() {
       const matchesDept = activeFilters.department.length === 0 || activeFilters.department.includes(item.assignedDepartment || 'Unassigned');
       
       // Officer Filter
-      const officerName = MOCK_OFFICERS.find(o => o.id === item.assignedToId)?.name || 'Unassigned';
+      const officerName = filteredOfficers.find(o => o.id === item.assignedToId)?.name || 'Unassigned';
       const matchesOfficer = activeFilters.officer.length === 0 || activeFilters.officer.includes(officerName);
 
       // Location Filter
@@ -470,6 +491,7 @@ export default function ComplaintCockpitBoard() {
       ));
     }
   };
+
 
  const handleSaveChanges = async () => {
     // 1. Safety Check
@@ -587,8 +609,8 @@ export default function ComplaintCockpitBoard() {
 
   const assignedOfficerName = useMemo(() => {
     if (!selectedTicket) return 'Unassigned';
-    const officer = MOCK_OFFICERS.find(o => o.id === selectedTicket.assignedToId);
-    return officer ? `${officer.name} (${officer.dept})` : 'Unassigned';
+    const officer = filteredOfficers.find(o => o.id === selectedTicket.assignedToId);
+    return officer ? `${officer.name}` : 'Unassigned';
   }, [selectedTicket]);
 
   return (
@@ -735,7 +757,7 @@ export default function ComplaintCockpitBoard() {
                       <td className="px-4 py-3"><span className="font-mono text-xs text-gray-500 group-hover:text-blue-600 font-medium">#{complaint.complaintNumber.slice(-6)}</span></td>
                       <td className="px-4 py-3"><p className="text-sm font-medium text-gray-900 truncate max-w-[300px]">{complaint.subject}</p></td>
                       <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[complaint.status]?.color}`}>{STATUS_CONFIG[complaint.status]?.label || complaint.status}</span></td>
-                      {/* <td className="px-4 py-3"><div className={`flex items-center gap-1.5 text-xs font-medium ${PRIORITY_STYLES[complaint.priority].text}`}>{complaint.priority}</div></td> */}
+                      <td className="px-4 py-3"><div className={`flex items-center gap-1.5 text-xs font-medium ${PRIORITY_STYLES[complaint.priority].text}`}>{complaint.priority}</div></td>
                       <td className="px-4 py-3"><span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{complaint.assignedDepartment || 'Unassigned'}</span></td>
                       {/* RENDER Date */}
                       <td className="px-4 py-3"><span className="text-xs text-gray-600">{new Date(complaint.createdAt).toLocaleDateString()}</span></td>
@@ -824,12 +846,12 @@ export default function ComplaintCockpitBoard() {
                 >
                   <select 
                     className="w-full text-sm p-1 border border-blue-500 rounded focus:ring-2 focus:ring-blue-100 outline-none"
-                    value={tempChanges.assignedToId || selectedTicket.assignedToId || ''}
+                    value={selectedTicket.assignedToId || ''}
                     onChange={(e) => handleTempChange('assignedToId', e.target.value)}
                   >
                     <option value="">Select Officer...</option>
-                    {MOCK_OFFICERS.map(o => (
-                      <option key={o.id} value={o.id}>{o.name} ({o.dept})</option>
+                    {filteredOfficers.map(o => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
                     ))}
                   </select>
                 </EditableDetailRow>
