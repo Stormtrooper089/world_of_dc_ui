@@ -184,10 +184,10 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           htmlFor="location"
           className="block text-sm font-medium text-gray-700"
         >
-          Location *
+          Location
         </label>
         <input
-          {...register("location", { required: "Location is required" })}
+          {...register("location")}
           type="text"
           id="location"
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
@@ -207,10 +207,10 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           htmlFor="department"
           className="block text-sm font-medium text-gray-700"
         >
-          Department *
+          Department
         </label>
         <select
-          {...register("department", { required: "Department is required" })}
+          {...register("department")}
           id="department"
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
             errors.department ? "border-red-500" : ""
@@ -236,11 +236,10 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           htmlFor="mobileNumber"
           className="block text-sm font-medium text-gray-700"
         >
-          Mobile Number *
+          Mobile Number
         </label>
         <input
           {...register("mobileNumber", {
-            required: "Mobile number is required",
             pattern: {
               value: /^[6-9]\d{9}$/,
               message: "Please enter a valid 10-digit mobile number",

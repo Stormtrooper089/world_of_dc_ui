@@ -80,24 +80,25 @@ const DialogBox: React.FC<DialogBoxProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "dialog-title" : undefined}
     >
       <div
-        className={`bg-white rounded-lg shadow-xl w-full ${widthClass} max-h-[90vh] flex flex-col ${className}`}
+        className={`bg-white/95 backdrop-blur-md rounded-2xl border border-white/40 shadow-2xl w-full ${widthClass} max-h-[90vh] flex flex-col overflow-hidden ${className}`}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
           <div
-            className={`sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-lg ${headerClassName}`}
+            className={`bg-gradient-to-r from-blue-700 to-blue-600 px-6 py-4 flex justify-between items-center ${headerClassName}`}
           >
             {title && (
               <h2
                 id="dialog-title"
-                className="text-2xl font-bold text-gray-900"
+                className="text-2xl font-bold text-white"
+                style={{ fontFamily: 'inherit' }}
               >
                 {title}
               </h2>
@@ -105,23 +106,23 @@ const DialogBox: React.FC<DialogBoxProps> = ({
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                className="text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/60 rounded"
                 aria-label="Close dialog"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
             )}
           </div>
         )}
 
         {/* Body */}
-        <div className={`flex-1 overflow-y-auto p-6 ${bodyClassName}`}>
+        <div className={`flex-1 overflow-y-auto px-6 py-5 bg-white ${bodyClassName}`}>
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 rounded-b-lg">
+          <div className="bg-gray-50 border-t border-gray-100 px-6 py-4">
             {footer}
           </div>
         )}

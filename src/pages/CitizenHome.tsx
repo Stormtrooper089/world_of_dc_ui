@@ -25,9 +25,16 @@ import {
   CarouselSlide,
   PortalStatistics,
 } from "../services/authService";
+import { complaintService } from "../services/complaintService";
 import DialogBox from "../components/common/DialogBox";
 import { useAuth } from "../contexts/AuthContext";
-import { Citizen, CitizenUpdateData } from "../types";
+import {
+  Citizen,
+  CitizenUpdateData,
+  Complaint,
+  ComplaintDocument,
+  ComplaintHistory,
+} from "../types";
 import GrievanceForm from "./GrievanceFile/GrievanceForm";
 import webImage1 from "../assets/web-image-1.jpg";
 import webImage2 from "../assets/web-image-2.jpg";
@@ -65,6 +72,20 @@ const CitizenHome: React.FC = () => {
   });
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [isGrievanceDialogOpen, setIsGrievanceDialogOpen] = useState(false);
+  const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
+  const [citizenComplaints, setCitizenComplaints] = useState<Complaint[]>([]);
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(
+    null
+  );
+  const [complaintDetails, setComplaintDetails] = useState<{
+    complaint: Complaint;
+    history: ComplaintHistory[];
+    documents: ComplaintDocument[];
+  } | null>(null);
+  const [isLoadingTrack, setIsLoadingTrack] = useState(false);
+  const [isLoadingComplaintDetails, setIsLoadingComplaintDetails] =
+    useState(false);
+  const [trackError, setTrackError] = useState("");
 
   // Default slides to show when backend returns no data
   const defaultSlides: CarouselSlide[] = [
@@ -95,7 +116,6 @@ const CitizenHome: React.FC = () => {
       icon: FileText,
       iconBg: "bg-gradient-to-br from-rose-100 to-rose-200 text-rose-600",
       accent: "text-rose-600",
-      cta: "View cases",
     },
     {
       label: "Resolved",
@@ -103,7 +123,6 @@ const CitizenHome: React.FC = () => {
       icon: FileCheck,
       iconBg: "bg-gradient-to-br from-green-100 to-emerald-200 text-emerald-600",
       accent: "text-emerald-600",
-      cta: "Resolution log",
     },
     {
       label: "Avg Resolution Time",
@@ -111,7 +130,6 @@ const CitizenHome: React.FC = () => {
       icon: Clock,
       iconBg: "bg-gradient-to-br from-amber-100 to-orange-200 text-orange-600",
       accent: "text-orange-600",
-      cta: "Improve SLA",
     },
     {
       label: "Satisfaction Rate",
@@ -119,7 +137,6 @@ const CitizenHome: React.FC = () => {
       icon: TrendingUp,
       iconBg: "bg-gradient-to-br from-indigo-100 to-purple-200 text-indigo-600",
       accent: "text-indigo-600",
-      cta: "View surveys",
     },
   ];
 
@@ -134,40 +151,41 @@ const CitizenHome: React.FC = () => {
 
   const quickServices = [
     {
-      name: "Government",
-      icon: FileText,
-      description: "Ministers, Advisors & Bureaucrats",
+      name: "File Grievance",
+      icon: Plus,
+      description: "Submit new case in minutes",
       accentBg: "bg-[#f45d5d] text-white",
       iconColor: "text-white",
+      action: "grievance",
+    },
+    {
+      name: "Track Grievance",
+      icon: Search,
+      description: "Check live case status",
+      accentBg: "bg-[#fdecec] text-[#f45d5d]",
+      iconColor: "text-[#f45d5d]",
+      action: "track",
     },
     {
       name: "Web Services",
-      icon: Search,
-      description: "Websites & Online Services",
-      accentBg: "bg-[#fdecec] text-[#f45d5d]",
-      iconColor: "text-[#f45d5d]",
-    },
-    {
-      name: "Business",
-      icon: BookOpen,
-      description: "Ease of doing business",
+      icon: Globe,
+      description: "Websites & online tools",
       accentBg: "bg-[#fdecec] text-[#f45d5d]",
       iconColor: "text-[#f45d5d]",
     },
     {
       name: "News",
       icon: FileText,
-      description: "Latest news & updates",
+      description: "Latest updates & alerts",
       accentBg: "bg-[#fdecec] text-[#f45d5d]",
       iconColor: "text-[#f45d5d]",
     },
     {
-      name: "Grievances",
-      icon: Plus,
-      description: "CPGRAMS",
+      name: "Government",
+      icon: BookOpen,
+      description: "Ministers & departments",
       accentBg: "bg-[#fdecec] text-[#f45d5d]",
       iconColor: "text-[#f45d5d]",
-      action: "grievance",
     },
   ];
 
@@ -546,18 +564,139 @@ const CitizenHome: React.FC = () => {
         }
         break;
       case "track":
-        console.log("Track Status");
+        if (!isAuthenticated) {
+          openLoginModal();
+        } else {
+          openTrackModal();
+        }
         break;
       default:
         break;
     }
   };
 
+  const openTrackModal = () => {
+    setTrackError("");
+    setIsTrackModalOpen(true);
+    fetchCitizenComplaints();
+  };
+
+  const closeTrackModal = () => {
+    setIsTrackModalOpen(false);
+    setTrackError("");
+    setCitizenComplaints([]);
+    setSelectedComplaint(null);
+    setComplaintDetails(null);
+  };
+
+  const fetchCitizenComplaints = async () => {
+    if (!user?.mobileNumber) {
+      setTrackError(
+        "Mobile number not found. Please update your profile to track grievances."
+      );
+      setCitizenComplaints([]);
+      setSelectedComplaint(null);
+      setComplaintDetails(null);
+      return;
+    }
+
+    try {
+      setIsLoadingTrack(true);
+      const complaints = await complaintService.getComplaintsByCitizen(
+        user.mobileNumber
+      );
+      setCitizenComplaints(complaints);
+      if (complaints.length > 0) {
+        await fetchComplaintDetails(complaints[0]);
+      } else {
+        setSelectedComplaint(null);
+        setComplaintDetails(null);
+      }
+    } catch (error: any) {
+      console.error("Error fetching citizen complaints:", error);
+      setTrackError(
+        error?.response?.data?.message ||
+          "Unable to load your grievances right now."
+      );
+    } finally {
+      setIsLoadingTrack(false);
+    }
+  };
+
+  const fetchComplaintDetails = async (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    try {
+      setIsLoadingComplaintDetails(true);
+      const response = await complaintService.trackComplaint(
+        complaint.complaintNumber
+      );
+      if (response.success && response.data) {
+        setComplaintDetails(response.data);
+      } else {
+        setTrackError(response.message || "Unable to load complaint details.");
+        setComplaintDetails(null);
+      }
+    } catch (error: any) {
+      console.error("Error fetching complaint detail:", error);
+      setTrackError(
+        error?.response?.data?.message ||
+          "Unable to load complaint details right now."
+      );
+      setComplaintDetails(null);
+    } finally {
+      setIsLoadingComplaintDetails(false);
+    }
+  };
+
+  const formatReadableDate = (value?: string) => {
+    if (!value) return "Not available";
+    try {
+      return new Date(value).toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    } catch {
+      return value;
+    }
+  };
+
+  const formatStatusLabel = (value?: string) =>
+    value ? value.replace(/_/g, " ") : "Not available";
+
+  const getStatusBadgeClasses = (status?: string) => {
+    if (!status) return "bg-gray-100 text-gray-700";
+    
+    const statusUpper = status.toUpperCase();
+    
+    // Starting states - Blue
+    if (statusUpper === "CREATED") {
+      return "bg-blue-100 text-blue-700";
+    }
+    
+    // Medium states - Yellow
+    if (["ASSIGNED", "IN_PROGRESS", "IN PROGRESS", "BLOCKED"].includes(statusUpper)) {
+      return "bg-yellow-100 text-yellow-700";
+    }
+    
+    // Closed states - Green
+    if (["RESOLVED", "CLOSED"].includes(statusUpper)) {
+      return "bg-green-100 text-green-700";
+    }
+    
+    // Rejected/Removed - Red
+    if (["REJECTED", "DUPLICATE", "REMOVED"].includes(statusUpper)) {
+      return "bg-red-100 text-red-700";
+    }
+    
+    // Default fallback
+    return "bg-gray-100 text-gray-700";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Carousel - Background Layer */}
       <div
-        className="relative h-[500px] sm:h-[600px] lg:h-[700px] overflow-hidden bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 pt-20 sm:pt-24"
+        className="relative h-[420px] sm:h-[520px] lg:h-[620px] overflow-hidden bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 pt-14 sm:pt-18"
         onMouseEnter={() => setIsHeroHovered(true)}
         onMouseLeave={() => setIsHeroHovered(false)}
         id="home"
@@ -616,38 +755,15 @@ const CitizenHome: React.FC = () => {
                 {/* Elegant gradient overlay for better text contrast */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60"></div>
                 
-                {/* Content - positioned lower to make room for header */}
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-end pb-32 sm:pb-40 z-10">
-                  <div className="text-white max-w-3xl mb-8">
-                    <div className="inline-block bg-white/20 backdrop-blur-md px-5 py-2 rounded-full mb-5 border border-white/30">
-                      <span className="text-sm font-semibold uppercase tracking-wider text-white">Government Initiative</span>
-                    </div>
-                    <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-5 leading-tight drop-shadow-2xl">
+                {/* Content spacing keeps quick services visible without extra scroll */}
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-start z-10 pl-20 sm:pl-24">
+                  <div className="text-white max-w-3xl">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 leading-tight drop-shadow-2xl">
                       {slide.title}
                     </h2>
-                    <p className="text-lg sm:text-xl text-blue-100 mb-6 leading-relaxed drop-shadow-lg max-w-2xl">
+                    <p className="text-sm sm:text-base text-blue-100 leading-relaxed drop-shadow-lg max-w-2xl">
                       {slide.description}
                     </p>
-                    <div className="flex flex-wrap gap-4">
-                      <button
-                        onClick={() => {
-                          if (!isAuthenticated) {
-                            openLoginModal();
-                          } else {
-                            setIsGrievanceDialogOpen(true);
-                          }
-                        }}
-                        className="bg-white text-blue-700 px-8 py-3 rounded-lg font-bold text-base hover:bg-blue-50 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-                      >
-                        Get Started
-                      </button>
-                      <button
-                        onClick={() => navigate("/customer")}
-                        className="border-2 border-white text-white px-8 py-3 rounded-lg font-bold text-base hover:bg-white/20 transition-all backdrop-blur-sm shadow-lg"
-                      >
-                        Learn More
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -656,7 +772,7 @@ const CitizenHome: React.FC = () => {
         )}
 
         {/* Header Overlay - Fully Transparent on top of carousel */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-sm">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-blue-900/90 via-blue-900/60 to-transparent backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-20">
             {/* Logo */}
@@ -676,25 +792,25 @@ const CitizenHome: React.FC = () => {
               <nav className="hidden md:flex space-x-1" aria-label="Primary">
               <a
                 href="#home"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors rounded-lg hover:bg-white/10 backdrop-blur-sm"
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
               >
                 Home
               </a>
               <a
                 href="#services"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors rounded-lg hover:bg-white/10 backdrop-blur-sm"
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
               >
                 Services
               </a>
               <a
                 href="#schemes"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors rounded-lg hover:bg-white/10 backdrop-blur-sm"
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
               >
                 Schemes
               </a>
               <a
                 href="#about"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors rounded-lg hover:bg-white/10 backdrop-blur-sm"
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
               >
                 About
               </a>
@@ -720,13 +836,13 @@ const CitizenHome: React.FC = () => {
                 <div className="hidden sm:flex items-center space-x-2">
                   <button
                     onClick={openLoginModal}
-                      className="px-4 py-2 bg-white/90 backdrop-blur-md text-blue-700 rounded-md text-sm font-semibold hover:bg-white transition-colors shadow-lg"
+                      className="px-4 py-2 bg-white text-blue-700 rounded-md text-sm font-semibold hover:bg-blue-50 transition-colors shadow-lg"
                   >
                     Login
                   </button>
                   <button
                     onClick={handleOfficerLogin}
-                      className="px-4 py-2 bg-white/80 backdrop-blur-md text-gray-800 rounded-md text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg"
+                      className="px-4 py-2 bg-white text-blue-700 rounded-md text-sm font-semibold hover:bg-blue-50 transition-colors shadow-lg"
                   >
                     Officer Login
                   </button>
@@ -751,7 +867,7 @@ const CitizenHome: React.FC = () => {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-              <div className="md:hidden py-4 border-t border-white/20 bg-white/95 backdrop-blur-md">
+              <div className="md:hidden py-4 border-t border-white/20 bg-white/95 backdrop-blur-md text-gray-900">
                 <nav className="flex flex-col space-y-2" aria-label="Mobile">
                 <a
                   href="#home"
@@ -808,7 +924,7 @@ const CitizenHome: React.FC = () => {
                           handleOfficerLogin();
                           setMobileMenuOpen(false);
                         }}
-                        className="px-4 py-2 bg-gray-700 text-white rounded-md text-sm font-semibold hover:bg-gray-800 transition-colors w-full"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors w-full"
                     >
                       Officer Login
                     </button>
@@ -838,17 +954,9 @@ const CitizenHome: React.FC = () => {
       </div>
 
       {/* Quick Services - Overlaying on Carousel */}
-      <section className="relative -mt-24 sm:-mt-32 z-20 mb-16" id="services">
+      <section className="relative -mt-28 sm:-mt-36 z-20 mb-12" id="services">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-[32px] shadow-[0_25px_60px_rgba(16,24,40,0.08)] border border-gray-100 px-4 py-6 sm:px-8 sm:py-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 tracking-[0.3em] uppercase">
-            Quick Services
-          </h2>
-              <p className="text-sm text-gray-500">
-                Access the most visited Assam Citizen Portal destinations in one place.
-              </p>
-            </div>
+          <div className="bg-white rounded-[28px] shadow-[0_20px_40px_rgba(16,24,40,0.08)] border border-gray-100 px-4 py-4 sm:px-6 sm:py-6">
             <div className="grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
               {quickServices.map((service, index) => {
                 const isInteractive = Boolean(service.action);
@@ -860,19 +968,19 @@ const CitizenHome: React.FC = () => {
                     if (!isInteractive) return;
                     handleNavigateToService(service.action);
                   }}
-                  className={`group flex flex-col items-center text-center px-6 py-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors ${
+                  className={`group flex flex-col items-center text-center px-4 py-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors ${
                     isInteractive ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"
                   }`}
                 >
                   <div
-                    className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-lg ${service.accentBg}`}
+                    className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-md ${service.accentBg}`}
                   >
-                    <service.icon className={`h-7 w-7 ${service.iconColor}`} />
+                    <service.icon className={`h-6 w-6 ${service.iconColor}`} />
                 </div>
-                  <p className="text-sm font-semibold text-gray-900 uppercase tracking-[0.2em]">
+                  <p className="text-xs font-semibold text-gray-900 uppercase tracking-[0.15em]">
                   {service.name}
                   </p>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 mt-1 leading-snug">
                     {service.description}
                   </p>
               </button>
@@ -883,10 +991,10 @@ const CitizenHome: React.FC = () => {
         </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
         {/* Analytics Cards - Government Portal Style */}
-        <section className="relative mb-12 overflow-hidden rounded-3xl bg-white p-8 text-gray-900 shadow-[0_25px_60px_rgba(15,23,42,0.1)] border border-gray-100">
+        <section className="relative mb-10 overflow-hidden rounded-2xl bg-white p-6 text-gray-900 shadow-[0_20px_45px_rgba(15,23,42,0.08)] border border-gray-100">
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
             style={{
@@ -894,60 +1002,39 @@ const CitizenHome: React.FC = () => {
                 "url('data:image/svg+xml,%3Csvg width=\\'200\\' height=\\'200\\' viewBox=\\'0 0 200 200\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cg fill=\\'none\\' stroke=\\'%23ffffff\\' stroke-width=\\'0.5\\' opacity=\\'0.3\\'%3E%3Cpath d=\\'M0 100h200M100 0v200\\'/%3E%3C/g%3E%3C/svg%3E')",
             }}
           />
-          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-            <div>
-              <p className="text-sm uppercase tracking-[0.4em] text-blue-500">
-                Live Summary
-              </p>
-              <h2 className="text-3xl font-bold mt-2 text-gray-900">Portal Statistics</h2>
-              <p className="text-gray-500 mt-2 max-w-2xl">
-                Real-time overview of citizen engagement and grievance resolution across Assam.
-              </p>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <button className="inline-flex items-center gap-2 rounded-full bg-blue-600 text-white px-5 py-2 text-sm font-semibold shadow-lg hover:-translate-y-0.5 transition">
-                View Analytics
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button className="inline-flex items-center gap-2 rounded-full border border-gray-200 text-gray-700 px-5 py-2 text-sm font-semibold hover:bg-gray-50 transition">
-                Download Report
-              </button>
-            </div>
+          <div className="relative mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Live Summary</h2>
           </div>
           {isLoadingStats ? (
-            <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[1, 2, 3, 4].map((index) => (
                 <div
                   key={index}
-                  className="rounded-2xl bg-gray-50 backdrop-blur-sm border border-gray-100 p-6 flex items-center justify-center shadow-lg"
+                  className="rounded-2xl bg-gray-50 backdrop-blur-sm border border-gray-100 p-5 flex items-center justify-center shadow-md"
                 >
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {analyticsData.map((item, index) => (
                 <div
                   key={index}
-                  className="group rounded-2xl bg-white text-gray-900 p-6 shadow-xl border border-gray-100 hover:-translate-y-1 transition"
+                  className="group rounded-2xl bg-white text-gray-900 p-5 shadow-lg border border-gray-100 hover:-translate-y-0.5 transition"
                 >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${item.iconBg}`}>
-                    <item.icon className="h-7 w-7" />
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${item.iconBg}`}>
+                    <item.icon className="h-6 w-6" />
                   </div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-500">
                     {item.label}
                   </p>
-                  <p className={`mt-3 text-4xl font-bold ${item.accent}`}>
+                  <p className={`mt-2 text-3xl font-bold ${item.accent}`}>
                     {item.value}
                   </p>
-                  <p className="mt-2 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 leading-snug">
                     {item.description}
                   </p>
-                  <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
-                    {item.cta}
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
                 </div>
               ))}
             </div>
@@ -955,49 +1042,49 @@ const CitizenHome: React.FC = () => {
         </section>
 
         {/* About Assam Section */}
-        <section className="mb-12" id="about">
-          <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-8">
-            <div className="flex items-center justify-between mb-6">
+        <section className="mb-10" id="about">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 sm:p-7">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
                   About Assam
                 </h2>
                 <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="space-y-4">
-                <p className="text-gray-700 leading-relaxed text-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+              <div className="space-y-3">
+                <p className="text-gray-700 leading-relaxed text-base">
                   Assam, the land of the mighty Brahmaputra, is one of the most beautiful states in Northeast India. 
                   Known for its rich cultural heritage, diverse wildlife, and tea plantations, Assam is a state that 
                   beautifully blends tradition with modernity.
                 </p>
-                <p className="text-gray-700 leading-relaxed text-lg">
+                <p className="text-gray-700 leading-relaxed text-base">
                   The state is home to the famous Kaziranga National Park, a UNESCO World Heritage Site, which is 
                   home to the one-horned rhinoceros. Assam's tea gardens produce some of the finest tea in the world, 
                   and the state's vibrant festivals like Bihu showcase its rich cultural traditions.
                 </p>
-                <p className="text-gray-700 leading-relaxed text-lg">
+                <p className="text-gray-700 leading-relaxed text-base">
                   With a commitment to digital transformation and citizen-centric governance, the Government of Assam 
                   is working towards making the state a model of development and progress in the region.
                 </p>
-                <div className="flex flex-wrap gap-4 mt-6">
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex flex-wrap gap-3 mt-4">
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
                     <h4 className="font-bold text-blue-900 mb-1">Capital</h4>
                     <p className="text-gray-700">Dispur</p>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                  <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                     <h4 className="font-bold text-green-900 mb-1">Area</h4>
                     <p className="text-gray-700">78,438 sq km</p>
                   </div>
-                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
                     <h4 className="font-bold text-purple-900 mb-1">Population</h4>
                     <p className="text-gray-700">31.2 Million</p>
                   </div>
                 </div>
               </div>
-              <div className="relative">
-                <div className="rounded-2xl shadow-xl border-2 border-blue-100 overflow-hidden">
+              <div className="relative h-full min-h-[280px]">
+                <div className="rounded-2xl shadow-xl border-2 border-blue-100 overflow-hidden h-full">
                   <img
                     src={assamHeroImage}
                     alt="Scenic view of Assam"
@@ -1022,18 +1109,18 @@ const CitizenHome: React.FC = () => {
         </section>
 
         {/* Two Column Layout - News & Schemes - Government Portal Style */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
           {/* Latest News as timeline */}
           <section>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
               Latest Updates
             </h2>
                 <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
               <div className="relative pl-8">
                 {/* vertical line */}
                 <div className="absolute left-3 top-0 bottom-0 w-1 bg-blue-600 rounded-full" />
@@ -1041,11 +1128,11 @@ const CitizenHome: React.FC = () => {
                   {news.map((item, index) => (
                     <div key={index} className="relative">
                       <div className="absolute left-[-29px] top-1 w-6 h-6 bg-blue-600 rounded-full border-4 border-white shadow-md"></div>
-                      <div className="cursor-pointer rounded-lg p-4 -m-4 hover:bg-blue-50 transition-colors border-l-4 border-transparent hover:border-blue-600">
+                      <div className="cursor-pointer rounded-lg p-3 -m-3 hover:bg-blue-50 transition-colors border-l-4 border-transparent hover:border-blue-600">
                         <p className="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wide">
                           {item.date}
                         </p>
-                        <p className="text-gray-900 font-bold text-base leading-relaxed">
+                        <p className="text-gray-900 font-semibold text-[15px] leading-snug">
                           {item.title}
                         </p>
                       </div>
@@ -1053,7 +1140,7 @@ const CitizenHome: React.FC = () => {
                   ))}
                 </div>
               </div>
-              <button className="mt-6 text-blue-600 font-bold hover:text-blue-700 text-sm inline-flex items-center gap-2 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors">
+              <button className="mt-4 text-blue-600 font-semibold hover:text-blue-700 text-sm inline-flex items-center gap-2 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors">
                 View All Updates
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -1062,34 +1149,34 @@ const CitizenHome: React.FC = () => {
 
           {/* Featured Schemes */}
           <section id="schemes">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
               Featured Schemes
             </h2>
                 <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-6">
-              <div className="space-y-4">
+            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+              <div className="space-y-3">
                 {schemes.map((scheme, index) => (
                   <div
                     key={index}
-                    className="border-2 border-gray-200 hover:border-blue-500 rounded-lg p-5 hover:shadow-md transition-all bg-gradient-to-r from-white to-gray-50"
+                    className="border border-gray-200 hover:border-blue-500 rounded-lg p-4 hover:shadow-md transition-all bg-gradient-to-r from-white to-gray-50"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-bold text-gray-900 text-lg">
+                    <div className="flex items-start justify-between mb-2.5">
+                      <h3 className="font-semibold text-gray-900 text-base">
                         {scheme.name}
                       </h3>
                       <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full font-bold uppercase tracking-wide shadow-sm">
                         {scheme.status}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{scheme.desc}</p>
+                    <p className="text-sm text-gray-700 leading-snug">{scheme.desc}</p>
                   </div>
                 ))}
               </div>
-              <button className="mt-6 text-blue-600 font-bold hover:text-blue-700 text-sm inline-flex items-center gap-2 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors">
+              <button className="mt-4 text-blue-600 font-semibold hover:text-blue-700 text-sm inline-flex items-center gap-2 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors">
                 Browse All Schemes
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -1262,36 +1349,213 @@ const CitizenHome: React.FC = () => {
         </div>
       </footer>
 
+      {/* Track Grievance Modal */}
+      {isTrackModalOpen && (
+        <DialogBox
+          isOpen={isTrackModalOpen}
+          onClose={closeTrackModal}
+          title="Track Grievances"
+          size="lg"
+          bodyClassName="bg-white"
+        >
+          {trackError && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {trackError}
+            </div>
+          )}
+          {isLoadingTrack ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-b-transparent border-blue-600"></div>
+            </div>
+          ) : citizenComplaints.length === 0 ? (
+            <div className="py-10 text-center text-sm text-gray-500">
+              No grievances found for your account yet.
+            </div>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                {citizenComplaints.map((complaint) => {
+                  const isActive =
+                    selectedComplaint?.complaintNumber ===
+                    complaint.complaintNumber;
+                  return (
+            <button
+                      type="button"
+                      key={complaint.id}
+                      onClick={() => fetchComplaintDetails(complaint)}
+                      className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                        isActive
+                          ? "border-blue-500 bg-blue-50/80 shadow-md"
+                          : "border-gray-100 bg-white shadow-sm hover:border-blue-200"
+                      }`}
+                    >
+                      <p className="text-[11px] uppercase tracking-[0.35em] text-gray-500">
+                        #{complaint.complaintNumber}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gray-900">
+                        {complaint.subject}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                        <span>{formatReadableDate(complaint.createdAt)}</span>
+                        <span className={`rounded-full px-2 py-0.5 font-semibold text-[10px] uppercase tracking-wide ${getStatusBadgeClasses(complaint.status)}`}>
+                          {formatStatusLabel(complaint.status)}
+                        </span>
+                      </div>
+            </button>
+                  );
+                })}
+              </div>
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/40 p-5">
+                {isLoadingComplaintDetails ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-b-transparent border-blue-600"></div>
+                  </div>
+                ) : complaintDetails ? (
+                  <>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.35em] text-gray-500">
+                          Complaint No.
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {complaintDetails.complaint.complaintNumber}
+                        </p>
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusBadgeClasses(complaintDetails.complaint.status)}`}>
+                        {formatStatusLabel(complaintDetails.complaint.status)}
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm text-gray-700">
+                      {complaintDetails.complaint.description}
+                    </p>
+                    <div className="mt-5 grid grid-cols-1 gap-3 text-sm text-gray-700 sm:grid-cols-2">
+                      <div className="rounded-xl border border-white bg-white/80 p-3">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">
+                          Subject
+                        </p>
+                        <p className="mt-1 font-semibold text-gray-900">
+                          {complaintDetails.complaint.subject}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white bg-white/80 p-3">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">
+                          Priority
+                        </p>
+                        <p className="mt-1 font-semibold text-gray-900">
+                          {formatStatusLabel(complaintDetails.complaint.priority)}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white bg-white/80 p-3">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">
+                          Department
+                        </p>
+                        <p className="mt-1 font-semibold text-gray-900">
+                          {complaintDetails.complaint.assignedDepartment
+                            ? formatStatusLabel(
+                                complaintDetails.complaint.assignedDepartment
+                              )
+                            : "Not assigned"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white bg-white/80 p-3">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">
+                          Filed On
+                        </p>
+                        <p className="mt-1 font-semibold text-gray-900">
+                          {formatReadableDate(
+                            complaintDetails.complaint.createdAt
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6">
+                      <h4 className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
+                        History
+                      </h4>
+                      {complaintDetails.history?.length ? (
+                        <div className="mt-3 space-y-3 max-h-52 overflow-y-auto pr-1">
+                          {complaintDetails.history.map((entry) => (
+                            <div
+                              key={entry.id}
+                              className="rounded-xl border border-white bg-white/90 px-3 py-2 text-sm text-gray-700 shadow-sm"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-gray-900">
+                                  {formatStatusLabel(entry.status)}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {formatReadableDate(entry.updatedAt)}
+                                </span>
+                              </div>
+                              {entry.remarks && (
+                                <p className="mt-1 text-xs text-gray-600">
+                                  {entry.remarks}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-gray-500">
+                          No history available yet.
+                        </p>
+                      )}
+                    </div>
+
+                    {complaintDetails.documents?.length ? (
+                      <p className="mt-4 text-xs text-gray-500">
+                        {complaintDetails.documents.length} attachment
+                        {complaintDetails.documents.length > 1 ? "s" : ""} linked
+                        with this grievance.
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                    Select a grievance to view its details.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogBox>
+      )}
+
       {/* Login Modal */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
-            <button
-              onClick={closeLoginModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close modal"
-            >
-              <X className="h-6 w-6" />
-            </button>
-
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/40 max-w-md w-full overflow-hidden">
+            <div className="relative bg-gradient-to-r from-blue-700 to-blue-600 text-white px-6 py-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-white/80">
+                  Citizen Access
+                </p>
+                <h2 className="text-2xl font-bold" style={{ fontFamily: 'inherit' }}>
                 {otpSent ? "Enter OTP" : "Citizen Login"}
               </h2>
-              <p className="text-sm text-gray-600">
+                <p className="text-sm text-white/80 mt-1">
                 {otpSent
-                  ? `We sent an OTP to ${mobileNumber}`
-                  : "Enter your mobile number to receive an OTP for login"}
-              </p>
+                    ? `OTP sent to ${mobileNumber}`
+                    : "Enter your mobile number to receive an OTP"}
+                </p>
+              </div>
+              <button
+                onClick={closeLoginModal}
+                className="absolute top-5 right-6 text-white/80 hover:text-white transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-6 space-y-4">
               {!otpSent ? (
                 <>
-                  <div>
+                  <div className="space-y-2">
                     <label
                       htmlFor="mobile"
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="block text-sm font-semibold text-gray-700"
                     >
                       Mobile Number
                     </label>
@@ -1305,7 +1569,7 @@ const CitizenHome: React.FC = () => {
                       }}
                       placeholder="9000000000"
                       maxLength={10}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 bg-white/80"
                       onKeyPress={(e) => {
                         if (e.key === "Enter" && !isLoading) {
                           handleSendOtp();
@@ -1315,15 +1579,15 @@ const CitizenHome: React.FC = () => {
                   </div>
 
                   {error && (
-                    <div className="rounded-lg bg-red-50 p-4 border border-red-200">
-                      <p className="text-sm text-red-700">{error}</p>
+                    <div className="rounded-xl bg-red-50 p-4 border border-red-200 text-sm text-red-700">
+                      {error}
                     </div>
                   )}
 
                   <div className="flex gap-3">
                     <button
                       onClick={closeLoginModal}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
                       disabled={isLoading}
                     >
                       Cancel
@@ -1331,7 +1595,7 @@ const CitizenHome: React.FC = () => {
                     <button
                       onClick={handleSendOtp}
                       disabled={isLoading || mobileNumber.trim().length < 10}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 rounded-xl bg-blue-600 px-4 py-3 text-white font-semibold shadow-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? "Sending..." : "Send OTP"}
                     </button>
@@ -1339,10 +1603,10 @@ const CitizenHome: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <div>
+                  <div className="space-y-2">
                     <label
                       htmlFor="otp"
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="block text-sm font-semibold text-gray-700"
                     >
                       Enter OTP
                     </label>
@@ -1356,7 +1620,7 @@ const CitizenHome: React.FC = () => {
                       }}
                       placeholder="123456"
                       maxLength={6}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-center text-lg tracking-[0.4em] focus:border-transparent focus:ring-2 focus:ring-blue-500 bg-white/80"
                       onKeyPress={(e) => {
                         if (e.key === "Enter" && !isLoading) {
                           handleVerifyOtp();
@@ -1367,8 +1631,8 @@ const CitizenHome: React.FC = () => {
                   </div>
 
                   {error && (
-                    <div className="rounded-lg bg-red-50 p-4 border border-red-200">
-                      <p className="text-sm text-red-700">{error}</p>
+                    <div className="rounded-xl bg-red-50 p-4 border border-red-200 text-sm text-red-700">
+                      {error}
                     </div>
                   )}
 
@@ -1379,7 +1643,7 @@ const CitizenHome: React.FC = () => {
                         setOtp("");
                         setError("");
                       }}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
                       disabled={isLoading}
                     >
                       Back
@@ -1387,7 +1651,7 @@ const CitizenHome: React.FC = () => {
                     <button
                       onClick={handleVerifyOtp}
                       disabled={isLoading || otp.trim().length < 4}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 rounded-xl bg-blue-600 px-4 py-3 text-white font-semibold shadow-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? "Verifying..." : "Verify OTP"}
                     </button>
@@ -1397,7 +1661,7 @@ const CitizenHome: React.FC = () => {
                     <button
                       onClick={handleResendOtp}
                       disabled={isLoading}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                      className="text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50"
                     >
                       {isLoading ? "Sending..." : "Resend OTP"}
                     </button>
@@ -1411,26 +1675,21 @@ const CitizenHome: React.FC = () => {
 
       {/* Profile Modal */}
       {isProfileModalOpen && user && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
-            <button
-              onClick={closeProfileModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close modal"
-            >
-              <X className="h-6 w-6" />
-            </button>
-
-            <div className="mb-6">
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-8 w-8 text-blue-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/40 max-w-md w-full overflow-hidden">
+            <div className="relative bg-gradient-to-r from-blue-700 to-blue-600 text-white px-6 py-5">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                  <User className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <p className="text-xs uppercase tracking-[0.35em] text-white/80">
+                    Citizen Profile
+                  </p>
+                  <h2 className="text-2xl font-bold" style={{ fontFamily: 'inherit' }}>
                     {citizenProfile?.name || user.name || "Citizen"}
                   </h2>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-white/80">
                     {citizenProfile?.mobileNumber ||
                       user.mobileNumber ||
                       user.email ||
@@ -1438,23 +1697,30 @@ const CitizenHome: React.FC = () => {
                   </p>
                 </div>
               </div>
+              <button
+                onClick={closeProfileModal}
+                className="absolute top-5 right-6 text-white/80 hover:text-white transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
             {isLoadingProfile ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-10">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="p-6 space-y-4">
                 {profileError && (
-                  <div className="rounded-lg bg-red-50 p-4 border border-red-200">
-                    <p className="text-sm text-red-700">{profileError}</p>
+                  <div className="rounded-xl bg-red-50 p-4 border border-red-200 text-sm text-red-700">
+                    {profileError}
                   </div>
                 )}
 
                 {profileSuccess && (
-                  <div className="rounded-lg bg-green-50 p-4 border border-green-200">
-                    <p className="text-sm text-green-700">{profileSuccess}</p>
+                  <div className="rounded-xl bg-green-50 p-4 border border-green-200 text-sm text-green-700">
+                    {profileSuccess}
                   </div>
                 )}
 
@@ -1466,10 +1732,10 @@ const CitizenHome: React.FC = () => {
                     }}
                     className="space-y-4"
                   >
-                    <div>
+                    <div className="space-y-2">
                       <label
                         htmlFor="name"
-                        className="block text-sm font-medium text-gray-700 mb-2"
+                        className="block text-sm font-semibold text-gray-700"
                       >
                         Name
                       </label>
@@ -1481,14 +1747,14 @@ const CitizenHome: React.FC = () => {
                           setFormData({ ...formData, name: e.target.value })
                         }
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
-                    <div>
+                    <div className="space-y-2">
                       <label
                         htmlFor="email"
-                        className="block text-sm font-medium text-gray-700 mb-2"
+                        className="block text-sm font-semibold text-gray-700"
                       >
                         Email
                       </label>
@@ -1499,14 +1765,14 @@ const CitizenHome: React.FC = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, email: e.target.value })
                         }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
-                    <div>
+                    <div className="space-y-2">
                       <label
                         htmlFor="address"
-                        className="block text-sm font-medium text-gray-700 mb-2"
+                        className="block text-sm font-semibold text-gray-700"
                       >
                         Address
                       </label>
@@ -1517,14 +1783,14 @@ const CitizenHome: React.FC = () => {
                           setFormData({ ...formData, address: e.target.value })
                         }
                         rows={3}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
-                    <div>
+                    <div className="space-y-2">
                       <label
                         htmlFor="pincode"
-                        className="block text-sm font-medium text-gray-700 mb-2"
+                        className="block text-sm font-semibold text-gray-700"
                       >
                         Pincode
                       </label>
@@ -1542,23 +1808,23 @@ const CitizenHome: React.FC = () => {
                         }
                         maxLength={6}
                         placeholder="6 digits"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
-                    <div className="flex gap-3 pt-4 border-t">
+                    <div className="flex gap-3 pt-4 border-t border-gray-100">
                       <button
                         type="button"
                         onClick={handleCancelEdit}
                         disabled={isLoading}
-                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 rounded-xl bg-blue-600 px-4 py-3 text-white font-semibold shadow-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isLoading ? "Updating..." : "Update Profile"}
                       </button>
@@ -1566,65 +1832,53 @@ const CitizenHome: React.FC = () => {
                   </form>
                 ) : (
                   <>
-                    <div className="border-t pt-4">
-                      <div className="space-y-3">
+                    <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4 space-y-3">
                         {citizenProfile?.name && (
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">
-                              Name:
-                            </span>
-                            <span className="text-sm text-gray-900">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Name</span>
+                          <span className="font-semibold text-gray-900">
                               {citizenProfile.name}
                             </span>
                           </div>
                         )}
                         {citizenProfile?.email && (
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">
-                              Email:
-                            </span>
-                            <span className="text-sm text-gray-900">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Email</span>
+                          <span className="font-semibold text-gray-900">
                               {citizenProfile.email}
                             </span>
                           </div>
                         )}
                         {citizenProfile?.address && (
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">
-                              Address:
-                            </span>
-                            <span className="text-sm text-gray-900">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Address</span>
+                          <span className="font-semibold text-gray-900 text-right">
                               {citizenProfile.address}
                             </span>
                           </div>
                         )}
                         {citizenProfile?.pincode && (
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">
-                              Pincode:
-                            </span>
-                            <span className="text-sm text-gray-900">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Pincode</span>
+                          <span className="font-semibold text-gray-900">
                               {citizenProfile.pincode}
                             </span>
                           </div>
                         )}
                         {citizenProfile?.mobileNumber && (
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">
-                              Mobile:
-                            </span>
-                            <span className="text-sm text-gray-900">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Mobile</span>
+                          <span className="font-semibold text-gray-900">
                               {citizenProfile.mobileNumber}
                             </span>
                           </div>
                         )}
-                      </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 pt-4 border-t">
+                    <div className="flex flex-col gap-3 pt-1">
                       <button
                         onClick={handleEditProfile}
-                        className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
                       >
                         Edit Profile
                       </button>
@@ -1633,7 +1887,7 @@ const CitizenHome: React.FC = () => {
                           closeProfileModal();
                           logout();
                         }}
-                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        className="w-full rounded-xl bg-red-600 px-4 py-3 text-white font-semibold hover:bg-red-700 transition-colors"
                       >
                         Logout
                       </button>
