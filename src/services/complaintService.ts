@@ -135,6 +135,35 @@ export const complaintService = {
     return response.data.data;
   },
 
+  async addComment(complaintId: string, text: string, files?: File[]): Promise<Comment> {
+    // 1. Create a FormData instance
+    const formData = new FormData();
+    
+    // 2. Append the text field
+    formData.append('text', text);
+
+    // 3. Append files if they exist
+    // Note: 'attachments' should match the field name expected by your backend middleware (e.g., Multer)
+    if (files) {
+      files.forEach((file) => {
+        formData.append('attachments', file); 
+      });
+    }
+
+    const response = await api.post<ApiResponse<Comment>>(
+      `/complaints/${complaintId}/comments`,
+      formData, // 4. Pass formData as the body
+      {
+        headers: {
+          // 5. Explicitly set content type (optional with most libraries like Axios)
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    return response.data.data;
+  },
+
   async updateComment(request: CommentUpdateRequest): Promise<Comment> {
     const response = await api.put<ApiResponse<Comment>>(
       `/complaints/comments/${request.commentId}`,

@@ -1,3 +1,5 @@
+import { ComplaintPriority, ComplaintStatus, Department, UserRole } from "../constants/enums";
+
 // User and Authentication Types
 export interface User {
   id: string;
