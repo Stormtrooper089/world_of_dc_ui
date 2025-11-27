@@ -36,15 +36,16 @@ import {
   ComplaintHistory,
 } from "../types";
 import GrievanceForm from "./GrievanceFile/GrievanceForm";
-import webImage1 from "../assets/web-image-1.jpg";
-import webImage2 from "../assets/web-image-2.jpg";
-import webImage3 from "../assets/web-image-3.jpg";
+import image1 from "../assets/image-1.jpg";
+import image2 from "../assets/image-2.jpg";
+import image3 from "../assets/image-3.jpg";
+import image4 from "../assets/image-4.jpg";
 import image5 from "../assets/image-5.jpg";
 import image6 from "../assets/image-6.jpg";
-import image7 from "../assets/iamge-7.jpg";
+import image7 from "../assets/image-7.jpg";
 import assamHeroImage from "../assets/image-4.jpg";
 
-const heroImages = [webImage1, webImage2, webImage3, image5, image6, image7];
+const heroImages = [image7, image5, image6, image1, image2, image3];
 
 const CitizenHome: React.FC = () => {
   const navigate = useNavigate();
@@ -121,7 +122,8 @@ const CitizenHome: React.FC = () => {
       label: "Resolved",
       description: "Closed with citizen confirmation",
       icon: FileCheck,
-      iconBg: "bg-gradient-to-br from-green-100 to-emerald-200 text-emerald-600",
+      iconBg:
+        "bg-gradient-to-br from-green-100 to-emerald-200 text-emerald-600",
       accent: "text-emerald-600",
     },
     {
@@ -665,29 +667,33 @@ const CitizenHome: React.FC = () => {
 
   const getStatusBadgeClasses = (status?: string) => {
     if (!status) return "bg-gray-100 text-gray-700";
-    
+
     const statusUpper = status.toUpperCase();
-    
+
     // Starting states - Blue
     if (statusUpper === "CREATED") {
       return "bg-blue-100 text-blue-700";
     }
-    
+
     // Medium states - Yellow
-    if (["ASSIGNED", "IN_PROGRESS", "IN PROGRESS", "BLOCKED"].includes(statusUpper)) {
+    if (
+      ["ASSIGNED", "IN_PROGRESS", "IN PROGRESS", "BLOCKED"].includes(
+        statusUpper
+      )
+    ) {
       return "bg-yellow-100 text-yellow-700";
     }
-    
+
     // Closed states - Green
     if (["RESOLVED", "CLOSED"].includes(statusUpper)) {
       return "bg-green-100 text-green-700";
     }
-    
+
     // Rejected/Removed - Red
     if (["REJECTED", "DUPLICATE", "REMOVED"].includes(statusUpper)) {
       return "bg-red-100 text-red-700";
     }
-    
+
     // Default fallback
     return "bg-gray-100 text-gray-700";
   };
@@ -705,9 +711,12 @@ const CitizenHome: React.FC = () => {
       >
         {/* Decorative overlay pattern */}
         <div className="absolute inset-0 opacity-5 z-0">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px)`
-          }}></div>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px)`,
+            }}
+          ></div>
         </div>
 
         {isLoadingCarousel ? (
@@ -754,10 +763,10 @@ const CitizenHome: React.FC = () => {
               >
                 {/* Elegant gradient overlay for better text contrast */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60"></div>
-                
+
                 {/* Content spacing keeps quick services visible without extra scroll */}
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-start z-10 pl-20 sm:pl-24">
-                  <div className="text-white max-w-3xl">
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-start z-10 pl-16 sm:pl-20 md:pl-24 lg:pl-28 pr-16 sm:pr-20 md:pr-24 lg:pr-28">
+                  <div className="text-white max-w-3xl w-full">
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 leading-tight drop-shadow-2xl">
                       {slide.title}
                     </h2>
@@ -773,183 +782,183 @@ const CitizenHome: React.FC = () => {
 
         {/* Header Overlay - Fully Transparent on top of carousel */}
         <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-blue-900/90 via-blue-900/60 to-transparent backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-20">
-            {/* Logo */}
+              {/* Logo */}
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center shadow-lg border-2 border-white/50">
                   <span className="text-blue-700 font-bold text-xl">AS</span>
-              </div>
-              <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">
-                  Government of Assam
-                </h1>
-                  <p className="text-xs text-white/90 font-medium drop-shadow-md">Citizen Grievance Portal</p>
-              </div>
-            </div>
-
-            {/* Desktop Navigation */}
-              <nav className="hidden md:flex space-x-1" aria-label="Primary">
-              <a
-                href="#home"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
-              >
-                Home
-              </a>
-              <a
-                href="#services"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
-              >
-                Services
-              </a>
-              <a
-                href="#schemes"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
-              >
-                Schemes
-              </a>
-              <a
-                href="#about"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
-              >
-                About
-              </a>
-            </nav>
-
-            {/* Right Side Actions */}
-              <div className="flex items-center space-x-3">
-              <button
-                  className="hidden sm:flex items-center space-x-1 text-white/80 hover:text-white transition-colors rounded-full px-3 py-1 border border-white/30 backdrop-blur"
-              >
-                  <Globe className="h-3.5 w-3.5" />
-                  <span className="text-xs font-semibold">EN</span>
-              </button>
-              {isAuthenticated ? (
-                <button
-                  onClick={() => setIsProfileModalOpen(true)}
-                    className="px-4 py-2 bg-white/90 backdrop-blur-md text-blue-700 rounded-md text-sm font-semibold hover:bg-white transition-colors hidden sm:flex items-center space-x-2 shadow-lg"
-                >
-                  <User className="h-4 w-4" />
-                  <span>Profile</span>
-                </button>
-              ) : (
-                <div className="hidden sm:flex items-center space-x-2">
-                  <button
-                    onClick={openLoginModal}
-                      className="px-4 py-2 bg-white text-blue-700 rounded-md text-sm font-semibold hover:bg-blue-50 transition-colors shadow-lg"
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={handleOfficerLogin}
-                      className="px-4 py-2 bg-white text-blue-700 rounded-md text-sm font-semibold hover:bg-blue-50 transition-colors shadow-lg"
-                  >
-                    Officer Login
-                  </button>
                 </div>
-              )}
+                <div className="hidden sm:block">
+                  <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">
+                    Government of Assam
+                  </h1>
+                  <p className="text-xs text-white/90 font-medium drop-shadow-md">
+                    Citizen Grievance Portal
+                  </p>
+                </div>
+              </div>
 
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="md:hidden p-2 rounded-lg hover:bg-white/20 transition-colors text-white"
-                aria-label="Open Menu"
-                aria-expanded={mobileMenuOpen}
-              >
-                {mobileMenuOpen ? (
-                  <X className="h-6 w-6" />
-                ) : (
-                  <Menu className="h-6 w-6" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-              <div className="md:hidden py-4 border-t border-white/20 bg-white/95 backdrop-blur-md text-gray-900">
-                <nav className="flex flex-col space-y-2" aria-label="Mobile">
+              {/* Desktop Navigation */}
+              <nav className="hidden md:flex space-x-1" aria-label="Primary">
                 <a
                   href="#home"
-                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
-                    onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Home
                 </a>
                 <a
                   href="#services"
-                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
-                    onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Services
                 </a>
                 <a
                   href="#schemes"
-                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
-                    onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Schemes
                 </a>
                 <a
                   href="#about"
-                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
-                    onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   About
                 </a>
+              </nav>
+
+              {/* Right Side Actions */}
+              <div className="flex items-center space-x-3">
+                <button className="hidden sm:flex items-center space-x-1 text-white/80 hover:text-white transition-colors rounded-full px-3 py-1 border border-white/30 backdrop-blur">
+                  <Globe className="h-3.5 w-3.5" />
+                  <span className="text-xs font-semibold">EN</span>
+                </button>
                 {isAuthenticated ? (
                   <button
-                      onClick={() => {
-                        setIsProfileModalOpen(true);
-                        setMobileMenuOpen(false);
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors w-full flex items-center justify-center space-x-2 mt-2"
+                    onClick={() => setIsProfileModalOpen(true)}
+                    className="px-4 py-2 bg-white/90 backdrop-blur-md text-blue-700 rounded-md text-sm font-semibold hover:bg-white transition-colors hidden sm:flex items-center space-x-2 shadow-lg"
                   >
                     <User className="h-4 w-4" />
                     <span>Profile</span>
                   </button>
                 ) : (
-                    <div className="space-y-2 mt-2">
+                  <div className="hidden sm:flex items-center space-x-2">
                     <button
-                        onClick={() => {
-                          openLoginModal();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors w-full"
+                      onClick={openLoginModal}
+                      className="px-4 py-2 bg-white text-blue-700 rounded-md text-sm font-semibold hover:bg-blue-50 transition-colors shadow-lg"
                     >
                       Login
                     </button>
                     <button
-                        onClick={() => {
-                          handleOfficerLogin();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors w-full"
+                      onClick={handleOfficerLogin}
+                      className="px-4 py-2 bg-white text-blue-700 rounded-md text-sm font-semibold hover:bg-blue-50 transition-colors shadow-lg"
                     >
                       Officer Login
                     </button>
                   </div>
                 )}
-              </nav>
+
+                {/* Mobile Menu Button */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="md:hidden p-2 rounded-lg hover:bg-white/20 transition-colors text-white"
+                  aria-label="Open Menu"
+                  aria-expanded={mobileMenuOpen}
+                >
+                  {mobileMenuOpen ? (
+                    <X className="h-6 w-6" />
+                  ) : (
+                    <Menu className="h-6 w-6" />
+                  )}
+                </button>
+              </div>
             </div>
-          )}
-        </div>
-      </header>
+
+            {/* Mobile Menu */}
+            {mobileMenuOpen && (
+              <div className="md:hidden py-4 border-t border-white/20 bg-white/95 backdrop-blur-md text-gray-900">
+                <nav className="flex flex-col space-y-2" aria-label="Mobile">
+                  <a
+                    href="#home"
+                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Home
+                  </a>
+                  <a
+                    href="#services"
+                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Services
+                  </a>
+                  <a
+                    href="#schemes"
+                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Schemes
+                  </a>
+                  <a
+                    href="#about"
+                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    About
+                  </a>
+                  {isAuthenticated ? (
+                    <button
+                      onClick={() => {
+                        setIsProfileModalOpen(true);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors w-full flex items-center justify-center space-x-2 mt-2"
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Profile</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-2 mt-2">
+                      <button
+                        onClick={() => {
+                          openLoginModal();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors w-full"
+                      >
+                        Login
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleOfficerLogin();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors w-full"
+                      >
+                        Officer Login
+                      </button>
+                    </div>
+                  )}
+                </nav>
+              </div>
+            )}
+          </div>
+        </header>
 
         {/* Carousel Controls - Enhanced */}
         <button
           onClick={prevSlide}
-          className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-3 rounded-full transition-all z-40 shadow-lg hover:shadow-xl"
+          className="absolute left-2 sm:left-4 md:left-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all z-40 shadow-lg hover:shadow-xl"
           aria-label="Previous slide"
         >
-          <ChevronLeft className="h-7 w-7 text-white" />
+          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
         </button>
         <button
           onClick={nextSlide}
-          className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-3 rounded-full transition-all z-40 shadow-lg hover:shadow-xl"
+          className="absolute right-2 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all z-40 shadow-lg hover:shadow-xl"
           aria-label="Next slide"
         >
-          <ChevronRight className="h-7 w-7 text-white" />
+          <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
         </button>
       </div>
 
@@ -961,38 +970,42 @@ const CitizenHome: React.FC = () => {
               {quickServices.map((service, index) => {
                 const isInteractive = Boolean(service.action);
                 return (
-              <button
-                key={index}
-                  type="button"
-                onClick={() => {
-                    if (!isInteractive) return;
-                    handleNavigateToService(service.action);
-                  }}
-                  className={`group flex flex-col items-center text-center px-4 py-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors ${
-                    isInteractive ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"
-                  }`}
-                >
-                  <div
-                    className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-md ${service.accentBg}`}
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => {
+                      if (!isInteractive) return;
+                      handleNavigateToService(service.action);
+                    }}
+                    className={`group flex flex-col items-center text-center px-4 py-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors ${
+                      isInteractive
+                        ? "hover:bg-gray-50 cursor-pointer"
+                        : "cursor-default"
+                    }`}
                   >
-                    <service.icon className={`h-6 w-6 ${service.iconColor}`} />
-                </div>
-                  <p className="text-xs font-semibold text-gray-900 uppercase tracking-[0.15em]">
-                  {service.name}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 leading-snug">
-                    {service.description}
-                  </p>
-              </button>
-              )})}
+                    <div
+                      className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-md ${service.accentBg}`}
+                    >
+                      <service.icon
+                        className={`h-6 w-6 ${service.iconColor}`}
+                      />
+                    </div>
+                    <p className="text-xs font-semibold text-gray-900 uppercase tracking-[0.15em]">
+                      {service.name}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 leading-snug">
+                      {service.description}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
-          </div>
-        </section>
+        </div>
+      </section>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-
         {/* Analytics Cards - Government Portal Style */}
         <section className="relative mb-10 overflow-hidden rounded-2xl bg-white p-6 text-gray-900 shadow-[0_20px_45px_rgba(15,23,42,0.08)] border border-gray-100">
           <div
@@ -1023,7 +1036,9 @@ const CitizenHome: React.FC = () => {
                   key={index}
                   className="group rounded-2xl bg-white text-gray-900 p-5 shadow-lg border border-gray-100 hover:-translate-y-0.5 transition"
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${item.iconBg}`}>
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${item.iconBg}`}
+                  >
                     <item.icon className="h-6 w-6" />
                   </div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-500">
@@ -1055,18 +1070,24 @@ const CitizenHome: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
               <div className="space-y-3">
                 <p className="text-gray-700 leading-relaxed text-base">
-                  Assam, the land of the mighty Brahmaputra, is one of the most beautiful states in Northeast India. 
-                  Known for its rich cultural heritage, diverse wildlife, and tea plantations, Assam is a state that 
-                  beautifully blends tradition with modernity.
+                  Assam, the land of the mighty Brahmaputra, is one of the most
+                  beautiful states in Northeast India. Known for its rich
+                  cultural heritage, diverse wildlife, and tea plantations,
+                  Assam is a state that beautifully blends tradition with
+                  modernity.
                 </p>
                 <p className="text-gray-700 leading-relaxed text-base">
-                  The state is home to the famous Kaziranga National Park, a UNESCO World Heritage Site, which is 
-                  home to the one-horned rhinoceros. Assam's tea gardens produce some of the finest tea in the world, 
-                  and the state's vibrant festivals like Bihu showcase its rich cultural traditions.
+                  The state is home to the famous Kaziranga National Park, a
+                  UNESCO World Heritage Site, which is home to the one-horned
+                  rhinoceros. Assam's tea gardens produce some of the finest tea
+                  in the world, and the state's vibrant festivals like Bihu
+                  showcase its rich cultural traditions.
                 </p>
                 <p className="text-gray-700 leading-relaxed text-base">
-                  With a commitment to digital transformation and citizen-centric governance, the Government of Assam 
-                  is working towards making the state a model of development and progress in the region.
+                  With a commitment to digital transformation and
+                  citizen-centric governance, the Government of Assam is working
+                  towards making the state a model of development and progress
+                  in the region.
                 </p>
                 <div className="flex flex-wrap gap-3 mt-4">
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
@@ -1078,7 +1099,9 @@ const CitizenHome: React.FC = () => {
                     <p className="text-gray-700">78,438 sq km</p>
                   </div>
                   <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                    <h4 className="font-bold text-purple-900 mb-1">Population</h4>
+                    <h4 className="font-bold text-purple-900 mb-1">
+                      Population
+                    </h4>
                     <p className="text-gray-700">31.2 Million</p>
                   </div>
                 </div>
@@ -1099,7 +1122,8 @@ const CitizenHome: React.FC = () => {
                       Gateway to Northeast India
                     </h3>
                     <p className="text-sm text-blue-100">
-                      From the Brahmaputra valley to the lush tea estates, discover how digital services connect every district.
+                      From the Brahmaputra valley to the lush tea estates,
+                      discover how digital services connect every district.
                     </p>
                   </div>
                 </div>
@@ -1115,8 +1139,8 @@ const CitizenHome: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">
-              Latest Updates
-            </h2>
+                  Latest Updates
+                </h2>
                 <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
@@ -1152,8 +1176,8 @@ const CitizenHome: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">
-              Featured Schemes
-            </h2>
+                  Featured Schemes
+                </h2>
                 <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
@@ -1172,7 +1196,9 @@ const CitizenHome: React.FC = () => {
                         {scheme.status}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 leading-snug">{scheme.desc}</p>
+                    <p className="text-sm text-gray-700 leading-snug">
+                      {scheme.desc}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -1198,15 +1224,17 @@ const CitizenHome: React.FC = () => {
                 <div className="flex items-start space-x-3">
                   <Phone className="h-5 w-5 mt-1 flex-shrink-0 text-blue-400" />
                   <div>
-                    <span className="text-sm font-semibold block">Toll Free</span>
+                    <span className="text-sm font-semibold block">
+                      Toll Free
+                    </span>
                     <span className="text-sm">1800-XXX-XXXX</span>
-                </div>
+                  </div>
                 </div>
                 <div className="flex items-start space-x-3">
                   <Mail className="h-5 w-5 mt-1 flex-shrink-0 text-blue-400" />
                   <div>
                     <span className="text-sm font-semibold block">Email</span>
-                  <span className="text-sm">support@assam.gov.in</span>
+                    <span className="text-sm">support@assam.gov.in</span>
                   </div>
                 </div>
               </div>
@@ -1339,11 +1367,12 @@ const CitizenHome: React.FC = () => {
                 © 2025 Government of Assam. All rights reserved.
               </p>
               <p className="text-xs text-gray-400">
-              Content owned, maintained and updated by Government of Assam
-            </p>
+                Content owned, maintained and updated by Government of Assam
+              </p>
               <p className="text-xs text-gray-500 mt-2">
-                Designed & Developed by Department of Information Technology, Government of Assam
-            </p>
+                Designed & Developed by Department of Information Technology,
+                Government of Assam
+              </p>
             </div>
           </div>
         </div>
@@ -1379,7 +1408,7 @@ const CitizenHome: React.FC = () => {
                     selectedComplaint?.complaintNumber ===
                     complaint.complaintNumber;
                   return (
-            <button
+                    <button
                       type="button"
                       key={complaint.id}
                       onClick={() => fetchComplaintDetails(complaint)}
@@ -1397,11 +1426,15 @@ const CitizenHome: React.FC = () => {
                       </p>
                       <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                         <span>{formatReadableDate(complaint.createdAt)}</span>
-                        <span className={`rounded-full px-2 py-0.5 font-semibold text-[10px] uppercase tracking-wide ${getStatusBadgeClasses(complaint.status)}`}>
+                        <span
+                          className={`rounded-full px-2 py-0.5 font-semibold text-[10px] uppercase tracking-wide ${getStatusBadgeClasses(
+                            complaint.status
+                          )}`}
+                        >
                           {formatStatusLabel(complaint.status)}
                         </span>
                       </div>
-            </button>
+                    </button>
                   );
                 })}
               </div>
@@ -1421,7 +1454,11 @@ const CitizenHome: React.FC = () => {
                           {complaintDetails.complaint.complaintNumber}
                         </p>
                       </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusBadgeClasses(complaintDetails.complaint.status)}`}>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusBadgeClasses(
+                          complaintDetails.complaint.status
+                        )}`}
+                      >
                         {formatStatusLabel(complaintDetails.complaint.status)}
                       </span>
                     </div>
@@ -1442,7 +1479,9 @@ const CitizenHome: React.FC = () => {
                           Priority
                         </p>
                         <p className="mt-1 font-semibold text-gray-900">
-                          {formatStatusLabel(complaintDetails.complaint.priority)}
+                          {formatStatusLabel(
+                            complaintDetails.complaint.priority
+                          )}
                         </p>
                       </div>
                       <div className="rounded-xl border border-white bg-white/80 p-3">
@@ -1506,8 +1545,8 @@ const CitizenHome: React.FC = () => {
                     {complaintDetails.documents?.length ? (
                       <p className="mt-4 text-xs text-gray-500">
                         {complaintDetails.documents.length} attachment
-                        {complaintDetails.documents.length > 1 ? "s" : ""} linked
-                        with this grievance.
+                        {complaintDetails.documents.length > 1 ? "s" : ""}{" "}
+                        linked with this grievance.
                       </p>
                     ) : null}
                   </>
@@ -1531,11 +1570,14 @@ const CitizenHome: React.FC = () => {
                 <p className="text-xs uppercase tracking-[0.35em] text-white/80">
                   Citizen Access
                 </p>
-                <h2 className="text-2xl font-bold" style={{ fontFamily: 'inherit' }}>
-                {otpSent ? "Enter OTP" : "Citizen Login"}
-              </h2>
+                <h2
+                  className="text-2xl font-bold"
+                  style={{ fontFamily: "inherit" }}
+                >
+                  {otpSent ? "Enter OTP" : "Citizen Login"}
+                </h2>
                 <p className="text-sm text-white/80 mt-1">
-                {otpSent
+                  {otpSent
                     ? `OTP sent to ${mobileNumber}`
                     : "Enter your mobile number to receive an OTP"}
                 </p>
@@ -1686,7 +1728,10 @@ const CitizenHome: React.FC = () => {
                   <p className="text-xs uppercase tracking-[0.35em] text-white/80">
                     Citizen Profile
                   </p>
-                  <h2 className="text-2xl font-bold" style={{ fontFamily: 'inherit' }}>
+                  <h2
+                    className="text-2xl font-bold"
+                    style={{ fontFamily: "inherit" }}
+                  >
                     {citizenProfile?.name || user.name || "Citizen"}
                   </h2>
                   <p className="text-sm text-white/80">
@@ -1833,46 +1878,46 @@ const CitizenHome: React.FC = () => {
                 ) : (
                   <>
                     <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4 space-y-3">
-                        {citizenProfile?.name && (
+                      {citizenProfile?.name && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Name</span>
                           <span className="font-semibold text-gray-900">
-                              {citizenProfile.name}
-                            </span>
-                          </div>
-                        )}
-                        {citizenProfile?.email && (
+                            {citizenProfile.name}
+                          </span>
+                        </div>
+                      )}
+                      {citizenProfile?.email && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Email</span>
                           <span className="font-semibold text-gray-900">
-                              {citizenProfile.email}
-                            </span>
-                          </div>
-                        )}
-                        {citizenProfile?.address && (
+                            {citizenProfile.email}
+                          </span>
+                        </div>
+                      )}
+                      {citizenProfile?.address && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Address</span>
                           <span className="font-semibold text-gray-900 text-right">
-                              {citizenProfile.address}
-                            </span>
-                          </div>
-                        )}
-                        {citizenProfile?.pincode && (
+                            {citizenProfile.address}
+                          </span>
+                        </div>
+                      )}
+                      {citizenProfile?.pincode && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Pincode</span>
                           <span className="font-semibold text-gray-900">
-                              {citizenProfile.pincode}
-                            </span>
-                          </div>
-                        )}
-                        {citizenProfile?.mobileNumber && (
+                            {citizenProfile.pincode}
+                          </span>
+                        </div>
+                      )}
+                      {citizenProfile?.mobileNumber && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Mobile</span>
                           <span className="font-semibold text-gray-900">
-                              {citizenProfile.mobileNumber}
-                            </span>
-                          </div>
-                        )}
+                            {citizenProfile.mobileNumber}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-3 pt-1">
