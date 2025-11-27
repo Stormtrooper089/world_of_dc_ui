@@ -11,6 +11,7 @@ import { complaintService } from "../services/complaintService";
 import { UserRole, ComplaintPriority, ComplaintStatus, Department } from "../constants/enums";
 import { Complaint, ComplaintUpdateRequest, Officer, ComplaintDocument, Comment as ComplaintComment } from '../types';
 import { officerService } from "../services/officerService";
+import api from '../services/api';
 
 // --- TOAST NOTIFICATION COMPONENT ---
 const Toast = ({ message, type, onClose }: {
@@ -36,7 +37,7 @@ const Toast = ({ message, type, onClose }: {
   };
 
   return (
-    <div className={`fixed top-4 right-4 z-50 min-w-[320px] max-w-md p-4 rounded-lg border-2 shadow-lg flex items-start gap-3 animate-in slide-in-from-top duration-300 ${styles[type]}`}>
+    <div className={`fixed top-4 right-4 z-[60] min-w-[320px] max-w-md p-4 rounded-lg border-2 shadow-lg flex items-start gap-3 animate-in slide-in-from-top duration-300 ${styles[type]}`}>
       {icons[type]}
       <div className="flex-1">
         <p className="text-sm font-medium">{message}</p>
@@ -140,50 +141,6 @@ const FacetedFilterCheckbox = ({ label, count, checked, onChange }: {
   </label>
 );
 
-const EditableDetailRow = ({ label, value, isEditing, onEditStart, onEditCancel, children, displayValue }: {
-  label: string;
-  value: string;
-  isEditing: boolean;
-  onEditStart: () => void;
-  onEditCancel: () => void;
-  children: React.ReactNode;
-  displayValue?: string;
-}) => {
-  return (
-    <div className="group h-12">
-      <span className="text-xs text-gray-400 block mb-1">{label}</span>
-      {isEditing ? (
-        <div className="flex items-center gap-2 animate-in fade-in duration-200">
-          <div className="flex-1">
-            {children}
-          </div>
-          <button 
-            onClick={onEditCancel}
-            className="p-1.5 hover:bg-red-50 text-red-500 rounded transition-colors"
-            title="Cancel"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-800 truncate max-w-[180px]">
-            {displayValue || value || 'N/A'}
-          </span>
-          <button 
-            onClick={onEditStart}
-            className="opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-blue-50 text-blue-600 rounded"
-            title="Edit Field"
-          >
-            <Edit2 className="w-3 h-3" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// --- CREATE MODAL COMPONENT ---
 const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
   onClose: () => void;
   onSuccess: (complaint: Complaint) => void;
@@ -283,153 +240,174 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">New Complaint</h2>
-            <p className="text-xs text-gray-500">Enter the details of the issue below.</p>
+            <h2 className="text-lg font-bold text-gray-900">New Complaint Ticket</h2>
+            <p className="text-xs text-gray-500">Fill in the details to create a new ticket.</p>
           </div>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 text-gray-400 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
-          {!isCitizen && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Citizen Contact</label>
-              <input 
-                type="tel"
-                required 
-                value={formData.mobileNumber}
-                onChange={e => setFormData({...formData, mobileNumber: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Mobile Number"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Subject</label>
-            <input 
-              type="text" 
-              required
-              value={formData.subject}
-              onChange={e => setFormData({...formData, subject: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="e.g. Street light broken on Main St"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Department</label>
-              <select 
-                value={formData.department}
-                onChange={e => setFormData({...formData, department: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">Select Department</option>
-                {Object.entries(DEPARTMENT_NAMES).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
-            {!isCitizen && (
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* LEFT SECTION: Core Details */}
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Priority</label>
-                <select 
-                  value={formData.priority}
-                  onChange={e => setFormData({...formData, priority: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
-                </select>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Subject <span className="text-red-500">*</span></label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.subject}
+                  onChange={e => setFormData({...formData, subject: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="e.g. Street light broken on Main St"
+                />
               </div>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Location</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input 
-                type="text" 
-                value={formData.location}
-                onChange={e => setFormData({...formData, location: e.target.value})}
-                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Address or landmark"
-              />
-            </div>
-          </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Description <span className="text-red-500">*</span></label>
+                <textarea 
+                  required
+                  rows={6}
+                  value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  placeholder="Provide detailed information about the issue..."
+                />
+              </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Description</label>
-            <textarea 
-              required
-              rows={4}
-              value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-              placeholder="Provide details about the issue..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Attachment</label>
-            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 transition-colors text-center cursor-pointer">
-              <input 
-                type="file" 
-                onChange={handleFileChange} 
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                accept="image/*,.pdf,.doc,.docx"
-              />
-              <div className="flex flex-col items-center gap-1">
-                {attachment ? (
-                  <>
-                    <FileText className="w-6 h-6 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-600">{attachment.name}</span>
-                    <span className="text-xs text-gray-400">{(attachment.size / 1024).toFixed(1)} KB</span>
-                    <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAttachment(null);
-                        showToast('Attachment removed', 'info');
-                      }}
-                      className="mt-1 text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
-                    >
-                      <Trash2 className="w-3 h-3" /> Remove
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm text-gray-500">Click to upload file</span>
-                    <span className="text-xs text-gray-400">PNG, JPG, PDF, DOC (max 10MB)</span>
-                  </>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Attachment</label>
+                <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 transition-colors text-center cursor-pointer">
+                  <input 
+                    type="file" 
+                    onChange={handleFileChange} 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+                  <div className="flex flex-col items-center gap-1">
+                    {attachment ? (
+                      <>
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600">{attachment.name}</span>
+                        <span className="text-xs text-gray-400">{(attachment.size / 1024).toFixed(1)} KB</span>
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAttachment(null);
+                            showToast('Attachment removed', 'info');
+                          }}
+                          className="mt-1 text-xs text-red-600 hover:text-red-700 flex items-center gap-1 z-10"
+                        >
+                          <Trash2 className="w-3 h-3" /> Remove
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm text-gray-500">Click to upload file</span>
+                        <span className="text-xs text-gray-400">PNG, JPG, PDF, DOC (max 10MB)</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
+
+            {/* RIGHT SECTION: Classification */}
+            <div className="space-y-4">
+              {!isCitizen && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Citizen Contact <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                      type="tel"
+                      required 
+                      value={formData.mobileNumber}
+                      onChange={e => setFormData({...formData, mobileNumber: e.target.value})}
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Mobile Number"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Department</label>
+                <select 
+                  value={formData.department}
+                  onChange={e => setFormData({...formData, department: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Select Department</option>
+                  {Object.entries(DEPARTMENT_NAMES).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {!isCitizen && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Priority</label>
+                  <select 
+                    value={formData.priority}
+                    onChange={e => setFormData({...formData, priority: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Location</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input 
+                    type="text" 
+                    value={formData.location}
+                    onChange={e => setFormData({...formData, location: e.target.value})}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Address or landmark"
                   />
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-70">
-              {loading ? 'Creating...' : 'Create Ticket'}
+          <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-70 flex items-center justify-center gap-2"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {loading ? 'Creating Ticket...' : 'Create Ticket'}
             </button>
           </div>
         </form>
@@ -442,14 +420,12 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
 export default function ComplaintCockpitBoard() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('LIST');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filteredOfficers, setFilteredOfficers] = useState<Officer[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-  const [editingField, setEditingField] = useState<string | null>(null);
   const [tempChanges, setTempChanges] = useState<Partial<Complaint>>({});
   const [commentText, setCommentText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -489,7 +465,6 @@ export default function ComplaintCockpitBoard() {
     try {
       const data = await complaintService.getMyComplaints();
       setComplaints(data);
-      // showToast('Complaints loaded successfully', 'success');
     } catch (err) {
       console.error(err);
       showToast('Failed to load complaints', 'error');
@@ -497,6 +472,20 @@ export default function ComplaintCockpitBoard() {
       setLoading(false);
     }
   };
+
+  const fetchTicketDetails = async (complaintId: string) => {
+    setLoading(true);
+    try {
+      const data = await complaintService.getComplaintById(complaintId);
+      setComplaints(prev => prev.map(c => c.id === complaintId ? data : c));
+
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load complaint details', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };  
 
   const fetchComments = async (complaintId: string) => {
     setLoading(true);
@@ -508,7 +497,6 @@ export default function ComplaintCockpitBoard() {
           ? { ...c, comments: data }
           : c
       ));
-      // showToast('Comments loaded successfully', 'success');
     } catch (err) {
       console.error(err);
       showToast('Failed to load comments', 'error');
@@ -618,23 +606,13 @@ export default function ComplaintCockpitBoard() {
     }));
   };
 
-  const startEditing = (field: string, currentValue: any) => {
-    setEditingField(field);
-    setTempChanges(prev => ({ ...prev, [field]: currentValue }));
-  };
-
-  const cancelEditing = () => {
-    setEditingField(null);
-    setTempChanges({});
-  };
-
   const handleTempChange = (field: string, value: any) => {
     setTempChanges(prev => ({ ...prev, [field]: value }));
   };
 
   const handleDrawerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !selectedTicket) return;
+    if (!file || !selectedTicket || !selectedTicket.complaintId) return;
 
     if (file.size > 10 * 1024 * 1024) {
       showToast('File size must be less than 10MB', 'error');
@@ -648,28 +626,56 @@ export default function ComplaintCockpitBoard() {
     }
 
     setUploadingFile(true);
+    setCommentText(`\n[Uploading file: ${file.name}]`);
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('files', file);
       formData.append('complaintId', selectedTicket.complaintId?.toString() || '');
 
-      const newDoc: ComplaintDocument = {
-        id: Date.now().toString(),
-        fileName: file.name,
-        filePath: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
-        uploadedAt: new Date().toISOString()
+      const getAttachmentType = (mimeType: string): "image" | "video" | "document" => {
+        if (mimeType.startsWith('image/')) return 'image';
+        if (mimeType.startsWith('video/')) return 'video';
+        return 'document';
       };
 
-      setComplaints(prev => prev.map(c =>
-        c.id === selectedTicketId
-          ? { ...c, documents: [...(c.documents || []), newDoc] }
-          : c
-      ));
+      // const newComment: ComplaintComment = {
+      //   id: 'doc-' + Date.now(),
+      //   complaintId: selectedTicket.complaintId?.toString() || '',
+      //   commenterId: user?.id || '',
+      //   commenterRole: user?.role || 'ADMIN',
+      //   commenterName: user?.name || user?.email || 'Admin',
+      //   text: commentText,
+      //   createdAt: new Date().toISOString(),
+      //   updatedAt: new Date().toISOString(),
+      //   attachments: [{
+      //     id: 'doc-' + Date.now(),
+      //     commentId: 'doc-' + Date.now(),
+      //     fileName: file.name,
+      //     filePath: file.name,
+      //     fileSize: file.size,
+      //     mimeType: file.type,
+      //     attachmentType: getAttachmentType(file.type),
+      //     uploadedAt: new Date().toISOString()
+      //   }]
+      // };
 
+      const updatedComment = await  complaintService.addComment(selectedTicket.complaintId.toString(), commentText, [file]);
+      // if (updatedComment && updatedComment.id) {
+      //   newComment.id = updatedComment.id;
+      //   newComment.createdAt = updatedComment.createdAt;
+      //   newComment.updatedAt = updatedComment.updatedAt;
+      // }
+
+      // setComplaints(prev => prev.map(c =>
+      //   c.id === selectedTicketId
+      //     ? { ...c, comments: [...(c.comments || []), newComment] }
+      //     : c
+      // ));
       showToast('File uploaded successfully', 'success');
+      
+      fetchTicketDetails(updatedComment.complaintId.toString());
+      fetchComments(updatedComment.complaintId.toString());
     } catch (err) {
       console.error(err);
       showToast('Failed to upload file', 'error');
@@ -699,11 +705,6 @@ export default function ComplaintCockpitBoard() {
         text: commentText,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
-
-      const commentRequest = {
-        commentId: newComment.id,
-        text: commentText
       };
 
       const updatedComment = await  complaintService.addComment(selectedTicket.complaintId.toString(), commentText);
@@ -773,18 +774,19 @@ export default function ComplaintCockpitBoard() {
 
       const updatedComplaint = await complaintService.updateComplaint(updateRequest);
 
-      setComplaints(prev => prev.map(c => 
-        c.id === selectedTicketId 
-          ? { 
-              ...c, 
-              ...updatedComplaint,
-            } 
-          : c
-      ));
+      // setComplaints(prev => prev.map(c => 
+      //   c.id === selectedTicketId 
+      //     ? { 
+      //         ...c, 
+      //         ...updatedComplaint,
+      //       } 
+      //     : c
+      // ));
+
+      fetchTicketDetails(selectedTicketId);
+      fetchComments(selectedTicket.complaintId.toString());
 
       showToast("Complaint updated successfully!", 'success');
-
-      setEditingField(null);
       setTempChanges({});
       setCommentText('');
 
@@ -800,17 +802,31 @@ export default function ComplaintCockpitBoard() {
     }
   };
 
+const handleViewDocument = async (doc: any) => {
+  if (!doc.filePath) return;
+  const fileName = doc.filePath.split(/[\\/]/).pop();
+  try {
+    showToast('Opening document...', 'info');
+    const response = await api.get(`/uploads/${fileName}`, {
+      responseType: 'blob'
+    });
+    const blob = new Blob([response.data], { 
+      type: response.headers['content-type'] || 'application/pdf' 
+    });
+    const blobUrl = window.URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank', 'noopener,noreferrer');
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+  } catch (error) {
+    console.error("Error fetching document:", error);
+    showToast('Failed to load document. You may not have permission.', 'error');
+  }
+};
+
   const selectedTicket = useMemo(() => {
     if (!selectedTicketId) return null;
     const ticket = complaints.find(c => c.id === selectedTicketId);
     return { ...ticket, ...tempChanges };
   }, [complaints, selectedTicketId, tempChanges]);
-
-  const assignedOfficerName = useMemo(() => {
-    if (!selectedTicket) return 'Unassigned';
-    const officer = filteredOfficers.find(o => o.id === selectedTicket.assignedToId);
-    return officer ? officer.name : 'Unassigned';
-  }, [selectedTicket, filteredOfficers]);
 
   return (  
     <div className="h-screen flex flex-col bg-slate-50 text-slate-900 font-sans relative">
@@ -989,8 +1005,9 @@ export default function ComplaintCockpitBoard() {
                     onClick={() => { 
                       setSelectedTicketId(complaint.id); 
                       // setCommentText(''); 
+                      fetchTicketDetails(complaint.id);
                       fetchComments(complaint.complaintId?.toString() || '');
-                      setEditingField(null); 
+                      setTempChanges({}); 
                     }} 
                     className={`hover:bg-blue-50 cursor-pointer transition-colors group ${selectedTicketId === complaint.id ? 'bg-blue-50/60' : ''}`}
                   >
@@ -1029,230 +1046,259 @@ export default function ComplaintCockpitBoard() {
           </div>
         </div>
         
+        {/* --- EDIT COMPLAINT MODAL (Replaced Drawer) --- */}
         {selectedTicket && (
-          <div className="w-[480px] bg-white rounded-xl shadow-xl border border-gray-200 flex flex-col shrink-0 animate-in slide-in-from-right duration-200">
-            <div className="p-5 border-b border-gray-100 flex justify-between items-start bg-gray-50/50">
-              <div className="flex-1 mr-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-mono text-sm text-gray-500">#{selectedTicket.complaintNumber}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase border ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].bg} ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].text} ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].border}`}>
-                    {selectedTicket.priority || 'MEDIUM'}
-                  </span>
-                </div>
-                <h2 className="text-lg font-bold text-gray-900 leading-tight">{selectedTicket.subject}</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={handleSaveChanges} 
-                  disabled={isSaving}
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm disabled:opacity-70"
-                >
-                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  {isSaving ? 'Saving' : 'Save'}
-                </button>
-                <button onClick={() => setSelectedTicketId(null)} className="text-gray-400 hover:text-gray-600 p-1">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
               
-              <div className="mb-6">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h3>
-                <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded border border-gray-100">
-                  {selectedTicket.description}
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                
-                <EditableDetailRow 
-                  label="Status" 
-                  value={STATUS_CONFIG[selectedTicket.status || 'CREATED']?.label}
-                  isEditing={editingField === 'STATUS'}
-                  onEditStart={() => startEditing('STATUS', selectedTicket.status)}
-                  onEditCancel={cancelEditing}
-                >
-                  <select 
-                    className="w-full text-sm p-1 border border-blue-500 rounded focus:ring-2 focus:ring-blue-100 outline-none"
-                    value={tempChanges.status || selectedTicket.status}
-                    onChange={(e) => handleTempChange('status', e.target.value)}
-                  >
-                    {Object.keys(STATUS_CONFIG).map(s => (
-                      <option key={s} value={s}>{STATUS_CONFIG[s as keyof typeof STATUS_CONFIG].label}</option>
-                    ))}
-                  </select>
-                </EditableDetailRow>
-
-                <EditableDetailRow 
-                  label="Department" 
-                  value={selectedTicket.assignedDepartment || ''}
-                  displayValue={selectedTicket.assignedDepartment ? (DEPARTMENT_NAMES[selectedTicket.assignedDepartment] || selectedTicket.assignedDepartment) : 'Unassigned'}
-                  isEditing={editingField === 'DEPT'}
-                  onEditStart={() => startEditing('DEPT', selectedTicket.assignedDepartment)}
-                  onEditCancel={cancelEditing}
-                >
-                  <select 
-                    className="w-full text-sm p-1 border border-blue-500 rounded focus:ring-2 focus:ring-blue-100 outline-none"
-                    value={tempChanges.assignedDepartment || selectedTicket.assignedDepartment || ''}
-                    onChange={(e) => handleTempChange('assignedDepartment', e.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {Object.entries(DEPARTMENT_NAMES).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
-                    ))}
-                  </select>
-                </EditableDetailRow>
-
-                <EditableDetailRow 
-                  label="Assigned Officer" 
-                  value={selectedTicket.assignedToId || ''}
-                  displayValue={assignedOfficerName}
-                  isEditing={editingField === 'OFFICER'}
-                  onEditStart={() => startEditing('OFFICER', selectedTicket.assignedToId)}
-                  onEditCancel={cancelEditing}
-                >
-                  <select 
-                    className="w-full text-sm p-1 border border-blue-500 rounded focus:ring-2 focus:ring-blue-100 outline-none"
-                    value={selectedTicket.assignedToId || ''}
-                    onChange={(e) => handleTempChange('assignedToId', e.target.value)}
-                  >
-                    <option value="">Select Officer...</option>
-                    {filteredOfficers.map(o => (
-                      <option key={o.id} value={o.id}>{o.name}</option>
-                    ))}
-                  </select>
-                </EditableDetailRow>
-
-                <div className="h-12">
-                  <span className="text-xs text-gray-400 block mb-1">Location</span>
-                  <span className="text-sm font-medium text-gray-800 truncate block">
-                    {selectedTicket.location || 'N/A'}
-                  </span>
+              {/* MODAL HEADER */}
+              <div className="px-6 py-4 border-b border-gray-200 flex items-start justify-between bg-gray-50/80">
+                <div>
+                   <div className="flex items-center gap-3 mb-1">
+                    <span className="font-mono text-sm font-bold text-gray-500">#{selectedTicket.complaintNumber}</span>
+                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase border ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].bg} ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].text} ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].border}`}>
+                        {selectedTicket.priority || 'MEDIUM'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${STATUS_CONFIG[selectedTicket.status || 'CREATED']?.color}`}>
+                        {STATUS_CONFIG[selectedTicket.status || 'CREATED']?.label || selectedTicket.status}
+                      </span>
+                   </div>
+                   <h2 className="text-xl font-bold text-gray-900">{selectedTicket.subject}</h2>
                 </div>
-                <div className="h-12">
-                  <span className="text-xs text-gray-400 block mb-1">Citizen Contact</span>
-                  <span className="text-sm font-medium text-gray-800 truncate block">
-                    {(selectedTicket as any).mobileNumber || 'N/A'}
-                  </span>
-                </div>
-                <div className="h-12">
-                  <span className="text-xs text-gray-400 block mb-1">Created At</span>
-                  <span className="text-sm font-medium text-gray-800 truncate block">
-                    {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleDateString() : 'N/A'}
-                  </span>
-                </div>
-
-              </div>
-
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Attachments</h3>
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingFile}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 disabled:opacity-50"
-                  >
-                    {uploadingFile ? (
-                      <>
-                        <Loader2 className="w-3 h-3 animate-spin" /> Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-3 h-3" /> Add File
-                      </>
-                    )}
-                  </button>
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleDrawerFileUpload}
-                    accept="image/*,.pdf,.doc,.docx"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  {(!selectedTicket.documents || selectedTicket.documents.length === 0) && (
-                    <div className="p-3 bg-gray-50 border border-dashed border-gray-200 rounded text-center text-xs text-gray-400">
-                      No attachments yet
-                    </div>
-                  )}
-                  {selectedTicket.documents?.map((doc, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-2 bg-white border border-gray-200 rounded-lg group hover:border-blue-300 transition-colors">
-                      <div className="bg-blue-50 p-1.5 rounded text-blue-600">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{doc.fileName}</p>
-                        <p className="text-[10px] text-gray-400">
-                          {(doc.fileSize / 1024).toFixed(1)} KB • {new Date(doc.uploadedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <button className="text-gray-400 hover:text-blue-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ArrowUpRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-2">
+                   <button 
+                      onClick={handleSaveChanges} 
+                      disabled={isSaving}
+                      className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm disabled:opacity-70 mr-2"
+                    >
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      {isSaving ? 'Saving Changes' : 'Save Changes'}
+                    </button>
+                    <div className="h-8 w-px bg-gray-300 mx-2"></div>
+                    <button onClick={() => setSelectedTicketId(null)} className="p-2 rounded-full hover:bg-gray-200 text-gray-500 transition-colors">
+                      <X className="w-6 h-6" />
+                    </button>
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" /> Comments
-                </h3>
-                <div className="space-y-4 mb-4 max-h-[200px] overflow-y-auto">
-                  {(!selectedTicket.comments || selectedTicket.comments.length === 0) && (
-                    <div className="p-3 bg-gray-50 border border-dashed border-gray-200 rounded text-center text-xs text-gray-400">
-                      No comments yet. Be the first to add one!
+              {/* MODAL BODY (Grid Layout) */}
+              <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* --- LEFT COLUMN: Main Details & Comments --- */}
+                  <div className="lg:col-span-2 space-y-6">
+                    
+                    {/* Description Card */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                      <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Description</h3>
+                      <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                        {selectedTicket.description}
+                      </p>
                     </div>
-                  )}
-                  {selectedTicket.comments?.map((c, i) => (
-                    <div key={i} className="flex gap-3 animate-in fade-in duration-200">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shrink-0">
-                        {c.commenterName?.charAt(0).toUpperCase() || 'A'}
+
+                    {/* Attributes Card */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                      <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                         <div>
+                            <span className="text-xs text-gray-400 block mb-1">Location</span>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              {selectedTicket.location || 'N/A'}
+                            </div>
+                         </div>
+                         <div>
+                            <span className="text-xs text-gray-400 block mb-1">Citizen Contact</span>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <Phone className="w-4 h-4 text-gray-400" />
+                              {(selectedTicket as any).mobileNumber || 'N/A'}
+                            </div>
+                         </div>
+                         <div>
+                            <span className="text-xs text-gray-400 block mb-1">Reported On</span>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString() : 'N/A'}
+                            </div>
+                         </div>
                       </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-xs font-medium text-gray-900">{c.commenterName || 'Admin'}</span>
-                          <span className="text-[10px] text-gray-400">{new Date(c.createdAt).toLocaleString()}</span>
+                    </div>
+
+                    {/* Attachments Card */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Attachments</h3>
+                          <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingFile}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {uploadingFile ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                            Add File
+                          </button>
+                           <input 
+                            type="file" 
+                            className="hidden" 
+                            ref={fileInputRef} 
+                            onChange={handleDrawerFileUpload}
+                            accept="image/*,.pdf,.doc,.docx"
+                          />
                         </div>
-                        <p className="text-xs text-gray-600 mt-0.5 bg-gray-50 p-2 rounded">{c.text}</p>
-                      </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                           {(!selectedTicket.documents || selectedTicket.documents.length === 0) && (
+                              <div className="col-span-full p-4 bg-gray-50 border border-dashed border-gray-200 rounded text-center text-xs text-gray-400">
+                                No attachments found
+                              </div>
+                            )}
+                            {selectedTicket.documents?.map((doc, idx) => (
+                              <div 
+                                key={idx} 
+                                onClick={() => handleViewDocument(doc)}
+                                className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg group hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer"
+                              >
+                                <div className="bg-blue-50 p-2 rounded text-blue-600">
+                                  <FileText className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-800 truncate">{doc.fileName}</p>
+                                  <p className="text-[10px] text-gray-400">
+                                    {(doc.fileSize / 1024).toFixed(1)} KB • {new Date(doc.uploadedAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                              </div>
+                            ))}
+                        </div>
                     </div>
-                  ))}
-                </div>
-                <div className="relative">
-                  <textarea 
-                    rows={2}
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Type a note or comment..." 
-                    className="w-full text-xs pl-3 pr-10 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleAddComment();
-                      }
-                    }}
-                  />
-                  <button 
-                    onClick={handleAddComment} 
-                    disabled={isAddingComment || !commentText.trim()}
-                    className="absolute right-2 bottom-2 text-blue-600 hover:text-blue-800 disabled:opacity-40 disabled:cursor-not-allowed"
-                    title="Add comment (Enter)"
-                  >
-                    {isAddingComment ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ArrowUpRight className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1">Press Enter to send, Shift+Enter for new line</p>
-              </div>
 
+                    {/* Comments Card (Moved to Left Column) */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                           <MessageSquare className="w-4 h-4" /> Comments
+                        </h3>
+                        
+                        <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto pr-1">
+                             {(!selectedTicket.comments || selectedTicket.comments.length === 0) && (
+                                <div className="text-center py-8">
+                                  <div className="bg-gray-50 rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-2">
+                                    <MessageSquare className="w-5 h-5 text-gray-300" />
+                                  </div>
+                                  <p className="text-xs text-gray-400">No comments yet</p>
+                                </div>
+                              )}
+                             {selectedTicket.comments?.map((c, i) => (
+                                <div key={i} className="flex gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shrink-0 border border-blue-200">
+                                    {c.commenterName?.charAt(0).toUpperCase() || 'A'}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex justify-between items-baseline mb-1">
+                                      <span className="text-xs font-bold text-gray-900">{c.commenterName || 'Admin'}</span>
+                                      <span className="text-[10px] text-gray-400">{new Date(c.createdAt).toLocaleString()}</span>
+                                    </div>
+                                    <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-br-lg rounded-bl-lg rounded-tr-lg border border-gray-100">
+                                      {c.text}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                        </div>
+
+                        <div className="relative mt-2">
+                          <textarea 
+                            rows={3}
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            placeholder="Type a note or comment..." 
+                            className="w-full text-sm pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleAddComment();
+                              }
+                            }}
+                          />
+                          <button 
+                            onClick={handleAddComment} 
+                            disabled={isAddingComment || !commentText.trim()}
+                            className="absolute right-2 bottom-2 p-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-400 transition-colors"
+                            title="Add comment (Enter)"
+                          >
+                            {isAddingComment ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <ArrowUpRight className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* --- RIGHT COLUMN: Administrative Controls Only --- */}
+                  <div className="space-y-6">
+                    
+                    {/* Management Card */}
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-5 sticky top-6">
+                       
+                       <div>
+                          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Status</label>
+                          <select 
+                            className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            value={tempChanges.status || selectedTicket.status}
+                            onChange={(e) => handleTempChange('status', e.target.value)}
+                          >
+                            {Object.keys(STATUS_CONFIG).map(s => (
+                              <option key={s} value={s}>{STATUS_CONFIG[s as keyof typeof STATUS_CONFIG].label}</option>
+                            ))}
+                          </select>
+                       </div>
+
+                       <div>
+                          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Priority</label>
+                           <select 
+                            className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            value={tempChanges.priority || selectedTicket.priority}
+                            onChange={(e) => handleTempChange('priority', e.target.value)}
+                          >
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="URGENT">Urgent</option>
+                          </select>
+                       </div>
+
+                       <div>
+                          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Assigned Department</label>
+                          <select 
+                            className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            value={tempChanges.assignedDepartment || selectedTicket.assignedDepartment || ''}
+                            onChange={(e) => handleTempChange('assignedDepartment', e.target.value)}
+                          >
+                            <option value="">Unassigned</option>
+                            {Object.entries(DEPARTMENT_NAMES).map(([k, v]) => (
+                              <option key={k} value={k}>{v}</option>
+                            ))}
+                          </select>
+                       </div>
+
+                       <div>
+                          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Assigned Officer</label>
+                          <select 
+                            className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            value={selectedTicket.assignedToId || ''}
+                            onChange={(e) => handleTempChange('assignedToId', e.target.value)}
+                          >
+                            <option value="">Select Officer...</option>
+                            {filteredOfficers.map(o => (
+                              <option key={o.id} value={o.id}>{o.name}</option>
+                            ))}
+                          </select>
+                       </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+              
             </div>
           </div>
         )}
