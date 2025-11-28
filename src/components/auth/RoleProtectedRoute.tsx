@@ -1,6 +1,6 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface Props {
   children: React.ReactNode;
@@ -11,12 +11,22 @@ const RoleProtectedRoute: React.FC<Props> = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (isLoading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
 
-  if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!isAuthenticated)
+    return <Navigate to="/" state={{ from: location }} replace />;
 
   if (!user || !allowedRoles.includes(user.role as string)) {
-    return <div className="min-h-screen flex items-center justify-center">Access denied</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Access denied
+      </div>
+    );
   }
 
   return <>{children}</>;

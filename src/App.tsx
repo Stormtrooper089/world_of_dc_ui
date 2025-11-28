@@ -5,7 +5,6 @@ import {
   BrowserRouter as Router,
   Routes,
 } from "react-router-dom";
-import LoginForm from "./components/auth/LoginForm";
 import OtpVerification from "./components/auth/OtpVerification";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
@@ -37,16 +36,6 @@ const AppRoutes: React.FC = () => {
       <Route path="/officer-login" element={<Officer />} />
       <Route path="/customer2" element={<Home />} />
       <Route path="/verify-otp" element={<OtpVerification />} />
-      <Route
-        path="/login"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/officer-dashboard" replace />
-          ) : (
-            <LoginForm />
-          )
-        }
-      />
       <Route
         path="/signup"
         element={

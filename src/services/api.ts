@@ -39,10 +39,10 @@ api.interceptors.response.use(
         !url.includes("/citizen/") &&
         !url.includes("/officer/")
       ) {
-        // Token expired or invalid - redirect to login for protected endpoints
+        // Token expired or invalid - redirect to home for protected endpoints
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+        window.location.href = "/";
       }
     }
     return Promise.reject(error);

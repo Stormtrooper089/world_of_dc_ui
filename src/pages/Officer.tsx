@@ -8,6 +8,7 @@ import {
   User, Lock, Mail, Phone, Building, Briefcase, 
   Shield, Loader2, AlertCircle, CheckCircle2, ArrowRight 
 } from "lucide-react";
+import { Department, UserRole, getDepartmentLabel, getUserRoleLabel } from "../constants/enums";
 
 const Officer: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -67,9 +68,18 @@ const Officer: React.FC = () => {
       await officerLogin(data);
       navigate("/officer-dashboard"); 
     } catch (err: any) {
-      if (err.response?.status === 401) setError("Invalid credentials.");
-      else if (err.response?.status === 403) setError("Account not approved yet.");
-      else setError("Login failed. Please try again.");
+      // First, try to get the error message from backend response
+      const backendMessage = err.response?.data?.message || err.message;
+      
+      if (backendMessage && backendMessage !== "Officer login failed") {
+        setError(backendMessage);
+      } else if (err.response?.status === 401) {
+        setError("Invalid credentials.");
+      } else if (err.response?.status === 403) {
+        setError("Account not approved yet.");
+      } else {
+        setError("Login failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -199,11 +209,26 @@ const Officer: React.FC = () => {
                 />
               </div>
 
-              <InputField 
-                icon={Building} label="Department" placeholder="e.g. Sanitation"
-                registration={register("department", { required: "Required" })}
-                error={errors.department}
-              />
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Building className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    {...register("department", { required: "Required" })}
+                    className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                  >
+                    <option value="">Select Department</option>
+                    {Object.values(Department).map((dept) => (
+                      <option key={dept} value={dept}>
+                        {getDepartmentLabel(dept)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {errors.department && <p className="text-xs text-red-600 mt-1">{errors.department.message}</p>}
+              </div>
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</label>
@@ -216,9 +241,11 @@ const Officer: React.FC = () => {
                     className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
                   >
                     <option value="">Select Role</option>
-                    <option value="DISTRICT_COMMISSIONER">District Commissioner</option>
-                    <option value="BLOCK_DEVELOPMENT_OFFICER">Block Dev. Officer</option>
-                    <option value="GRAM_PANCHAYAT_OFFICER">Gram Panchayat Officer</option>
+                    {Object.values(UserRole).map((role) => (
+                      <option key={role} value={role}>
+                        {getUserRoleLabel(role)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 {errors.role && <p className="text-xs text-red-600 mt-1">{errors.role.message}</p>}

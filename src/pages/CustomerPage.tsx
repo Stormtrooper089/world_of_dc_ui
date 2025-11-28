@@ -276,7 +276,7 @@ const CustomerPage: React.FC = () => {
   const handleCreateComplaint = () => {
     // Citizens must be authenticated to create complaints
     if (!isAuthenticated) {
-      navigate("/login");
+      navigate("/");
       return;
     }
     setShowComplaintModal(true);

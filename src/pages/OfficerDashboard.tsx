@@ -567,6 +567,22 @@ const OfficerDashboard: React.FC = () => {
                             </span>
                           </div>
                         )}
+                        <div className="flex justify-between items-center pt-2 border-t">
+                          <span className="text-sm font-medium text-gray-700">
+                            Approval Status:
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              officerProfile?.isApproved
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
+                          >
+                            {officerProfile?.isApproved
+                              ? "✓ Approved"
+                              : "⏳ Pending Approval"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
