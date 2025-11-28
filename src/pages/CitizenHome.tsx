@@ -20,14 +20,17 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  authService,
-  CarouselSlide,
-  PortalStatistics,
-} from "../services/authService";
-import { complaintService } from "../services/complaintService";
+import image1 from "../assets/image-1.jpg";
+import image2 from "../assets/image-2.jpg";
+import image3 from "../assets/image-3.jpg";
+import assamHeroImage from "../assets/image-4.jpg";
+import image5 from "../assets/image-5.jpg";
+import image6 from "../assets/image-6.jpg";
+import image7 from "../assets/image-7.jpg";
 import DialogBox from "../components/common/DialogBox";
 import { useAuth } from "../contexts/AuthContext";
+import { authService, CarouselSlide } from "../services/authService";
+import { complaintService } from "../services/complaintService";
 import {
   Citizen,
   CitizenUpdateData,
@@ -36,14 +39,6 @@ import {
   ComplaintHistory,
 } from "../types";
 import GrievanceForm from "./GrievanceFile/GrievanceForm";
-import image1 from "../assets/image-1.jpg";
-import image2 from "../assets/image-2.jpg";
-import image3 from "../assets/image-3.jpg";
-import image4 from "../assets/image-4.jpg";
-import image5 from "../assets/image-5.jpg";
-import image6 from "../assets/image-6.jpg";
-import image7 from "../assets/image-7.jpg";
-import assamHeroImage from "../assets/image-4.jpg";
 
 const heroImages = [image7, image5, image6, image1, image2, image3];
 
@@ -174,6 +169,7 @@ const CitizenHome: React.FC = () => {
       description: "Websites & online tools",
       accentBg: "bg-[#fdecec] text-[#f45d5d]",
       iconColor: "text-[#f45d5d]",
+      action: "services",
     },
     {
       name: "News",
@@ -181,6 +177,7 @@ const CitizenHome: React.FC = () => {
       description: "Latest updates & alerts",
       accentBg: "bg-[#fdecec] text-[#f45d5d]",
       iconColor: "text-[#f45d5d]",
+      action: "schemes",
     },
     {
       name: "Government",
@@ -188,6 +185,7 @@ const CitizenHome: React.FC = () => {
       description: "Ministers & departments",
       accentBg: "bg-[#fdecec] text-[#f45d5d]",
       iconColor: "text-[#f45d5d]",
+      action: "government",
     },
   ];
 
@@ -572,6 +570,39 @@ const CitizenHome: React.FC = () => {
           openTrackModal();
         }
         break;
+      case "services":
+        if (!isAuthenticated) {
+          openLoginModal();
+        } else {
+          window.open(
+            "https://assam.gov.in/eservices",
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }
+        break;
+      case "schemes":
+        if (!isAuthenticated) {
+          openLoginModal();
+        } else {
+          window.open(
+            "https://cm.assam.gov.in/schemes",
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }
+        break;
+      case "government":
+        if (!isAuthenticated) {
+          openLoginModal();
+        } else {
+          window.open(
+            "https://assam.gov.in/",
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }
+        break;
       default:
         break;
     }
@@ -791,9 +822,12 @@ const CitizenHome: React.FC = () => {
                 </div>
                 <div className="hidden sm:block">
                   <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">
-                    Government of Assam
+                    বলবে কাছাড়
                   </h1>
                   <p className="text-xs text-white/90 font-medium drop-shadow-md">
+                    Government of Assam
+                  </p>
+                  <p className="text-xs text-white/80 font-medium drop-shadow-md mt-0.5">
                     Citizen Grievance Portal
                   </p>
                 </div>

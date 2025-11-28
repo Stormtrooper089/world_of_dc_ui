@@ -115,7 +115,10 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
+    <form
+      onSubmit={handleSubmit(onFormSubmit)}
+      className="space-y-6 bg-purple-50/30 rounded-lg p-4"
+    >
       {/* Error Message */}
       {error && (
         <div className="rounded-md bg-red-50 p-4 border border-red-200">
@@ -134,7 +137,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
       <div>
         <label
           htmlFor="subject"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-purple-900"
         >
           Subject *
         </label>
@@ -142,7 +145,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           {...register("subject", { required: "Subject is required" })}
           type="text"
           id="subject"
-          className={`mt-1 block w-full rounded-md border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white ${
             errors.subject ? "border-red-500" : ""
           }`}
           placeholder="Enter subject"
@@ -157,7 +160,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
       <div>
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-purple-900"
         >
           Description *
         </label>
@@ -165,7 +168,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           {...register("description", { required: "Description is required" })}
           id="description"
           rows={4}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white ${
             errors.description ? "border-red-500" : ""
           }`}
           placeholder="Enter description"
@@ -182,7 +185,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
       <div>
         <label
           htmlFor="location"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-purple-900"
         >
           Location
         </label>
@@ -190,7 +193,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           {...register("location")}
           type="text"
           id="location"
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white ${
             errors.location ? "border-red-500" : ""
           }`}
           placeholder="Enter location"
@@ -205,14 +208,14 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
       <div>
         <label
           htmlFor="department"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-purple-900"
         >
           Department
         </label>
         <select
           {...register("department")}
           id="department"
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white ${
             errors.department ? "border-red-500" : ""
           }`}
           disabled={isSubmitting}
@@ -234,7 +237,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
       <div>
         <label
           htmlFor="mobileNumber"
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-purple-900"
         >
           Mobile Number
         </label>
@@ -248,7 +251,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           type="tel"
           id="mobileNumber"
           maxLength={10}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white ${
             errors.mobileNumber ? "border-red-500" : ""
           }`}
           placeholder={"9000000000"}
@@ -263,7 +266,9 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
 
       {/* Files */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">Files</label>
+        <label className="block text-sm font-medium text-purple-900">
+          Files
+        </label>
         <div className="mt-1 space-y-2">
           <div className="flex items-center gap-2">
             <input
@@ -276,7 +281,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
             />
             <label
               htmlFor="files"
-              className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${
+              className={`inline-flex items-center gap-2 px-4 py-2 border border-purple-300 rounded-md shadow-sm text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors ${
                 isSubmitting
                   ? "opacity-50 cursor-not-allowed pointer-events-none"
                   : "cursor-pointer"
@@ -293,13 +298,13 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
               {selectedFiles.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-md border border-gray-200 hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-purple-50 rounded-md border border-purple-200 hover:bg-purple-100 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-purple-900 truncate">
                       {file.name}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-purple-600 mt-0.5">
                       {(file.size / 1024).toFixed(2)} KB
                     </p>
                   </div>
@@ -323,13 +328,13 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+      <div className="flex justify-end gap-3 pt-6 border-t border-purple-200">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-purple-700 bg-white border border-purple-300 rounded-md shadow-sm hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Cancel
           </button>
@@ -337,7 +342,7 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? "Submitting..." : "Submit"}
         </button>
