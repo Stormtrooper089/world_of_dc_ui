@@ -818,9 +818,6 @@ const CitizenHome: React.FC = () => {
                   <span className="text-blue-700 font-bold text-xl">AS</span>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">
-                    বলবে কাছাড়
-                  </h1>
                   <p className="text-xs text-white/90 font-medium drop-shadow-md">
                     Government of Assam
                   </p>
@@ -829,6 +826,7 @@ const CitizenHome: React.FC = () => {
                   </p>
                 </div>
               </div>
+              <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">বলবে কাছাড়</h1>
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex space-x-1" aria-label="Primary">
