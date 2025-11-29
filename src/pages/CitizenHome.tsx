@@ -18,7 +18,7 @@ import {
   X,
   Youtube,
 } from "lucide-react";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import image1 from "../assets/image-1.jpg";
 import image2 from "../assets/image-2.jpg";
@@ -572,33 +572,21 @@ const CitizenHome: React.FC = () => {
         }
         break;
       case "services":
-        if (!isAuthenticated) {
-          openLoginModal();
-        } else {
-          window.open(
-            "https://assam.gov.in/eservices",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        }
+        window.open(
+          "https://assam.gov.in/eservices",
+          "_blank",
+          "noopener,noreferrer"
+        );
         break;
       case "schemes":
-        if (!isAuthenticated) {
-          openLoginModal();
-        } else {
-          window.open(
-            "https://cm.assam.gov.in/schemes",
-            "_blank",
-            "noopener,noreferrer"
-          );
-        }
+        window.open(
+          "https://cm.assam.gov.in/schemes",
+          "_blank",
+          "noopener,noreferrer"
+        );
         break;
       case "government":
-        if (!isAuthenticated) {
-          openLoginModal();
-        } else {
-          window.open("https://assam.gov.in/", "_blank", "noopener,noreferrer");
-        }
+        window.open("https://assam.gov.in/", "_blank", "noopener,noreferrer");
         break;
       default:
         break;
