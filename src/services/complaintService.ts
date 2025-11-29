@@ -175,4 +175,11 @@ export const complaintService = {
   async deleteComment(commentId: string): Promise<void> {
     await api.delete(`/complaints/comments/${commentId}`);
   },
+
+  async getAttachments(complaintId: string): Promise<ComplaintDocument[]> {
+    const response = await api.get<ApiResponse<ComplaintDocument[]>>(
+      `/files/complaints/${complaintId}`
+    );
+    return response.data.data;
+  }
 };

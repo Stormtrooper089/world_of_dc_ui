@@ -516,6 +516,52 @@ export default function ComplaintCockpitBoard() {
     }
   };
 
+  const fetchAttachments = async (complaintId: string) => {
+    setLoading(true);
+    try {
+      const data = await complaintService.getAttachments(complaintId);
+      // Update the complaint's documents in state
+      setComplaints(prev => prev.map(c => 
+        c.complaintId?.toString() === complaintId 
+          ? { ...c, documents: data }
+          : c
+      ));
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load attachments', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const fetchFullTicketData = async (ticketId: string, businessId: string) => {
+    setLoading(true);
+    try {
+      // 1. Run both API calls in parallel for speed
+      const [ticketData, commentsData] = await Promise.all([
+        complaintService.getComplaintById(ticketId),
+        complaintService.getComments(businessId)
+      ]);
+
+      // 2. Merge the data into a single object
+      const fullTicketData = { 
+        ...ticketData, 
+        comments: commentsData 
+      };
+
+      // 3. Update the Complaints List (Background Table)
+      setComplaints(prev => prev.map(c => 
+        c.id === ticketId ? fullTicketData : c
+      ));
+
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load ticket details', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchOfficers = async () => {
     try {
       const officersList = await officerService.getAllOfficers();
@@ -621,82 +667,99 @@ export default function ComplaintCockpitBoard() {
     setTempChanges(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleDrawerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedTicket || !selectedTicket.complaintId) return;
+  const handleSaveChanges = async () => {
+      // Validation checks
+      if (!selectedTicketId || !selectedTicket || !selectedTicket.complaintId) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      showToast('File size must be less than 10MB', 'error');
-      return;
-    }
+      const isAdminRole = user?.role === 'DISTRICT_COMMISSIONER' || user?.role === 'ADMIN';
+      const isAssignedOfficer = selectedTicket.assignedToId === user?.id;
+      // logic: Admins can edit anything. Officers can edit their own. Unassigned tickets can be grabbed by admins.
+      const canEdit = isAdminRole || isAssignedOfficer || (!selectedTicket.assignedToId && isAdminRole);
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(file.type)) {
-      showToast('Invalid file type. Please upload images, PDF, or Word documents', 'error');
-      return;
-    }
-
-    setUploadingFile(true);
-    setCommentText(`\n[Uploading file: ${file.name}]`);
-
-    try {
-      const formData = new FormData();
-      formData.append('files', file);
-      formData.append('complaintId', selectedTicket.complaintId?.toString() || '');
-
-      const getAttachmentType = (mimeType: string): "image" | "video" | "document" => {
-        if (mimeType.startsWith('image/')) return 'image';
-        if (mimeType.startsWith('video/')) return 'video';
-        return 'document';
-      };
-
-      // const newComment: ComplaintComment = {
-      //   id: 'doc-' + Date.now(),
-      //   complaintId: selectedTicket.complaintId?.toString() || '',
-      //   commenterId: user?.id || '',
-      //   commenterRole: user?.role || 'ADMIN',
-      //   commenterName: user?.name || user?.email || 'Admin',
-      //   text: commentText,
-      //   createdAt: new Date().toISOString(),
-      //   updatedAt: new Date().toISOString(),
-      //   attachments: [{
-      //     id: 'doc-' + Date.now(),
-      //     commentId: 'doc-' + Date.now(),
-      //     fileName: file.name,
-      //     filePath: file.name,
-      //     fileSize: file.size,
-      //     mimeType: file.type,
-      //     attachmentType: getAttachmentType(file.type),
-      //     uploadedAt: new Date().toISOString()
-      //   }]
-      // };
-
-      const updatedComment = await  complaintService.addComment(selectedTicket.complaintId.toString(), commentText, [file]);
-      // if (updatedComment && updatedComment.id) {
-      //   newComment.id = updatedComment.id;
-      //   newComment.createdAt = updatedComment.createdAt;
-      //   newComment.updatedAt = updatedComment.updatedAt;
-      // }
-
-      // setComplaints(prev => prev.map(c =>
-      //   c.id === selectedTicketId
-      //     ? { ...c, comments: [...(c.comments || []), newComment] }
-      //     : c
-      // ));
-      showToast('File uploaded successfully', 'success');
-      
-      fetchTicketDetails(updatedComment.complaintId.toString());
-      fetchComments(updatedComment.complaintId.toString());
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to upload file', 'error');
-    } finally {
-      setUploadingFile(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      if (!canEdit) {
+        showToast("You don't have permission to edit this complaint", 'error');
+        return;
       }
-    }
-  };
+
+      // We check if there are no keys in tempChanges AND no text in the comment box.
+      const hasModifications = Object.keys(tempChanges).length > 0;
+
+      if (!hasModifications) {
+        // Return immediately if there is nothing to save
+        return;
+      }
+
+      setIsSaving(true);
+
+      try {
+        const currentData = { ...selectedTicket, ...tempChanges };
+
+        const updateRequest = {
+          complaintId: selectedTicket.complaintId, // Using the business ID for the DTO
+          subject: currentData.subject,
+          description: currentData.description,
+          location: currentData.location,
+          priority: currentData.priority,
+          status: currentData.status,
+          assignedDepartment: currentData.assignedDepartment,
+          assignedToId: currentData.assignedToId,
+          
+          // Handle remarks/comments added during save
+          // ...(commentText.trim() && { actionRemarks: commentText }),
+
+          ...(isAdminRole && 
+            tempChanges.assignedDepartment && 
+            tempChanges.assignedDepartment !== selectedTicket.assignedDepartment && {
+              assignedDepartment: tempChanges.assignedDepartment,
+              departmentRemarks: commentText || "Department reassigned by Admin",
+          }),
+
+          ...(tempChanges.assignedToId && 
+            tempChanges.assignedToId !== selectedTicket.assignedToId && {
+              assignedToId: tempChanges.assignedToId,
+          }),
+        };
+
+        const updatedComplaint = await complaintService.updateComplaint(updateRequest);
+
+        // 1. Update the Background List
+        setComplaints(prev => prev.map(c => 
+          c.id === selectedTicketId ? { ...c, ...updatedComplaint } : c
+        ));
+
+        // 2. IMPORTANT: Update the Active Modal State immediately
+        // This ensures the UI reflects changes without needing a full re-fetch delay
+        // setSelectedTicket(prev => (!prev ? null : {
+        //   ...prev,
+        //   ...updatedComplaint
+        // }));
+
+        // 3. Re-fetch details to ensure server-calculated fields (like logs/history) are synced
+        // await fetchTicketDetails(selectedTicketId);
+        await fetchFullTicketData(selectedTicketId, selectedTicket.complaintId.toString());
+        
+        // 4. If a comment was added via actionRemarks, fetch comments too
+        // if(commentText.trim()) {
+        //    await fetchComments(selectedTicket.complaintId.toString());
+        // }
+
+        showToast("Complaint updated successfully!", 'success');
+        
+
+      } catch (err) {
+        console.error(err);
+        const errorMessage = err instanceof Error 
+          ? err.message 
+          : (err as any)?.response?.data?.message || "Failed to update complaint";
+        
+        showToast(errorMessage, 'error');
+      } finally {
+        setIsSaving(false);
+        setTempChanges({});
+        // setCommentText(''); // Clear comment box
+      }
+    };
+
 
   const handleAddComment = async () => {
     if (!commentText.trim() || !selectedTicket || !selectedTicket.complaintId) {
@@ -707,32 +770,32 @@ export default function ComplaintCockpitBoard() {
     setIsAddingComment(true);
 
     try {
-      const newComment: ComplaintComment = {
-        id: 'temp-' + Date.now(),
-        complaintId: selectedTicket.complaintId.toString(),
-        commenterId: user?.id || '',
-        commenterRole: user?.role || 'ADMIN',
-        commenterName: user?.name || user?.email || 'Admin',
-        text: commentText,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // API Call
+      const updatedComment = await complaintService.addComment(
+        selectedTicket.complaintId.toString(), 
+        commentText
+      );
 
-      const updatedComment = await  complaintService.addComment(selectedTicket.complaintId.toString(), commentText);
-      if (updatedComment && updatedComment.id) {
-        newComment.id = updatedComment.id;
-        newComment.createdAt = updatedComment.createdAt;
-        newComment.updatedAt = updatedComment.updatedAt;
-      }
+      // 1. Update the Modal State (This makes it appear immediately)
+      // setSelectedTicket(prev => {
+      //   if (!prev) return null;
+      //   const currentComments = prev.comments || [];
+      //   return {
+      //     ...prev,
+      //     comments: [...currentComments, updatedComment]
+      //   };
+      // });
 
+      // 2. Update the background list (optional, but good for consistency)
       setComplaints(prev => prev.map(c =>
         c.id === selectedTicketId
-          ? { ...c, comments: [...(c.comments || []), newComment] }
+          ? { ...c, comments: [...(c.comments || []), updatedComment] }
           : c
       ));
 
       showToast('Comment added successfully', 'success');
       setCommentText('');
+      
     } catch (err) {
       console.error(err);
       showToast('Failed to add comment', 'error');
@@ -741,97 +804,85 @@ export default function ComplaintCockpitBoard() {
     }
   };
 
-  const handleSaveChanges = async () => {
-    if (!selectedTicketId || !selectedTicket || !selectedTicket.complaintId) return;
 
-    const isAdminRole = user?.role === 'DISTRICT_COMMISSIONER' || user?.role === 'ADMIN';
-    const isAssignedOfficer = selectedTicket.assignedToId === user?.id;
-    const canEdit = isAdminRole || isAssignedOfficer || (!selectedTicket.assignedToId && isAdminRole);
+  const handleDrawerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedTicket || !selectedTicket.complaintId) return;
 
-    if (!canEdit) {
-      showToast("You don't have permission to edit this complaint", 'error');
+    // Size Validation (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('File size must be less than 10MB', 'error');
       return;
     }
 
-    setIsSaving(true);
+    // Type Validation
+    const allowedTypes = [
+        'image/jpeg', 'image/png', 'image/jpg', 
+        'application/pdf', 'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Invalid file type. Please upload images, PDF, or Word documents', 'error');
+      return;
+    }
+
+    setUploadingFile(true);
+    // Optional: Update text to show something is happening
+    const uploadNote = commentText ? commentText : `[Attached file: ${file.name}]`;
 
     try {
-      const currentData = { ...selectedTicket, ...tempChanges };
+      // API Call
+      const response = await complaintService.addComment(
+        selectedTicket.complaintId.toString(), 
+        uploadNote, 
+        [file] // Assuming service takes array of files
+      );
 
-      const updateRequest = {
-        complaintId: selectedTicket.complaintId, 
-        subject: currentData.subject,
-        description: currentData.description,
-        location: currentData.location,
-        priority: currentData.priority,
-        status: currentData.status,
-        assignedDepartment: currentData.assignedDepartment,
-        assignedToId: currentData.assignedToId,
-        
-        ...(commentText.trim() && { actionRemarks: commentText }),
+      showToast('File uploaded successfully', 'success');
 
-        ...(isAdminRole && 
-           tempChanges.assignedDepartment && 
-           tempChanges.assignedDepartment !== selectedTicket.assignedDepartment && {
-            assignedDepartment: tempChanges.assignedDepartment,
-            departmentRemarks: commentText || "Department reassigned by Admin",
-        }),
-
-        ...(tempChanges.assignedToId && 
-           tempChanges.assignedToId !== selectedTicket.assignedToId && {
-            assignedToId: tempChanges.assignedToId,
-        }),
-      };
-
-      const updatedComplaint = await complaintService.updateComplaint(updateRequest);
-
-      // setComplaints(prev => prev.map(c => 
-      //   c.id === selectedTicketId 
-      //     ? { 
-      //         ...c, 
-      //         ...updatedComplaint,
-      //       } 
-      //     : c
-      // ));
-
-      fetchTicketDetails(selectedTicketId);
-      fetchComments(selectedTicket.complaintId.toString());
-
-      showToast("Complaint updated successfully!", 'success');
-      setTempChanges({});
-      setCommentText('');
+      // CRITICAL FIX: 
+      // Attachments usually update the 'documents' list on the Complaint entity 
+      // AND create a comment. We must re-fetch the ticket details to get the 
+      // updated 'documents' array to show in the "Attachments" card.
+      
+      // 1. Fetch updated Ticket (updates Documents list)
+      // await fetchTicketDetails(selectedTicket.complaintId.toString()); 
+      
+      // 2. Fetch updated Comments (updates Comments list)
+      await fetchComments(selectedTicket.complaintId.toString());
 
     } catch (err) {
       console.error(err);
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : (err as any)?.response?.data?.message || "Failed to update complaint";
-      
-      showToast(errorMessage, 'error');
+      showToast('Failed to upload file', 'error');
     } finally {
-      setIsSaving(false);
+      setCommentText('');
+      setUploadingFile(false);
+      // Reset input so same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-const handleViewDocument = async (doc: any) => {
-  if (!doc.filePath) return;
-  const fileName = doc.filePath.split(/[\\/]/).pop();
-  try {
-    showToast('Opening document...', 'info');
-    const response = await api.get(`/uploads/${fileName}`, {
-      responseType: 'blob'
-    });
-    const blob = new Blob([response.data], { 
-      type: response.headers['content-type'] || 'application/pdf' 
-    });
-    const blobUrl = window.URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank', 'noopener,noreferrer');
-    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
-  } catch (error) {
-    console.error("Error fetching document:", error);
-    showToast('Failed to load document. You may not have permission.', 'error');
-  }
-};
+  const handleViewDocument = async (doc: any) => {
+    if (!doc.filePath) return;
+    const fileName = doc.filePath.split(/[\\/]/).pop();
+    try {
+      showToast('Opening document...', 'info');
+      const response = await api.get(`/uploads/${fileName}`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { 
+        type: response.headers['content-type'] || 'application/pdf' 
+      });
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      showToast('Failed to load document. You may not have permission.', 'error');
+    }
+  };
 
   const selectedTicket = useMemo(() => {
     if (!selectedTicketId) return null;
@@ -1031,8 +1082,7 @@ const handleViewDocument = async (doc: any) => {
                       key={complaint.id} 
                       onClick={() => { 
                         setSelectedTicketId(complaint.id); 
-                        fetchTicketDetails(complaint.id);
-                        fetchComments(complaint.complaintId?.toString() || '');
+                        fetchFullTicketData(complaint.id, complaint.complaintId.toString());
                         setTempChanges({}); 
                       }} 
                       className={`hover:bg-blue-50 cursor-pointer transition-colors group ${selectedTicketId === complaint.id ? 'bg-blue-50/60' : ''}`}
@@ -1094,7 +1144,7 @@ const handleViewDocument = async (doc: any) => {
                 <div className="flex items-center gap-2">
                    <button 
                       onClick={handleSaveChanges} 
-                      disabled={isSaving}
+                      disabled={isSaving || Object.keys(tempChanges).length === 0}
                       className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm disabled:opacity-70 mr-2"
                     >
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -1201,34 +1251,6 @@ const handleViewDocument = async (doc: any) => {
                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
                            <MessageSquare className="w-4 h-4" /> Comments
                         </h3>
-                        
-                        <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto pr-1">
-                             {(!selectedTicket.comments || selectedTicket.comments.length === 0) && (
-                                <div className="text-center py-8">
-                                  <div className="bg-gray-50 rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-2">
-                                    <MessageSquare className="w-5 h-5 text-gray-300" />
-                                  </div>
-                                  <p className="text-xs text-gray-400">No comments yet</p>
-                                </div>
-                              )}
-                             {selectedTicket.comments?.map((c, i) => (
-                                <div key={i} className="flex gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shrink-0 border border-blue-200">
-                                    {c.commenterName?.charAt(0).toUpperCase() || 'A'}
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-baseline mb-1">
-                                      <span className="text-xs font-bold text-gray-900">{c.commenterName || 'Admin'}</span>
-                                      <span className="text-[10px] text-gray-400">{new Date(c.createdAt).toLocaleString()}</span>
-                                    </div>
-                                    <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-br-lg rounded-bl-lg rounded-tr-lg border border-gray-100">
-                                      {c.text}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                        </div>
-
                         <div className="relative mt-2">
                           <textarea 
                             rows={3}
@@ -1256,6 +1278,41 @@ const handleViewDocument = async (doc: any) => {
                             )}
                           </button>
                         </div>
+                        <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto pr-1">
+                                {(!selectedTicket.comments || selectedTicket.comments.length === 0) && (
+                                  <div className="text-center py-8">
+                                    <div className="bg-gray-50 rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-2">
+                                      <MessageSquare className="w-5 h-5 text-gray-300" />
+                                    </div>
+                                    <p className="text-xs text-gray-400">No comments yet</p>
+                                  </div>
+                                )}
+
+                                {selectedTicket.comments
+                                  // 1. Create a copy so we don't mutate state
+                                  ?.slice() 
+                                  // 2. Sort by Date Descending (Newest first)
+                                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                  .map((c, i) => (
+                                    // Better to use c.id if available, falling back to index
+                                    <div key={c.id || i} className="flex gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shrink-0 border border-blue-200">
+                                        {c.commenterName?.charAt(0).toUpperCase() || 'A'}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                          <span className="text-xs font-bold text-gray-900">{c.commenterName || 'Admin'}</span>
+                                          <span className="text-[10px] text-gray-400">{new Date(c.createdAt).toLocaleString()}</span>
+                                        </div>
+                                        <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-br-lg rounded-bl-lg rounded-tr-lg border border-gray-100">
+                                          {c.text}
+                                        </div>
+                                      </div>
+                                    </div>
+                                ))}
+                          </div>
+
+                        
                     </div>
                   </div>
 
