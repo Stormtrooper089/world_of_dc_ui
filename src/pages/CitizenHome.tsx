@@ -810,7 +810,7 @@ const CitizenHome: React.FC = () => {
 
         {/* Header Overlay - Fully Transparent on top of carousel */}
         <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-blue-900/90 via-blue-900/60 to-transparent backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-red-500">
             <div className="flex items-center justify-between h-20">
               {/* Logo */}
               <div className="flex items-center space-x-4">
@@ -818,9 +818,6 @@ const CitizenHome: React.FC = () => {
                   <span className="text-blue-700 font-bold text-xl">AS</span>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">
-                    বলবে কাছাড়
-                  </h1>
                   <p className="text-xs text-white/90 font-medium drop-shadow-md">
                     Government of Assam
                   </p>
@@ -829,6 +826,7 @@ const CitizenHome: React.FC = () => {
                   </p>
                 </div>
               </div>
+              <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">বলবে কাছাড়</h1>
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex space-x-1" aria-label="Primary">
