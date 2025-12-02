@@ -21,3 +21,4 @@ export const config = {
   // Application version - defaults to "1.0.0" if not specified
   appVersion: import.meta.env.VITE_APP_VERSION || "1.0.0",
 };
+// trigger new build
