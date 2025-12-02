@@ -2,6 +2,7 @@
 // These should be kept in sync with backend enums
 
 export enum UserRole {
+  CITIZEN = "CITIZEN",
   ADMIN = "ADMIN",
   DISTRICT_COMMISSIONER = "DISTRICT_COMMISSIONER",
   ADDITIONAL_DISTRICT_COMMISSIONER = "ADDITIONAL_DISTRICT_COMMISSIONER",
@@ -173,6 +174,7 @@ export const getDepartmentLabel = (department: Department): string => {
 
 export const getUserRoleLabel = (role: UserRole): string => {
   const labels: Record<UserRole, string> = {
+    [UserRole.CITIZEN]: "Citizen",
     [UserRole.ADMIN]: "Administrator",
     [UserRole.DISTRICT_COMMISSIONER]: "District Commissioner",
     [UserRole.ADDITIONAL_DISTRICT_COMMISSIONER]:

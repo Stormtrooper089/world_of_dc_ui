@@ -22,11 +22,8 @@ const RoleProtectedRoute: React.FC<Props> = ({ children, allowedRoles }) => {
     return <Navigate to="/" state={{ from: location }} replace />;
 
   if (!user || !allowedRoles.includes(user.role as string)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Access denied
-      </div>
-    );
+    // Redirect to role-based home which will send them to their appropriate dashboard
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

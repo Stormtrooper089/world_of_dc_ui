@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import OtpVerification from "./components/auth/OtpVerification";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RoleBasedHome from "./components/auth/RoleBasedHome";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 import SignUpForm from "./components/auth/SignUpForm";
 import ComplaintList from "./components/complaints/ComplaintList";
@@ -20,9 +21,28 @@ import CustomerPage from "./pages/CustomerPage";
 import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import Officer from "./pages/Officer";
-import OfficerDashboard from "./pages/OfficerDashboard";
 import Profile from "./pages/Profile";
 import AppShell from "./components/layout/AppShell";
+import { UserRole } from "./constants/enums";
+
+// Officer roles that can access officer dashboard
+const OFFICER_ROLES: UserRole[] = [
+  UserRole.OFFICER,
+  UserRole.DISTRICT_COMMISSIONER,
+  UserRole.ADDITIONAL_DISTRICT_COMMISSIONER,
+  UserRole.BLOCK_DEVELOPMENT_OFFICER,
+  UserRole.GRAM_PANCHAYAT_OFFICER,
+  UserRole.TEHSILDAR,
+  UserRole.SUB_DIVISIONAL_OFFICER,
+  UserRole.HEALTH_OFFICER,
+  UserRole.EDUCATION_OFFICER,
+  UserRole.REVENUE_OFFICER,
+  UserRole.AGRICULTURE_OFFICER,
+  UserRole.PUBLIC_WORKS_OFFICER,
+  UserRole.PWD_OFFICER,
+  UserRole.POLICE_OFFICER,
+  UserRole.ADMIN,
+];
 
 // Main App Routes
 const AppRoutes: React.FC = () => {
@@ -30,7 +50,7 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<CitizenHome />} />
+      <Route path="/" element={<RoleBasedHome />} />
       {/* <Route path="/" element={<CustomerPage />} /> */}
       <Route path="/customer" element={<CustomerPage />} />
       <Route path="/officer-login" element={<Officer />} />
@@ -38,34 +58,28 @@ const AppRoutes: React.FC = () => {
       <Route path="/verify-otp" element={<OtpVerification />} />
       <Route
         path="/signup"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/officer-dashboard" replace />
-          ) : (
-            <SignUpForm />
-          )
-        }
+        element={isAuthenticated ? <RoleBasedHome /> : <SignUpForm />}
       />
       <Route
         path="/officer-dashboard"
         element={
-          <ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={OFFICER_ROLES}>
             <AppShell />
-          </ProtectedRoute>
+          </RoleProtectedRoute>
         }
       />
       <Route
         path="/citizen"
         element={
-          <ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={["CITIZEN"]}>
             <CitizenHome />
-          </ProtectedRoute>
+          </RoleProtectedRoute>
         }
       />
       <Route
         path="/dashboard/*"
         element={
-          <ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={OFFICER_ROLES}>
             <Layout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -105,7 +119,7 @@ const AppRoutes: React.FC = () => {
                 <Route path="*" element={<Navigate to="/customer" replace />} />
               </Routes>
             </Layout>
-          </ProtectedRoute>
+          </RoleProtectedRoute>
         }
       />
     </Routes>
