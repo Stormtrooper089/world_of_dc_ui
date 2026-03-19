@@ -1,5 +1,7 @@
 import {
   BookOpen,
+  BriefcaseBusiness,
+  BriefcaseMedical,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -7,6 +9,7 @@ import {
   FileCheck,
   FileText,
   Globe,
+  Hospital,
   Mail,
   Menu,
   Phone,
@@ -15,6 +18,7 @@ import {
   TrendingUp,
   Twitter,
   User,
+  Vote,
   X,
   Youtube,
 } from "lucide-react";
@@ -148,6 +152,14 @@ const CitizenHome: React.FC = () => {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const quickServices = [
+    {
+      name: "Elections 2026",
+      icon: BriefcaseMedical,
+      description: "Information and updates",
+      accentBg: "bg-[#fdecec] text-[#f45d5d]",
+      iconColor: "text-[#f45d5d]",
+      action: "elections2026",
+    },
     {
       name: "File Grievance",
       icon: Plus,
@@ -557,6 +569,9 @@ const CitizenHome: React.FC = () => {
   const handleNavigateToService = (action?: string) => {
     if (!action) return;
     switch (action) {
+      case "elections2026":
+        navigate("/elections");
+        break;
       case "grievance":
         if (!isAuthenticated) {
           openLoginModal();
@@ -830,6 +845,12 @@ const CitizenHome: React.FC = () => {
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex space-x-1" aria-label="Primary">
+                <a
+                  href="/elections"
+                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
+                >
+                  Elections 2026
+                </a>
                 <a
                   href="#home"
                   className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"

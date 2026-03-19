@@ -807,15 +807,17 @@ export default function ComplaintCockpitBoard() {
 
   const handleDrawerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Basic null checks
     if (!file || !selectedTicket || !selectedTicket.complaintId) return;
 
-    // Size Validation (10MB)
+    // 1. Size Validation (10MB)
     if (file.size > 10 * 1024 * 1024) {
       showToast('File size must be less than 10MB', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
       return;
     }
 
-    // Type Validation
+    // 2. Type Validation
     const allowedTypes = [
         'image/jpeg', 'image/png', 'image/jpg', 
         'application/pdf', 'application/msword', 
@@ -823,41 +825,42 @@ export default function ComplaintCockpitBoard() {
     ];
     if (!allowedTypes.includes(file.type)) {
       showToast('Invalid file type. Please upload images, PDF, or Word documents', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
       return;
     }
 
     setUploadingFile(true);
-    // Optional: Update text to show something is happening
-    const uploadNote = commentText ? commentText : `[Attached file: ${file.name}]`;
+    
+    // 3. Prepare default text if the comment box is empty (Backend requires text)
+    const uploadNote = commentText.trim() ? commentText : `[Attached file: ${file.name}]`;
 
     try {
-      // API Call
-      const response = await complaintService.addComment(
+      // 4. API Call
+      const updatedComment = await complaintService.addComment(
         selectedTicket.complaintId.toString(), 
         uploadNote, 
-        [file] // Assuming service takes array of files
+        [file] 
       );
 
       showToast('File uploaded successfully', 'success');
+      
 
-      // CRITICAL FIX: 
-      // Attachments usually update the 'documents' list on the Complaint entity 
-      // AND create a comment. We must re-fetch the ticket details to get the 
-      // updated 'documents' array to show in the "Attachments" card.
-      
-      // 1. Fetch updated Ticket (updates Documents list)
-      // await fetchTicketDetails(selectedTicket.complaintId.toString()); 
-      
-      // 2. Fetch updated Comments (updates Comments list)
-      await fetchComments(selectedTicket.complaintId.toString());
+      // 6. Also update the background list (optional but recommended)
+      setComplaints(prev => prev.map(c =>
+        c.id === selectedTicketId
+          ? { ...c, comments: [...(c.comments || []), updatedComment] }
+          : c
+      ));
+
+      // 7. Clear the text input as the comment is now saved
+      setCommentText('');
 
     } catch (err) {
       console.error(err);
       showToast('Failed to upload file', 'error');
     } finally {
-      setCommentText('');
       setUploadingFile(false);
-      // Reset input so same file can be selected again if needed
+      // 8. Reset file input to allow selecting the same file again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

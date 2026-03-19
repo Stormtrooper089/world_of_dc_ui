@@ -6,7 +6,6 @@ import {
   Routes,
 } from "react-router-dom";
 import OtpVerification from "./components/auth/OtpVerification";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RoleBasedHome from "./components/auth/RoleBasedHome";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 import SignUpForm from "./components/auth/SignUpForm";
@@ -19,6 +18,13 @@ import CitizenHome from "./pages/CitizenHome";
 import ComplaintDetail from "./pages/ComplaintDetail";
 import CustomerPage from "./pages/CustomerPage";
 import Dashboard from "./pages/Dashboard";
+import Elections from "./pages/Elections.tsx";
+import ControlRoomPage from "./pages/elections/ControlRoomPage";
+import LocationUpdatePage from "./pages/elections/LocationUpdatePage";
+import MaterialsReceivedPage from "./pages/elections/MaterialsReceivedPage";
+import ReportIssuePage from "./pages/elections/ReportIssuePage";
+import TeamDirectoryPage from "./pages/elections/TeamDirectoryPage";
+import VehicleLocatorPage from "./pages/elections/VehicleLocatorPage";
 import Home from "./pages/Home";
 import Officer from "./pages/Officer";
 import Profile from "./pages/Profile";
@@ -53,6 +59,15 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<RoleBasedHome />} />
       {/* <Route path="/" element={<CustomerPage />} /> */}
       <Route path="/customer" element={<CustomerPage />} />
+      <Route path="/elections/*" element={<Elections />}>
+        <Route index element={<Navigate to="control-room" replace />} />
+        <Route path="team-directory" element={<TeamDirectoryPage />} />
+        <Route path="vehicle-locator" element={<VehicleLocatorPage />} />
+        <Route path="location-update" element={<LocationUpdatePage />} />
+        <Route path="materials" element={<MaterialsReceivedPage />} />
+        <Route path="control-room" element={<ControlRoomPage />} />
+        <Route path="issues/new" element={<ReportIssuePage />} />
+      </Route>
       <Route path="/officer-login" element={<Officer />} />
       <Route path="/customer2" element={<Home />} />
       <Route path="/verify-otp" element={<OtpVerification />} />
