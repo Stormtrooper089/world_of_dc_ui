@@ -32,7 +32,7 @@ const MAX_MEMBER_RESULTS = 6;
 export const electionsService = {
   async getPollingPartyOptions(): Promise<PollingPartyOptions> {
     const response = await api.get<ApiResponse<PollingPartyOptions>>(
-      "/api/polling-parties/options"
+      "/polling-parties/options"
     );
 
     return (
@@ -47,7 +47,7 @@ export const electionsService = {
     params: PollingPartySearchParams
   ): Promise<PollingParty[]> {
     const response = await api.get<ApiResponse<PollingParty[]>>(
-      "/api/polling-parties/search",
+      "/polling-parties/search",
       {
         params,
       }
