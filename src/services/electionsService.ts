@@ -1,35 +1,55 @@
 import api from "./api";
 import { ApiResponse } from "../types";
 
-export interface TeamMember {
+export interface PollingParty {
   id: string;
-  name: string;
-  team: string;
-  station: string;
-  phoneNumber: string;
+  acNo?: string;
+  psNo?: string;
+  psName?: string;
+  partyNo?: string;
+  presidingOfficer?: string;
+  pollingOfficer1?: string;
+  pollingOfficer2?: string;
+  pollingOfficer3?: string;
+  reserveOfficer?: string;
+  mobile?: string;
+  uploadTime?: number;
 }
 
-export interface TeamMemberSearchParams {
-  station?: string;
-  name?: string;
-  phoneNumber?: string;
-  team?: string;
-  limit?: number;
+export interface PollingPartySearchParams {
+  psName?: string;
+  partyNo?: string;
+  mobile?: string;
+}
+
+export interface PollingPartyOptions {
+  pollingStations: string[];
+  partyNames: string[];
 }
 
 const MAX_MEMBER_RESULTS = 6;
 
 export const electionsService = {
-  async searchTeamMembers(
-    params: TeamMemberSearchParams
-  ): Promise<TeamMember[]> {
-    const response = await api.get<ApiResponse<TeamMember[]>>(
-      "/elections/team-members/search",
+  async getPollingPartyOptions(): Promise<PollingPartyOptions> {
+    const response = await api.get<ApiResponse<PollingPartyOptions>>(
+      "/api/polling-parties/options"
+    );
+
+    return (
+      response.data?.data || {
+        pollingStations: [],
+        partyNames: [],
+      }
+    );
+  },
+
+  async searchPollingParties(
+    params: PollingPartySearchParams
+  ): Promise<PollingParty[]> {
+    const response = await api.get<ApiResponse<PollingParty[]>>(
+      "/api/polling-parties/search",
       {
-        params: {
-          ...params,
-          limit: Math.min(params.limit ?? MAX_MEMBER_RESULTS, MAX_MEMBER_RESULTS),
-        },
+        params,
       }
     );
 
