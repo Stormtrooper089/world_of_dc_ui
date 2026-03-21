@@ -271,7 +271,13 @@ const TeamDirectory: React.FC = () => {
                           Mobile
                         </span>
                         <span className="text-right font-semibold text-blue-800">
-                          {party.mobile || "Not available"}
+                          {party.mobile ? (
+                            <a href={`tel:${party.mobile}`} className="underline-offset-2 hover:underline">
+                              {party.mobile}
+                            </a>
+                          ) : (
+                            "Not available"
+                          )}
                         </span>
                       </p>
                     </div>

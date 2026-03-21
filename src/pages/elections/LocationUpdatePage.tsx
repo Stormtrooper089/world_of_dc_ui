@@ -47,14 +47,13 @@ const LocationUpdatePage: React.FC = () => {
             Update Your Location
           </h2>
           <p className="mt-1 text-sm text-gray-600">
-            Drivers can update the vehicle's latest location using team,
-            polling station, or vehicle number.
+            Drivers can update the vehicle's latest location using polling station or vehicle number.
           </p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div>
+        {/* <div>
           <label
             htmlFor="team"
             className="mb-1.5 block text-sm font-semibold text-gray-700"
@@ -69,7 +68,7 @@ const LocationUpdatePage: React.FC = () => {
             placeholder="Enter team name or code"
             className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base text-gray-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
           />
-        </div>
+        </div> */}
 
         <div>
           <label
@@ -136,7 +135,7 @@ const LocationUpdatePage: React.FC = () => {
       </div>
 
       <p className="mt-3 text-xs text-gray-500">
-        Provide at least one identifier (team, polling station, or vehicle
+        Provide at least one identifier (polling station or vehicle
         number) along with the current location.
       </p>
 
@@ -149,12 +148,6 @@ const LocationUpdatePage: React.FC = () => {
           <Navigation className="mr-2 h-4 w-4" />
           Update Now
         </button>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-          Status: Not shared
-        </span>
       </div>
     </section>
   );
