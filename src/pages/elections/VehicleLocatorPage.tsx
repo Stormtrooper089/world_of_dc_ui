@@ -12,17 +12,13 @@ import {
 } from "lucide-react";
 import { electionsService, VehicleDetails } from "../../services/electionsService";
 
-type SearchMode = "vehicleNo" | "psName";
-
 const VehicleLocatorPage: React.FC = () => {
-  const [mode, setMode] = useState<SearchMode>("vehicleNo");
   const [query, setQuery] = useState("");
   const [vehicles, setVehicles] = useState<VehicleDetails[]>([]);
   const [searched, setSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [vehicleNos, setVehicleNos] = useState<string[]>([]);
   const [psNames, setPsNames] = useState<string[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
@@ -30,11 +26,7 @@ const VehicleLocatorPage: React.FC = () => {
     const loadOptions = async () => {
       try {
         setIsLoadingOptions(true);
-        const [nos, partyOptions] = await Promise.all([
-          electionsService.getAllVehicleNos(),
-          electionsService.getPollingPartyOptions(),
-        ]);
-        setVehicleNos(nos);
+        const partyOptions = await electionsService.getPollingPartyOptions();
         setPsNames(partyOptions.pollingStations);
       } catch {
         // options are best-effort; search still works without them
@@ -45,14 +37,6 @@ const VehicleLocatorPage: React.FC = () => {
     loadOptions();
   }, []);
 
-  const resetSearch = (newMode: SearchMode) => {
-    setMode(newMode);
-    setQuery("");
-    setVehicles([]);
-    setSearched(false);
-    setError("");
-  };
-
   const handleSearch = async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
@@ -61,8 +45,7 @@ const VehicleLocatorPage: React.FC = () => {
       setError("");
       setIsLoading(true);
       setSearched(true);
-      const params = mode === "vehicleNo" ? { vehicleNo: trimmed } : { psName: trimmed };
-      const results = await electionsService.searchVehicles(params);
+      const results = await electionsService.searchVehicles({ psName: trimmed });
       setVehicles(results);
     } catch (err: any) {
       setVehicles([]);
@@ -89,35 +72,9 @@ const VehicleLocatorPage: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Find Your Vehicle</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Search by vehicle number or polling station name to view assignment details.
+            Search by polling station.
           </p>
         </div>
-      </div>
-
-      {/* Search Mode Toggle */}
-      <div className="mt-5 flex gap-2">
-        <button
-          type="button"
-          onClick={() => resetSearch("vehicleNo")}
-          className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-            mode === "vehicleNo"
-              ? "border-indigo-600 bg-indigo-600 text-white"
-              : "border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700"
-          }`}
-        >
-          Vehicle Number
-        </button>
-        <button
-          type="button"
-          onClick={() => resetSearch("psName")}
-          className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-            mode === "psName"
-              ? "border-indigo-600 bg-indigo-600 text-white"
-              : "border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700"
-          }`}
-        >
-          Polling Station Name
-        </button>
       </div>
 
       {/* Search Input with Datalist */}
@@ -126,21 +83,14 @@ const VehicleLocatorPage: React.FC = () => {
           <p className="mb-2 text-xs text-gray-400">Loading options…</p>
         )}
         <input
-          list={mode === "vehicleNo" ? "vehicle-nos-list" : "ps-names-list"}
+          list="ps-names-list"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={
-            mode === "vehicleNo" ? "e.g. AS01AB1234" : "Type to search polling station…"
-          }
+          placeholder="Type to search polling station…"
           className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
         />
-        <datalist id="vehicle-nos-list">
-          {vehicleNos.map((v) => (
-            <option key={v} value={v} />
-          ))}
-        </datalist>
         <datalist id="ps-names-list">
           {psNames.map((ps) => (
             <option key={ps} value={ps} />
@@ -195,18 +145,19 @@ const VehicleLocatorPage: React.FC = () => {
                   <Car className="h-5 w-5 text-indigo-700" />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-lg font-bold text-gray-900">
+                  <p className="text-lg font-bold text-gray-900">
                     {v.vehicleNo ?? "—"}
                   </p>
                   {v.vehicleType && (
                     <p className="text-xs text-gray-500">{v.vehicleType}</p>
                   )}
+                  {v.capacity != null && (
+                    <p className="text-xs text-gray-500">
+                      Capacity: {v.capacity}
+                    </p>
+                  )}
                 </div>
-                {v.capacity != null && (
-                  <span className="ml-auto shrink-0 rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
-                    Capacity: {v.capacity}
-                  </span>
-                )}
+              
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -270,12 +221,21 @@ const VehicleLocatorPage: React.FC = () => {
                   />
                 )}
 
-                {/* Parking Address */}
-                {v.parkingAddress && (
+                {/* Location */}
+                {v.location && (
                   <DetailRow
                     icon={<MapPin className="h-4 w-4 text-indigo-400" />}
-                    label="Parking Address"
-                    value={v.parkingAddress}
+                    label="Location"
+                    value={
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${v.location.y},${v.location.x}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-indigo-600 underline-offset-2 hover:underline"
+                      >
+                        {v.location.y.toFixed(4)}, {v.location.x.toFixed(4)}
+                      </a>
+                    }
                   />
                 )}
 

@@ -21,14 +21,14 @@ const Elections: React.FC = () => {
   const services = [
     {
       title: "Find Your Team",
-      description: "Locate assigned polling and support teams quickly.",
+      description: "Locate assigned polling teams quickly.",
       icon: Users,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-700",
       route: "/elections/team-directory",
     },
     {
-      title: "Find Your Car",
+      title: "Find Your Vehicle",
       description: "Track and identify your allocated election vehicle.",
       icon: Car,
       iconBg: "bg-indigo-100",
@@ -36,7 +36,15 @@ const Elections: React.FC = () => {
       route: "/elections/vehicle-locator",
     },
     {
-      title: "Update Your Location",
+      title: "Materials Status",
+      description: "Verify receipt of election materials.",
+      icon: PackageCheck,
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-700",
+      route: "/elections/materials",
+    },
+    {
+      title: "Update Location",
       description: "Share current location with the election command center.",
       icon: MapPin,
       iconBg: "bg-teal-100",
@@ -44,15 +52,7 @@ const Elections: React.FC = () => {
       route: "/elections/location-update",
     },
     {
-      title: "Check Materials Received",
-      description: "Verify receipt of EVM kits and required election materials.",
-      icon: PackageCheck,
-      iconBg: "bg-emerald-100",
-      iconColor: "text-emerald-700",
-      route: "/elections/materials",
-    },
-    {
-      title: "Contact Control Room",
+      title: "Contact",
       description: "Reach the control room for urgent operational help.",
       icon: Headset,
       iconBg: "bg-cyan-100",
@@ -91,7 +91,7 @@ const Elections: React.FC = () => {
     },
     {
       label: "Search",
-      icon: Search,
+      icon: Users,
       route: "/elections/team-directory",
       active: ["/elections/team-directory"].includes(
         location.pathname
@@ -99,28 +99,28 @@ const Elections: React.FC = () => {
     },
     {
       label: "Track",
-      icon: MapPin,
+      icon: Car,
       route: "/elections/vehicle-locator",
       active: ["/elections/vehicle-locator", "/elections/location-update"].includes(
         location.pathname
       ),
     },
-    // {
-    //   label: "Status",
-    //   icon: Activity,
-    //   route: "/elections/materials",
-    //   active: ["/elections/materials", "/elections/location-update"].includes(
-    //     location.pathname
-    //   ),
-    // },
     {
-      label: "Emergency",
-      icon: AlertTriangle,
-      route: "/elections/issues/new",
-      active: ["/elections/issues/new", "/elections/control-room"].includes(
+      label: "Status",
+      icon: PackageCheck,
+      route: "/elections/materials",
+      active: ["/elections/materials", "/elections/location-update"].includes(
         location.pathname
       ),
     },
+    // {
+    //   label: "Emergency",
+    //   icon: AlertTriangle,
+    //   route: "/elections/issues/new",
+    //   active: ["/elections/issues/new", "/elections/control-room"].includes(
+    //     location.pathname
+    //   ),
+    // },
   ];
 
   return (
@@ -204,14 +204,14 @@ const Elections: React.FC = () => {
           </aside>
 
           <section className="bg-white p-4 sm:p-5 lg:p-8">
-            <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+            {/* <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
                 Active Service
               </p>
               <p className="mt-1 text-base font-semibold text-gray-900">
                 {activeService?.title}
               </p>
-            </div>
+            </div> */}
 
             <Outlet />
           </section>

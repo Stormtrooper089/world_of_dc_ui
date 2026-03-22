@@ -1,6 +1,35 @@
 import api from "./api";
 import { ApiResponse } from "../types";
 
+export interface MaterialItem {
+  name: string;
+  received: boolean;
+}
+
+export interface PollingPartyMember {
+  role: string;
+  name?: string;
+  mobile?: string;
+}
+
+export interface MaterialsData {
+  items: MaterialItem[];
+  submitted: boolean;
+}
+
+export interface VehicleIdMapping {
+  vehicleId: string;
+  vehicleNo: string;
+}
+
+export interface VehicleLocation {
+  vehicleId?: string;
+  vehicleNo?: string;
+  parkingAddress?: string;
+  statusComment?: string;
+  location?: { x: number; y: number };
+}
+
 export interface VehicleDetails {
   id: string;
   acNo?: string;
@@ -25,6 +54,7 @@ export interface PollingParty {
   psNo?: string;
   psName?: string;
   partyNo?: string;
+  members?: PollingPartyMember[];
   presidingOfficer?: string;
   pollingOfficer1?: string;
   pollingOfficer2?: string;
@@ -36,7 +66,6 @@ export interface PollingParty {
 
 export interface PollingPartySearchParams {
   psName?: string;
-  partyNo?: string;
   mobile?: string;
 }
 
@@ -73,6 +102,45 @@ export const electionsService = {
 
     const data = response.data?.data ?? [];
     return data.slice(0, MAX_MEMBER_RESULTS);
+  },
+
+  async getMaterials(psName: string): Promise<MaterialsData> {
+    const response = await api.get<ApiResponse<MaterialsData[]>>(
+      "/polling-parties/materials",
+      { params: { psName } }
+    );
+    const arr = response.data?.data;
+    if (!arr || arr.length === 0) return { items: [], submitted: false };
+    return arr[0];
+  },
+
+  async submitMaterials(
+    psName: string,
+    items: MaterialItem[]
+  ): Promise<void> {
+    await api.put("/polling-parties/materials", { items }, { params: { psName } });
+  },
+
+  async getVehicleIdMappings(): Promise<VehicleIdMapping[]> {
+    const response = await api.get<ApiResponse<VehicleIdMapping[]>>(
+      "/vehicles/vehicle-id-mappings"
+    );
+    return response.data?.data ?? [];
+  },
+
+  async getVehicleLocation(vehicleId: string): Promise<VehicleLocation> {
+    const response = await api.get<ApiResponse<VehicleLocation>>(
+      "/vehicles/location",
+      { params: { vehicleId } }
+    );
+    return response.data?.data ?? {};
+  },
+
+  async updateVehicleLocation(
+    vehicleId: string,
+    payload: { parkingAddress: string; statusComment: string; location?: { x: number; y: number } }
+  ): Promise<void> {
+    await api.put("/vehicles/location", payload, { params: { vehicleId } });
   },
 
   async getAllVehicleNos(): Promise<string[]> {

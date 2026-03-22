@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { MapPin, Phone, Search, Users } from "lucide-react";
+import { Car, MapPin, Phone, Search, Users } from "lucide-react";
 import {
   electionsService,
   MAX_MEMBER_RESULTS,
   PollingPartyOptions,
   PollingParty,
+  PollingPartyMember,
 } from "../../services/electionsService";
 
 const TeamDirectory: React.FC = () => {
   const [psName, setPsName] = useState("");
-  const [partyNo, setPartyNo] = useState("");
   const [mobile, setMobile] = useState("");
   const [parties, setParties] = useState<PollingParty[]>([]);
   const [options, setOptions] = useState<PollingPartyOptions>({
@@ -55,8 +55,8 @@ const TeamDirectory: React.FC = () => {
   }, []);
 
   const handleSearch = async () => {
-    if (!psName.trim() && !partyNo.trim() && !mobile.trim()) {
-      setError("Enter at least one search field or filter before searching.");
+    if (!psName.trim() && !mobile.trim()) {
+      setError("Enter polling station or mobile before searching.");
       setSearched(false);
       setParties([]);
       return;
@@ -68,7 +68,6 @@ const TeamDirectory: React.FC = () => {
       setSearched(true);
       const results = await electionsService.searchPollingParties({
         psName: psName.trim() || undefined,
-        partyNo: partyNo.trim() || undefined,
         mobile: mobile.trim() || undefined,
       });
       setParties(results.slice(0, MAX_MEMBER_RESULTS));
@@ -86,16 +85,15 @@ const TeamDirectory: React.FC = () => {
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-100">
+          <Car className="h-5 w-5 text-indigo-700" />
+        </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-700">
-            Team Directory
-          </p>
-          <h2 className="mt-1 text-2xl font-bold text-gray-900">
-            Find Polling Party
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">Find Your Team</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Search by polling station, party number, or mobile.
+            Search by polling station or mobile.
           </p>
         </div>
       </div>
@@ -107,7 +105,7 @@ const TeamDirectory: React.FC = () => {
       ) : null}
 
       {isLoadingOptions ? (
-        <p className="mt-3 text-sm text-gray-500">Loading station and party options...</p>
+        <p className="mt-3 text-sm text-gray-500">Loading polling station options...</p>
       ) : null}
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -126,26 +124,6 @@ const TeamDirectory: React.FC = () => {
             {options.pollingStations.map((station) => (
               <option key={station} value={station}>
                 {station}
-              </option>
-            ))}
-          </datalist>
-        </label>
-
-        <label className="relative block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            list="party-names-list"
-            type="text"
-            value={partyNo}
-            onChange={(event) => setPartyNo(event.target.value)}
-            disabled={isLoadingOptions}
-            placeholder="Search or select party"
-            className="w-full rounded-xl border border-gray-200 py-2.5 pl-9 pr-3 text-base text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
-          <datalist id="party-names-list">
-            {options.partyNames.map((party) => (
-              <option key={party} value={party}>
-                {party}
               </option>
             ))}
           </datalist>
@@ -179,7 +157,6 @@ const TeamDirectory: React.FC = () => {
           type="button"
           onClick={() => {
             setPsName("");
-            setPartyNo("");
             setMobile("");
             setParties([]);
             setSearched(false);
@@ -199,7 +176,7 @@ const TeamDirectory: React.FC = () => {
 
       {!searched ? (
         <div className="mt-5 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
-          Search to view polling party details.
+          Search to view your team details.
         </div>
       ) : isLoading ? (
         <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
@@ -218,16 +195,22 @@ const TeamDirectory: React.FC = () => {
         <div className="mt-5">
           {(() => {
             const party = parties[0];
-            const memberEntries = [
-              { label: "Presiding Officer", value: party.presidingOfficer },
-              { label: "Polling Officer 1", value: party.pollingOfficer1 },
-              { label: "Polling Officer 2", value: party.pollingOfficer2 },
-              { label: "Polling Officer 3", value: party.pollingOfficer3 },
-              { label: "Reserve Officer", value: party.reserveOfficer },
-            ].filter((entry) => Boolean(entry.value)) as Array<{
-              label: string;
-              value: string;
-            }>;
+            const roleLabels: Record<string, string> = {
+              PRESIDING_OFFICER: "Presiding Officer",
+              POLLING_OFFICER_1: "Polling Officer 1",
+              POLLING_OFFICER_2: "Polling Officer 2",
+              POLLING_OFFICER_3: "Polling Officer 3",
+              RESERVE_OFFICER: "Reserve Officer",
+            };
+
+            const memberEntries: Array<{ roleLabel: string; name: string; mobile?: string }> =
+              (party.members ?? [])
+                .filter((member: PollingPartyMember) => Boolean(member.name))
+                .map((member: PollingPartyMember) => ({
+                  roleLabel: roleLabels[member.role] || member.role.split("_").join(" "),
+                  name: member.name || "Not available",
+                  mobile: member.mobile || undefined,
+                }));
 
             return (
               <article
@@ -265,21 +248,6 @@ const TeamDirectory: React.FC = () => {
                         </span>
                         <span className="text-right">{party.psName || "Not available"}</span>
                       </p>
-                      <p className="flex items-center justify-between gap-4">
-                        <span className="inline-flex items-center font-medium text-gray-900">
-                          <Phone className="mr-1.5 h-4 w-4 text-blue-600" />
-                          Mobile
-                        </span>
-                        <span className="text-right font-semibold text-blue-800">
-                          {party.mobile ? (
-                            <a href={`tel:${party.mobile}`} className="underline-offset-2 hover:underline">
-                              {party.mobile}
-                            </a>
-                          ) : (
-                            "Not available"
-                          )}
-                        </span>
-                      </p>
                     </div>
                   </div>
 
@@ -299,12 +267,21 @@ const TeamDirectory: React.FC = () => {
                             className="flex items-start rounded-lg bg-gray-50 px-3 py-2"
                           >
                             <Users className="mr-2 mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                {entry.label}
+                                {entry.roleLabel}
                               </p>
                               <p className="text-sm font-medium text-gray-900">
-                                {entry.value}
+                                {entry.name}
+                              </p>
+                              <p className="text-xs text-blue-700">
+                                {entry.mobile ? (
+                                  <a href={`tel:${entry.mobile}`} className="underline-offset-2 hover:underline">
+                                    {entry.mobile}
+                                  </a>
+                                ) : (
+                                  "Mobile not available"
+                                )}
                               </p>
                             </div>
                           </li>
