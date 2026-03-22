@@ -74,6 +74,17 @@ export interface PollingPartyOptions {
   partyNames: string[];
 }
 
+export type ComplaintSeverity = "MEDIUM" | "HIGH" | "CRITICAL";
+
+export interface ElectionComplaintPayload {
+  name?: string;
+  mobileNo: string;
+  psName: string;
+  severity: ComplaintSeverity;
+  title: string;
+  description?: string;
+}
+
 const MAX_MEMBER_RESULTS = 6;
 
 export const electionsService = {
@@ -138,7 +149,7 @@ export const electionsService = {
 
   async updateVehicleLocation(
     vehicleId: string,
-    payload: { parkingAddress: string; statusComment: string; location?: { x: number; y: number } }
+    payload: { remarks: string; location?: { x: number; y: number } }
   ): Promise<void> {
     await api.put("/vehicles/location", payload, { params: { vehicleId } });
   },
@@ -161,6 +172,10 @@ export const electionsService = {
     const data = response.data?.data;
     if (!data) return [];
     return Array.isArray(data) ? data : [data];
+  },
+
+  async submitElectionComplaint(payload: ElectionComplaintPayload): Promise<void> {
+    await api.post("/election-complaints", payload);
   },
 };
 
