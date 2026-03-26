@@ -4,6 +4,7 @@ import { authService } from "../services/authService";
 import CreateComplaint from "../components/complaints/CreateComplaint";
 import MyComplaints from "../components/complaints/MyComplaints";
 import AdminApproveOfficers from "./AdminApproveOfficers";
+import TrackingDashboard from "./TrackingDashboard";
 import Profile from "./Profile";
 import AppShell from "../components/layout/AppShell";
 import { Complaint, Officer, OfficerUpdateData } from "../types";
@@ -173,6 +174,8 @@ const OfficerDashboard: React.FC = () => {
         return <MyComplaints />;
       case "admin-approvals":
         return <AdminApproveOfficers />;
+      case "tracking-dashboard":
+        return <TrackingDashboard />;
       case "profile":
         return <Profile />;
       case "complaint-board":

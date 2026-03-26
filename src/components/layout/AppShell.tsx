@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, FileCheck, UserCircle, LogOut, 
-  ShieldCheck
+  ShieldCheck,
+  Pin,
+  SquareActivity
 } from 'lucide-react';
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../constants/enums"; 
@@ -9,6 +11,7 @@ import { UserRole } from "../../constants/enums";
 // Import your views
 import TicketDashboard from '../../pages/ComplaintTracker'; 
 import Approvals from '../../pages/AdminApproveOfficers';
+import TrackingDashboard from '../../pages/TrackingDashboard';
 import Profile from '../../pages/Profile';
 
 // Helper for Rail Icons (Light Mode Updated)
@@ -64,13 +67,22 @@ export default function AppShell() {
           
           {/* Only show Approvals for Admin */}
           {isAdmin && (
-            <NavIcon 
-              icon={ShieldCheck} 
-              label="Approvals" 
-              isActive={activeView === 'APPROVALS'} 
-              onClick={() => setActiveView('APPROVALS')} 
-              badge={0} 
-            />
+            <>
+              <NavIcon 
+                icon={ShieldCheck} 
+                label="Approvals" 
+                isActive={activeView === 'APPROVALS'} 
+                onClick={() => setActiveView('APPROVALS')} 
+                badge={0} 
+              />
+              <NavIcon 
+                icon={SquareActivity} 
+                label="Tracking" 
+                isActive={activeView === 'TRACKING'} 
+                onClick={() => setActiveView('TRACKING')} 
+                badge={0} 
+              />
+            </>
           )}
           
           <NavIcon 
@@ -98,6 +110,7 @@ export default function AppShell() {
         {/* View Router */}
         {activeView === 'CONSOLE' && <TicketDashboard />}
         {activeView === 'APPROVALS' && <Approvals />}
+        {activeView === 'TRACKING' && <TrackingDashboard />}
         {activeView === 'PROFILE' && <Profile />}
       </div>
     </div>
