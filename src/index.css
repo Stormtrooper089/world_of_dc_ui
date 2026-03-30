@@ -86,3 +86,17 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
+/* Leaflet tile rendering fixes for Tailwind preflight */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.leaflet-container img,
+.leaflet-container .leaflet-tile,
+.leaflet-container .leaflet-marker-icon,
+.leaflet-container .leaflet-marker-shadow {
+  max-width: none !important;
+  max-height: none !important;
+}

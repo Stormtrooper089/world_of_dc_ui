@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
-  LayoutDashboard, FileCheck, UserCircle, LogOut, 
+  LayoutDashboard, UserCircle, LogOut, 
   ShieldCheck,
-  Pin,
   SquareActivity,
-  NotebookPen
+  NotebookPen,
+  Users
 } from 'lucide-react';
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../constants/enums"; 
@@ -15,6 +15,7 @@ import Approvals from '../../pages/AdminApproveOfficers';
 import TrackingDashboard from '../../pages/TrackingDashboard';
 import Profile from '../../pages/Profile';
 import TaskBoard from '../../pages/TaskBoard';
+import SquadManagementPage from '../../pages/SquadManagementPage';
 
 // Helper for Rail Icons (Light Mode Updated)
 const NavIcon = ({ icon: Icon, label, isActive, onClick, badge }: any) => (
@@ -66,12 +67,25 @@ export default function AppShell() {
             isActive={activeView === 'CONSOLE'} 
             onClick={() => setActiveView('CONSOLE')} 
           />
-          
           <NavIcon 
             icon={NotebookPen} 
             label="Task Board" 
             isActive={activeView === 'TASK_BOARD'} 
             onClick={() => setActiveView('TASK_BOARD')} 
+            badge={0} 
+          />
+          <NavIcon 
+            icon={SquareActivity} 
+            label="Squad Tracking" 
+            isActive={activeView === 'TRACKING'} 
+            onClick={() => setActiveView('TRACKING')} 
+            badge={0} 
+          />
+          <NavIcon 
+            icon={Users} 
+            label="Squad Management" 
+            isActive={activeView === 'SQUAD_MANAGEMENT'} 
+            onClick={() => setActiveView('SQUAD_MANAGEMENT')} 
             badge={0} 
           />
           {/* Only show Approvals for Admin */}
@@ -82,13 +96,6 @@ export default function AppShell() {
                 label="Approvals" 
                 isActive={activeView === 'APPROVALS'} 
                 onClick={() => setActiveView('APPROVALS')} 
-                badge={0} 
-              />
-              <NavIcon 
-                icon={SquareActivity} 
-                label="Tracking" 
-                isActive={activeView === 'TRACKING'} 
-                onClick={() => setActiveView('TRACKING')} 
                 badge={0} 
               />
             </>
@@ -121,6 +128,7 @@ export default function AppShell() {
         {activeView === 'APPROVALS' && <Approvals />}
         {activeView === 'TASK_BOARD' && <TaskBoard />}
         {activeView === 'TRACKING' && <TrackingDashboard />}
+        {activeView === 'SQUAD_MANAGEMENT' && <SquadManagementPage />}
         {activeView === 'PROFILE' && <Profile />}
       </div>
     </div>

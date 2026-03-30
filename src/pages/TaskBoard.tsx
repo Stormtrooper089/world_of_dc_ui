@@ -3,6 +3,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   CalendarDays,
+  ChevronDown,
   CheckCircle,
   Clock,
   Loader2,
@@ -19,13 +20,12 @@ import {
 import { Department, getDepartmentLabel } from "../constants/enums";
 import { useAuth } from "../contexts/AuthContext";
 import { taskService } from "../services/taskService";
+import { officerService } from "../services/officerService";
 import {
   CreateTaskInput,
   Task,
-  TaskActivity,
   TaskAssignee,
   TaskPriority,
-  TaskScope,
   TaskStatus,
   UpdateTaskInput,
 } from "../types/taskTypes";
@@ -58,8 +58,8 @@ type ToastState = { message: string; type: "success" | "error" | "info" } | null
 type ActiveFilters = {
   status: TaskStatus[];
   priority: TaskPriority[];
-  scope: TaskScope[];
   department: Department[];
+  officer: string[];
   dueStart: string;
   dueEnd: string;
 };
@@ -67,10 +67,83 @@ type ActiveFilters = {
 const defaultFilters: ActiveFilters = {
   status: [],
   priority: [],
-  scope: [],
   department: [],
+  officer: [],
   dueStart: "",
   dueEnd: "",
+};
+
+type FilterOption = { value: string; label: string };
+
+const MultiSelectFilterMenu = ({
+  label,
+  options,
+  selected,
+  onChange,
+  emptyText = "All",
+}: {
+  label: string;
+  options: FilterOption[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  emptyText?: string;
+}) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const summaryText = selected.length === 0
+    ? emptyText
+    : selected.length === 1
+      ? (options.find((option) => option.value === selected[0])?.label || "1 selected")
+      : `${selected.length} selected`;
+
+  const toggleValue = (value: string) => {
+    const next = selected.includes(value)
+      ? selected.filter((item) => item !== value)
+      : [...selected, value];
+    onChange(next);
+  };
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">{label}</label>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full text-left text-sm px-2.5 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none flex items-center justify-between"
+      >
+        <span className="truncate text-gray-700">{summaryText}</span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute z-30 mt-1 w-full max-h-56 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg p-1.5 space-y-1">
+          {options.length === 0 && <p className="px-2 py-1 text-xs text-gray-400">No options</p>}
+          {options.map((option) => (
+            <label key={option.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={selected.includes(option.value)}
+                onChange={() => toggleValue(option.value)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="truncate">{option.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const MetricCard = ({ title, value, hint }: { title: string; value: number; hint: string }) => (
@@ -120,30 +193,7 @@ const Toast = ({
   );
 };
 
-const FilterCheckbox = ({
-  label,
-  checked,
-  count,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  count: number;
-  onChange: () => void;
-}) => (
-  <label className="flex items-center justify-between py-1.5 cursor-pointer hover:bg-gray-50 px-2 -mx-2 rounded">
-    <div className="flex items-center gap-2">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-      />
-      <span className={`text-sm ${checked ? "text-gray-900 font-medium" : "text-gray-600"}`}>{label}</span>
-    </div>
-    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{count}</span>
-  </label>
-);
+
 
 const CreateTaskModal = ({
   userId,
@@ -165,35 +215,30 @@ const CreateTaskModal = ({
     title: "",
     description: "",
     department: Department.UNASSIGNED,
-    scope: "SELF" as TaskScope,
     priority: "MEDIUM" as TaskPriority,
     assignedToId: userId,
     assignedToName: userName,
     dueDate: "",
-    tags: "",
   });
 
   const availableAssignees = useMemo(() => {
-    if (form.scope === "SELF") {
-      return [{ id: userId, name: userName, department: form.department }];
-    }
-    return assignees.filter((item) => item.department === form.department);
-  }, [assignees, form.department, form.scope, userId, userName]);
+    const filtered = assignees.filter((item) => item.department === form.department);
+    const self = { id: userId, name: userName, department: form.department };
+    const hasSelf = filtered.some((a) => a.id === userId);
+    return hasSelf ? filtered : [self, ...filtered];
+  }, [assignees, form.department, userId, userName]);
 
   useEffect(() => {
-    if (form.scope === "SELF") {
-      setForm((prev) => ({ ...prev, assignedToId: userId, assignedToName: userName }));
-      return;
-    }
-
     if (availableAssignees.length === 0) {
       setForm((prev) => ({ ...prev, assignedToId: "", assignedToName: "" }));
       return;
     }
-
-    const chosen = availableAssignees[0];
-    setForm((prev) => ({ ...prev, assignedToId: chosen.id, assignedToName: chosen.name }));
-  }, [availableAssignees, form.scope, userId, userName]);
+    const stillValid = availableAssignees.some((a) => a.id === form.assignedToId);
+    if (!stillValid) {
+      const first = availableAssignees[0];
+      setForm((prev) => ({ ...prev, assignedToId: first.id, assignedToName: first.name }));
+    }
+  }, [availableAssignees]);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -202,8 +247,8 @@ const CreateTaskModal = ({
       return;
     }
 
-    if (form.scope === "DEPARTMENT" && !form.assignedToId) {
-      onToast("Choose an officer for department task", "error");
+    if (!form.assignedToId) {
+      onToast("Please select an assignee", "error");
       return;
     }
 
@@ -211,15 +256,11 @@ const CreateTaskModal = ({
       title: form.title.trim(),
       description: form.description.trim(),
       department: form.department,
-      scope: form.scope,
+      scope: form.assignedToId === userId ? "SELF" : "DEPARTMENT",
       priority: form.priority,
       assignedToId: form.assignedToId || undefined,
       assignedToName: form.assignedToName || undefined,
       dueDate: form.dueDate || undefined,
-      tags: form.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
       createdById: userId,
       createdByName: userName,
     };
@@ -290,18 +331,6 @@ const CreateTaskModal = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Scope</label>
-              <select
-                value={form.scope}
-                onChange={(event) => setForm((prev) => ({ ...prev, scope: event.target.value as TaskScope }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="SELF">Self</option>
-                <option value="DEPARTMENT">Department</option>
-              </select>
-            </div>
-
-            <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Priority</label>
               <select
                 value={form.priority}
@@ -325,7 +354,7 @@ const CreateTaskModal = ({
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Assignee</label>
               <select
                 value={form.assignedToId}
@@ -338,7 +367,6 @@ const CreateTaskModal = ({
                   }));
                 }}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                disabled={form.scope === "SELF"}
               >
                 {availableAssignees.length === 0 && <option value="">No officer available</option>}
                 {availableAssignees.map((officer) => (
@@ -348,16 +376,6 @@ const CreateTaskModal = ({
                 ))}
               </select>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Tags</label>
-            <input
-              value={form.tags}
-              onChange={(event) => setForm((prev) => ({ ...prev, tags: event.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="audit, field, inspection"
-            />
           </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
@@ -435,20 +453,33 @@ export default function TaskBoard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [taskData, overdueData] = await Promise.all([
+      const [taskData, overdueData, officerData] = await Promise.all([
         taskService.getTasks(),
         taskService.getOverdueTasks(),
+        officerService.getAllOfficers(),
       ]);
 
-      const assigneeData = taskService.getAssignableOfficers(taskData, {
+      // Build assignee list: start from task-derived officers, then merge in all real officers
+      const taskDerived = taskService.getAssignableOfficers(taskData, {
         id: userId,
         name: userName,
         department: Department.UNASSIGNED,
       });
+      const merged = new Map<string, TaskAssignee>();
+      taskDerived.forEach((a) => merged.set(a.id, a));
+      officerData.forEach((o) => {
+        if (!merged.has(o.id)) {
+          merged.set(o.id, { id: o.id, name: o.name, department: o.department as Department });
+        }
+      });
+      // Always include current user
+      if (!merged.has(userId)) {
+        merged.set(userId, { id: userId, name: userName, department: Department.UNASSIGNED });
+      }
 
       setTasks(taskData);
       setOverdueCount(overdueData.length);
-      setAssignees(assigneeData);
+      setAssignees([...merged.values()]);
     } catch (_error) {
       showToast("Failed to load tasks", "error");
     } finally {
@@ -460,35 +491,7 @@ export default function TaskBoard() {
     loadData();
   }, [userId, userName]);
 
-  const facets = useMemo(() => {
-    const status: Record<TaskStatus, number> = {
-      OPEN: 0,
-      IN_PROGRESS: 0,
-      BLOCKED: 0,
-      DONE: 0,
-      CANCELLED: 0,
-    };
-
-    const priority: Record<TaskPriority, number> = {
-      LOW: 0,
-      MEDIUM: 0,
-      HIGH: 0,
-      URGENT: 0,
-    };
-
-    const scope: Record<TaskScope, number> = { SELF: 0, DEPARTMENT: 0 };
-
-    const department: Record<string, number> = {};
-
-    tasks.forEach((task) => {
-      status[task.status] += 1;
-      priority[task.priority] += 1;
-      scope[task.scope] += 1;
-      department[task.department] = (department[task.department] || 0) + 1;
-    });
-
-    return { status, priority, scope, department };
-  }, [tasks]);
+  // No facets needed — filters use single-select dropdowns
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -501,8 +504,8 @@ export default function TaskBoard() {
 
       const matchesStatus = filters.status.length === 0 || filters.status.includes(task.status);
       const matchesPriority = filters.priority.length === 0 || filters.priority.includes(task.priority);
-      const matchesScope = filters.scope.length === 0 || filters.scope.includes(task.scope);
       const matchesDept = filters.department.length === 0 || filters.department.includes(task.department);
+      const matchesOfficer = filters.officer.length === 0 || filters.officer.includes(task.assignedToId || "");
 
       let matchesDueDate = true;
       if (filters.dueStart && task.dueDate) {
@@ -518,8 +521,8 @@ export default function TaskBoard() {
         matchesQuery &&
         matchesStatus &&
         matchesPriority &&
-        matchesScope &&
         matchesDept &&
+        matchesOfficer &&
         matchesDueDate
       );
     });
@@ -546,19 +549,7 @@ export default function TaskBoard() {
     return task ? { ...task, ...tempChanges } : null;
   }, [tasks, selectedTaskId, tempChanges]);
 
-  const toggleFilter = <K extends keyof ActiveFilters>(key: K, value: ActiveFilters[K] extends Array<infer V> ? V : never) => {
-    setFilters((prev) => {
-      const bucket = prev[key];
-      if (!Array.isArray(bucket)) return prev;
-      const typedBucket = bucket as unknown[];
-      const exists = typedBucket.includes(value as unknown);
-      const updated = exists
-        ? typedBucket.filter((item) => item !== value)
-        : [...typedBucket, value as unknown];
 
-      return { ...prev, [key]: updated } as ActiveFilters;
-    });
-  };
 
   const handleSave = async () => {
     if (!selectedTaskId || Object.keys(tempChanges).length === 0) return;
@@ -709,77 +700,76 @@ export default function TaskBoard() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-gray-400" /> Due Date
-                </h4>
-                <div className="space-y-2">
-                  <input
-                    type="date"
-                    className="w-full text-xs p-2 border border-gray-200 rounded"
-                    value={filters.dueStart}
-                    onChange={(event) => setFilters((prev) => ({ ...prev, dueStart: event.target.value }))}
-                  />
-                  <input
-                    type="date"
-                    className="w-full text-xs p-2 border border-gray-200 rounded"
-                    value={filters.dueEnd}
-                    onChange={(event) => setFilters((prev) => ({ ...prev, dueEnd: event.target.value }))}
-                  />
-                </div>
+                <MultiSelectFilterMenu
+                  label="Status"
+                  emptyText="All statuses"
+                  selected={filters.status}
+                  onChange={(next) => setFilters((prev) => ({ ...prev, status: next as TaskStatus[] }))}
+                  options={(Object.keys(STATUS_LABELS) as TaskStatus[]).map((status) => ({
+                    value: status,
+                    label: STATUS_LABELS[status],
+                  }))}
+                />
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Status</h4>
-                {(Object.keys(STATUS_LABELS) as TaskStatus[]).map((status) => (
-                  <FilterCheckbox
-                    key={status}
-                    label={STATUS_LABELS[status]}
-                    checked={filters.status.includes(status)}
-                    count={facets.status[status] || 0}
-                    onChange={() => toggleFilter("status", status)}
-                  />
-                ))}
+                <MultiSelectFilterMenu
+                  label="Priority"
+                  emptyText="All priorities"
+                  selected={filters.priority}
+                  onChange={(next) => setFilters((prev) => ({ ...prev, priority: next as TaskPriority[] }))}
+                  options={(Object.keys(PRIORITY_STYLES) as TaskPriority[]).map((priority) => ({
+                    value: priority,
+                    label: priority.charAt(0) + priority.slice(1).toLowerCase(),
+                  }))}
+                />
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Priority</h4>
-                {(Object.keys(PRIORITY_STYLES) as TaskPriority[]).map((priority) => (
-                  <FilterCheckbox
-                    key={priority}
-                    label={priority}
-                    checked={filters.priority.includes(priority)}
-                    count={facets.priority[priority] || 0}
-                    onChange={() => toggleFilter("priority", priority)}
-                  />
-                ))}
+                <MultiSelectFilterMenu
+                  label="Department"
+                  emptyText="All departments"
+                  selected={filters.department}
+                  onChange={(next) => setFilters((prev) => ({ ...prev, department: next as Department[] }))}
+                  options={Object.values(Department).map((department) => ({
+                    value: department,
+                    label: getDepartmentLabel(department),
+                  }))}
+                />
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Scope</h4>
-                {(["SELF", "DEPARTMENT"] as TaskScope[]).map((scope) => (
-                  <FilterCheckbox
-                    key={scope}
-                    label={scope === "SELF" ? "Self" : "Department"}
-                    checked={filters.scope.includes(scope)}
-                    count={facets.scope[scope] || 0}
-                    onChange={() => toggleFilter("scope", scope)}
-                  />
-                ))}
+                <MultiSelectFilterMenu
+                  label="Officer"
+                  emptyText="All officers"
+                  selected={filters.officer}
+                  onChange={(next) => setFilters((prev) => ({ ...prev, officer: next }))}
+                  options={assignees.map((assignee) => ({ value: assignee.id, label: assignee.name }))}
+                />
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Department</h4>
-                {Object.values(Department).map((department) => (
-                  <FilterCheckbox
-                    key={department}
-                    label={getDepartmentLabel(department)}
-                    checked={filters.department.includes(department)}
-                    count={facets.department[department] || 0}
-                    onChange={() => toggleFilter("department", department)}
-                  />
-                ))}
+                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5" /> Due Date From
+                </label>
+                <input
+                  type="date"
+                  className="w-full text-sm px-2.5 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filters.dueStart}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, dueStart: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">Due Date To</label>
+                <input
+                  type="date"
+                  className="w-full text-sm px-2.5 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filters.dueEnd}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, dueEnd: e.target.value }))}
+                />
               </div>
             </div>
           </aside>
@@ -1053,18 +1043,6 @@ export default function TaskBoard() {
                       </div>
 
                       <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Scope</label>
-                        <select
-                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                          value={selectedTask.scope}
-                          onChange={(event) => setTempChanges((prev) => ({ ...prev, scope: event.target.value as TaskScope }))}
-                        >
-                          <option value="SELF">Self</option>
-                          <option value="DEPARTMENT">Department</option>
-                        </select>
-                      </div>
-
-                      <div>
                         <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Assignee</label>
                         <select
                           className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
@@ -1104,39 +1082,6 @@ export default function TaskBoard() {
                         />
                       </div>
 
-                      <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Tags</label>
-                        <input
-                          value={selectedTask.tags.join(", ")}
-                          onChange={(event) =>
-                            setTempChanges((prev) => ({
-                              ...prev,
-                              tags: event.target.value
-                                .split(",")
-                                .map((tag) => tag.trim())
-                                .filter(Boolean),
-                            }))
-                          }
-                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                          placeholder="inspection, urgent"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Workflow</label>
-                        <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                          {(selectedTask.activity || []).length === 0 && (
-                            <div className="text-xs text-gray-400">No workflow events</div>
-                          )}
-                          {(selectedTask.activity || []).map((item: TaskActivity) => (
-                            <div key={item.id} className="border border-gray-200 rounded-lg p-2 bg-gray-50">
-                              <div className="text-xs font-semibold text-gray-800">{item.action}</div>
-                              <div className="text-[11px] text-gray-500">{item.actorName}</div>
-                              <div className="text-[10px] text-gray-400">{new Date(item.createdAt).toLocaleString()}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>

@@ -28,6 +28,7 @@ import VehicleLocatorPage from "./pages/elections/VehicleLocatorPage";
 import Home from "./pages/Home";
 import Officer from "./pages/Officer";
 import Profile from "./pages/Profile";
+import SquadManagementPage from "./pages/SquadManagementPage";
 import TaskBoard from "./pages/TaskBoard";
 import AppShell from "./components/layout/AppShell";
 import { UserRole } from "./constants/enums";
@@ -107,6 +108,7 @@ const AppRoutes: React.FC = () => {
                 />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/tasks" element={<TaskBoard />} />
+                <Route path="/squad-management" element={<SquadManagementPage />} />
                 <Route
                   path="/admin/approvals"
                   element={

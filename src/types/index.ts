@@ -216,6 +216,83 @@ export interface CommentUpdateRequest {
 
 // Removed percentage-based progress updates; use ComplaintUpdateRequest with progressNotes
 
+// Tracking Types
+export type MemberStatus = 'ACTIVE' | 'EN_ROUTE' | 'COMPLETED' | 'ON_DUTY' | 'BREAK';
+
+export interface Member {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  status: MemberStatus;
+  coordinates: [number, number]; // [lat, lng]
+  location: string;
+  lastUpdate: string;
+  address?: string;
+}
+
+export interface ActivityAttachment {
+  id: string;
+  activityId?: string;
+  url: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  uploadedAt?: string;
+}
+
+export interface ActivityEvent {
+  id?: string;
+  time: string;
+  memberId: string;
+  memberName: string;
+  location: string;
+  status: MemberStatus;
+  address?: string;
+  description?: string;
+  timestamp?: string;
+  attachments?: ActivityAttachment[];
+}
+
+export interface Squad {
+  id: string;
+  name: string;
+  zone: string;
+  lead: string;
+  leadId?: string;
+  members?: Member[];
+  activities?: ActivityEvent[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateSquadInput {
+  name: string;
+  zone: string;
+  lead: string;
+}
+
+export interface CreateMemberInput {
+  squadId: string;
+  name: string;
+  role: string;
+  phone: string;
+}
+
+export interface UpdateMemberInput {
+  name?: string;
+  role?: string;
+  phone?: string;
+  status?: MemberStatus;
+}
+
+export interface UpdateMemberLocationInput {
+  latitude: number;
+  longitude: number;
+  address: string;
+  status: MemberStatus;
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   success: boolean;

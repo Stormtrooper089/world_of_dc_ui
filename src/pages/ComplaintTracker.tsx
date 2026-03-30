@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X, MessageSquare, Paperclip, Calendar, User, Plus,
   Filter, RefreshCw, Search, LayoutList, Kanban,
-  Clock, AlertCircle, CheckCircle, MoreHorizontal, ChevronRight,
+  Clock, AlertCircle, CheckCircle, MoreHorizontal, ChevronRight, ChevronDown,
   ArrowUpRight, SlidersHorizontal, MapPin, Phone, Upload,
   Edit2, Save, FileText, Loader2, Trash2, CalendarDays, Check
 } from 'lucide-react';
@@ -132,25 +132,85 @@ const MetricCard = ({ title, value, trend, type = 'neutral' }: {
   );
 };
 
-const FacetedFilterCheckbox = ({ label, count, checked, onChange }: {
+const PRIORITY_LABELS: Record<ComplaintPriority, string> = {
+  LOW: 'Low',
+  MEDIUM: 'Medium',
+  HIGH: 'High',
+  URGENT: 'Urgent',
+};
+
+type FilterOption = { value: string; label: string };
+
+const MultiSelectFilterMenu = ({
+  label,
+  options,
+  selected,
+  onChange,
+  emptyText = 'All',
+}: {
   label: string;
-  count: number;
-  checked: boolean;
-  onChange: () => void
-}) => (
-  <label className="flex items-center justify-between py-1.5 cursor-pointer group hover:bg-gray-50 px-2 -mx-2 rounded">
-    <div className="flex items-center gap-2">
-      <input 
-        type="checkbox" 
-        checked={checked} 
-        onChange={onChange}
-        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-      />
-      <span className={`text-sm ${checked ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>{label}</span>
+  options: FilterOption[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  emptyText?: string;
+}) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const summaryText = selected.length === 0
+    ? emptyText
+    : selected.length === 1
+      ? (options.find((option) => option.value === selected[0])?.label || '1 selected')
+      : `${selected.length} selected`;
+
+  const toggleValue = (value: string) => {
+    const next = selected.includes(value)
+      ? selected.filter((item) => item !== value)
+      : [...selected, value];
+    onChange(next);
+  };
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">{label}</label>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full text-left text-sm px-2.5 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none flex items-center justify-between"
+      >
+        <span className="truncate text-gray-700">{summaryText}</span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-30 mt-1 w-full max-h-56 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg p-1.5 space-y-1">
+          {options.length === 0 && <p className="px-2 py-1 text-xs text-gray-400">No options</p>}
+          {options.map((option) => (
+            <label key={option.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={selected.includes(option.value)}
+                onChange={() => toggleValue(option.value)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="truncate">{option.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
-    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full group-hover:bg-white">{count}</span>
-  </label>
-);
+  );
+};
 
 const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
   onClose: () => void;
@@ -445,8 +505,8 @@ export default function ComplaintCockpitBoard() {
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const [activeFilters, setActiveFilters] = useState<{
-    priority: string[];
-    status: string[];
+    priority: ComplaintPriority[];
+    status: ComplaintStatus[];
     department: string[];
     officer: string[];
     location: string[];
@@ -617,10 +677,10 @@ export default function ComplaintCockpitBoard() {
 
       const matchesPriority = activeFilters.priority.length === 0 || activeFilters.priority.includes(item.priority);
       const matchesStatus = activeFilters.status.length === 0 || activeFilters.status.includes(item.status);
-      const matchesDept = activeFilters.department.length === 0 || activeFilters.department.includes(item.assignedDepartment || 'Unassigned');
-      
-      const officerName = filteredOfficers.find(o => o.id === item.assignedToId)?.name || 'Unassigned';
-      const matchesOfficer = activeFilters.officer.length === 0 || activeFilters.officer.includes(officerName);
+      const complaintDepartment = item.assignedDepartment || 'UNASSIGNED';
+      const matchesDept = activeFilters.department.length === 0 || activeFilters.department.includes(complaintDepartment);
+      const officerId = item.assignedToId || '__UNASSIGNED__';
+      const matchesOfficer = activeFilters.officer.length === 0 || activeFilters.officer.includes(officerId);
 
       const locationName = item.location || 'Unknown';
       const matchesLocation = activeFilters.location.length === 0 || activeFilters.location.includes(locationName);
@@ -647,14 +707,6 @@ export default function ComplaintCockpitBoard() {
       today: complaints.filter(c => new Date(c.createdAt).toDateString() === new Date().toDateString()).length
     };
   }, [complaints]);
-
-  const toggleFilter = (category: keyof typeof activeFilters, value: string) => {
-    setActiveFilters(prev => {
-      const current = prev[category] as string[];
-      const updated = current.includes(value) ? current.filter(item => item !== value) : [...current, value];
-      return { ...prev, [category]: updated };
-    });
-  };
 
   const handleDateChange = (field: 'start' | 'end', value: string) => {
     setActiveFilters(prev => ({
@@ -952,7 +1004,7 @@ export default function ComplaintCockpitBoard() {
               }} className="text-xs text-blue-600 hover:text-blue-800">Reset</button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               
               <div>
                 <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -979,73 +1031,64 @@ export default function ComplaintCockpitBoard() {
                   </div>
                 </div>
               </div>
-              
-              <hr className="border-gray-100" />
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Status</h4>
-                {Object.keys(STATUS_CONFIG).map(key => (
-                  <FacetedFilterCheckbox 
-                    key={key} 
-                    label={STATUS_CONFIG[key as keyof typeof STATUS_CONFIG].label} 
-                    count={facets.status[key] || 0} 
-                    checked={activeFilters.status.includes(key)} 
-                    onChange={() => toggleFilter('status', key)} 
-                  />
-                ))}
-              </div>
-              
-              <hr className="border-gray-100" />
-              
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Department</h4>
-                {Object.keys(facets.department).map(dept => (
-                  <FacetedFilterCheckbox 
-                    key={dept} 
-                    label={dept} 
-                    count={facets.department[dept]} 
-                    checked={activeFilters.department.includes(dept)} 
-                    onChange={() => toggleFilter('department', dept)} 
-                  />
-                ))}
+                <MultiSelectFilterMenu
+                  label="Status"
+                  emptyText="All statuses"
+                  selected={activeFilters.status}
+                  onChange={(next) => setActiveFilters((prev) => ({ ...prev, status: next as ComplaintStatus[] }))}
+                  options={(Object.keys(STATUS_CONFIG) as ComplaintStatus[]).map((status) => ({
+                    value: status,
+                    label: STATUS_CONFIG[status].label,
+                  }))}
+                />
               </div>
 
-              <hr className="border-gray-100" />
-
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Officer</h4>
-                {Object.keys(facets.officer).length === 0 ? (
-                  <p className="text-xs text-gray-400">No data available</p>
-                ) : (
-                  Object.keys(facets.officer).map(officer => (
-                    <FacetedFilterCheckbox 
-                      key={officer} 
-                      label={officer} 
-                      count={facets.officer[officer]} 
-                      checked={activeFilters.officer.includes(officer)} 
-                      onChange={() => toggleFilter('officer', officer)} 
-                    />
-                  ))
-                )}
+                <MultiSelectFilterMenu
+                  label="Priority"
+                  emptyText="All priorities"
+                  selected={activeFilters.priority}
+                  onChange={(next) => setActiveFilters((prev) => ({ ...prev, priority: next as ComplaintPriority[] }))}
+                  options={(Object.keys(PRIORITY_STYLES) as ComplaintPriority[]).map((priority) => ({
+                    value: priority,
+                    label: PRIORITY_LABELS[priority],
+                  }))}
+                />
+              </div>
+              
+              <div>
+                <MultiSelectFilterMenu
+                  label="Department"
+                  emptyText="All departments"
+                  selected={activeFilters.department}
+                  onChange={(next) => setActiveFilters((prev) => ({ ...prev, department: next }))}
+                  options={Object.entries(DEPARTMENT_NAMES).map(([value, label]) => ({ value, label }))}
+                />
               </div>
 
-              <hr className="border-gray-100" />
+              <div>
+                <MultiSelectFilterMenu
+                  label="Officer"
+                  emptyText="All officers"
+                  selected={activeFilters.officer}
+                  onChange={(next) => setActiveFilters((prev) => ({ ...prev, officer: next }))}
+                  options={[
+                    { value: '__UNASSIGNED__', label: 'Unassigned' },
+                    ...filteredOfficers.map((officer) => ({ value: officer.id, label: officer.name })),
+                  ]}
+                />
+              </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Location</h4>
-                {Object.keys(facets.location).length === 0 ? (
-                  <p className="text-xs text-gray-400">No data available</p>
-                ) : (
-                  Object.keys(facets.location).map(loc => (
-                    <FacetedFilterCheckbox 
-                      key={loc} 
-                      label={loc} 
-                      count={facets.location[loc]} 
-                      checked={activeFilters.location.includes(loc)} 
-                      onChange={() => toggleFilter('location', loc)} 
-                    />
-                  ))
-                )}
+                <MultiSelectFilterMenu
+                  label="Location"
+                  emptyText="All locations"
+                  selected={activeFilters.location}
+                  onChange={(next) => setActiveFilters((prev) => ({ ...prev, location: next }))}
+                  options={Object.keys(facets.location).map((loc) => ({ value: loc, label: loc }))}
+                />
               </div>
             </div>
           </aside>
