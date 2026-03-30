@@ -198,19 +198,19 @@ const Toast = ({
 const CreateTaskModal = ({
   userId,
   userName,
-  assignees,
   onClose,
   onCreated,
   onToast,
 }: {
   userId: string;
   userName: string;
-  assignees: TaskAssignee[];
   onClose: () => void;
   onCreated: (task: Task) => void;
   onToast: (message: string, type: "success" | "error" | "info") => void;
 }) => {
   const [saving, setSaving] = useState(false);
+  const [loadingOfficers, setLoadingOfficers] = useState(true);
+  const [allOfficers, setAllOfficers] = useState<TaskAssignee[]>([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -221,24 +221,27 @@ const CreateTaskModal = ({
     dueDate: "",
   });
 
-  const availableAssignees = useMemo(() => {
-    const filtered = assignees.filter((item) => item.department === form.department);
-    const self = { id: userId, name: userName, department: form.department };
-    const hasSelf = filtered.some((a) => a.id === userId);
-    return hasSelf ? filtered : [self, ...filtered];
-  }, [assignees, form.department, userId, userName]);
-
+  // Fetch all officers directly on mount — no dependency on parent's assignees prop
   useEffect(() => {
-    if (availableAssignees.length === 0) {
-      setForm((prev) => ({ ...prev, assignedToId: "", assignedToName: "" }));
-      return;
-    }
-    const stillValid = availableAssignees.some((a) => a.id === form.assignedToId);
-    if (!stillValid) {
-      const first = availableAssignees[0];
-      setForm((prev) => ({ ...prev, assignedToId: first.id, assignedToName: first.name }));
-    }
-  }, [availableAssignees]);
+    let cancelled = false;
+    setLoadingOfficers(true);
+    officerService.getAllOfficers().then((data) => {
+      if (cancelled) return;
+      const officers: TaskAssignee[] = data
+        .filter((o) => o.isApproved)
+        .map((o) => ({ id: o.id, name: o.name, department: o.department as Department }));
+      // Pin current user to the top
+      const self: TaskAssignee = { id: userId, name: userName, department: Department.UNASSIGNED };
+      const selfInList = officers.find((o) => o.id === userId);
+      const others = officers.filter((o) => o.id !== userId);
+      setAllOfficers([selfInList ?? self, ...others]);
+    }).catch(() => {
+      if (!cancelled) onToast("Failed to load officers", "error");
+    }).finally(() => {
+      if (!cancelled) setLoadingOfficers(false);
+    });
+    return () => { cancelled = true; };
+  }, [userId, userName]);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -357,19 +360,21 @@ const CreateTaskModal = ({
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Assignee</label>
               <select
+                disabled={loadingOfficers}
                 value={form.assignedToId}
                 onChange={(event) => {
-                  const selected = availableAssignees.find((officer) => officer.id === event.target.value);
+                  const selected = allOfficers.find((o) => o.id === event.target.value);
                   setForm((prev) => ({
                     ...prev,
                     assignedToId: event.target.value,
                     assignedToName: selected?.name || "",
                   }));
                 }}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-60"
               >
-                {availableAssignees.length === 0 && <option value="">No officer available</option>}
-                {availableAssignees.map((officer) => (
+                {loadingOfficers && <option value="">Loading officers...</option>}
+                {!loadingOfficers && allOfficers.length === 0 && <option value="">No officers available</option>}
+                {allOfficers.map((officer) => (
                   <option key={officer.id} value={officer.id}>
                     {officer.name}
                   </option>
@@ -418,6 +423,8 @@ export default function TaskBoard() {
   const [overdueCount, setOverdueCount] = useState(0);
   const [filters, setFilters] = useState<ActiveFilters>(defaultFilters);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [editOfficers, setEditOfficers] = useState<TaskAssignee[]>([]);
+  const [editLoadingOfficers, setEditLoadingOfficers] = useState(false);
   const [tempChanges, setTempChanges] = useState<Partial<Task>>({});
   const [commentText, setCommentText] = useState("");
 
@@ -490,6 +497,21 @@ export default function TaskBoard() {
   useEffect(() => {
     loadData();
   }, [userId, userName]);
+
+  useEffect(() => {
+    if (!selectedTaskId) return;
+    let cancelled = false;
+    setEditLoadingOfficers(true);
+    officerService.getAllOfficers().then((data) => {
+      if (cancelled) return;
+      const officers = data
+        .filter((o) => o.isApproved)
+        .map((o) => ({ id: o.id, name: o.name, department: o.department as Department }));
+      setEditOfficers(officers);
+    }).catch(() => showToast("Failed to load officers", "error"))
+      .finally(() => { if (!cancelled) setEditLoadingOfficers(false); });
+    return () => { cancelled = true; };
+  }, [selectedTaskId]);
 
   // No facets needed — filters use single-select dropdowns
 
@@ -1045,10 +1067,11 @@ export default function TaskBoard() {
                       <div>
                         <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Assignee</label>
                         <select
-                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white disabled:opacity-50"
                           value={selectedTask.assignedToId || ""}
+                          disabled={editLoadingOfficers}
                           onChange={(event) => {
-                            const found = assignees.find((item) => item.id === event.target.value);
+                            const found = editOfficers.find((item) => item.id === event.target.value);
                             setTempChanges((prev) => ({
                               ...prev,
                               assignedToId: event.target.value || undefined,
@@ -1056,14 +1079,12 @@ export default function TaskBoard() {
                             }));
                           }}
                         >
-                          <option value="">Unassigned</option>
-                          {assignees
-                            .filter((item) => item.department === selectedTask.department)
-                            .map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name}
-                              </option>
-                            ))}
+                          <option value="">{editLoadingOfficers ? "Loading officers..." : "Unassigned"}</option>
+                          {editOfficers.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -1095,7 +1116,6 @@ export default function TaskBoard() {
         <CreateTaskModal
           userId={userId}
           userName={userName}
-          assignees={assignees}
           onClose={() => setCreateOpen(false)}
           onToast={showToast}
           onCreated={(task) => {
