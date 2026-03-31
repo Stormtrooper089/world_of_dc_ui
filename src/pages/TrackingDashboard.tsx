@@ -282,10 +282,21 @@ const ActivityDetailModal = ({
                     <p className="text-xs text-gray-500 mb-0.5">Location</p>
                     <p className="text-sm text-gray-900">{activity.location}</p>
                   </div>
-                  {activity.description && (
+                  {activity.latitude != null && activity.longitude != null && (
                     <div className="bg-gray-50 rounded-lg px-3 py-2.5 col-span-2">
-                      <p className="text-xs text-gray-500 mb-0.5">Description</p>
-                      <p className="text-sm text-gray-900">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mb-0.5">Coordinates</p>
+                      <p className="text-sm text-gray-900 font-mono">
+                        {activity.latitude.toFixed(4)}°N, {activity.longitude.toFixed(4)}°E
+                        {activity.accuracy != null && (
+                          <span className="text-xs text-gray-400 ml-1">(±{Math.round(activity.accuracy)}m)</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  {activity.notes && (
+                    <div className="bg-gray-50 rounded-lg px-3 py-2.5 col-span-2">
+                      <p className="text-xs text-gray-500 mb-0.5">Notes</p>
+                      <p className="text-sm text-gray-900">{activity.notes}</p>
                     </div>
                   )}
                 </div>

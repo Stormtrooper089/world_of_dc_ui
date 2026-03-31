@@ -15,6 +15,11 @@ export const config = {
     import.meta.env.VITE_API_BASE_URL ||
     "https://world-of-dc-backend.onrender.com",
 
+  // File/media base URL - always points to remote storage server
+  fileBaseUrl:
+    import.meta.env.VITE_FILE_BASE_URL ||
+    "https://world-of-dc-election.onrender.com",
+
   // Application name - defaults to "Complaint Management System" if not specified
   appName: import.meta.env.VITE_APP_NAME || "Complaint Management System",
 

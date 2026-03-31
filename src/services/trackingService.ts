@@ -1,4 +1,5 @@
 import api from './api';
+import { config } from '../config/env';
 import {
   Squad,
   Member,
@@ -51,27 +52,51 @@ export const createSquad = async (input: CreateSquadInput): Promise<Squad> => {
   }
 };
 
+const buildFileUrl = (path: string): string => {
+  const base = config.fileBaseUrl.replace(/\/+$/, '');
+  return `${base}/api/files/download/${path}`;
+};
+
 // ─── Attachment normalizer
-const normalizeAttachment = (raw: any): ActivityAttachment => ({
-  id: raw.id,
-  activityId: raw.activityId,
-  url: raw.url || raw.filePath || raw.path || '',
-  fileName: raw.fileName || raw.filename || raw.name || 'attachment',
-  fileSize: raw.fileSize || raw.size,
-  mimeType: raw.mimeType || raw.contentType,
-  uploadedAt: raw.uploadedAt || raw.createdAt,
-});
+const normalizeAttachment = (raw: any): ActivityAttachment => {
+  // Backend stores tracking attachments as plain file path strings e.g. "tracking/activities/uuid.jpg"
+  if (typeof raw === 'string') {
+    const fileName = raw.split('/').pop() || raw;
+    return {
+      id: raw,
+      url: buildFileUrl(raw),
+      fileName,
+      fileSize: undefined,
+      mimeType: undefined,
+      uploadedAt: undefined,
+    };
+  }
+  const filePath = raw.filePath || raw.path;
+  return {
+    id: raw.id,
+    activityId: raw.activityId,
+    url: raw.url || (filePath ? buildFileUrl(filePath) : ''),
+    fileName: raw.fileName || raw.filename || raw.name || 'attachment',
+    fileSize: raw.fileSize || raw.size,
+    mimeType: raw.mimeType || raw.contentType,
+    uploadedAt: raw.uploadedAt || raw.createdAt,
+  };
+};
 
 // ─── Activity normalizer
 const normalizeActivity = (act: any): ActivityEvent => ({
   id: act.id,
-  time: act.time || new Date(act.timestamp || Date.now()).toLocaleTimeString(),
+  time: act.time || (act.timestamp ? new Date(act.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString()),
   memberId: act.memberId || act.member?.id || '',
   memberName: act.memberName || act.member?.name || 'Unknown',
   location: act.location || act.address || 'Unknown',
   status: (act.status || 'ACTIVE') as MemberStatus,
-  address: act.address,
-  description: act.description,
+  address: act.location || act.address,
+  notes: act.notes,
+  type: act.type,
+  latitude: act.latitude,
+  longitude: act.longitude,
+  accuracy: act.accuracy,
   timestamp: act.timestamp,
   attachments: Array.isArray(act.attachments)
     ? act.attachments.map(normalizeAttachment)

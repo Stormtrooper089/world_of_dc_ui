@@ -249,7 +249,11 @@ export interface ActivityEvent {
   location: string;
   status: MemberStatus;
   address?: string;
-  description?: string;
+  notes?: string;
+  type?: string;
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number;
   timestamp?: string;
   attachments?: ActivityAttachment[];
 }
