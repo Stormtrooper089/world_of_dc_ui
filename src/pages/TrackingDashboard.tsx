@@ -699,7 +699,14 @@ const TrackingDashboard = () => {
                       ev.id ? 'cursor-pointer hover:bg-blue-50' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <span className="text-gray-400 font-medium shrink-0 w-12 pt-0.5">{ev.time}</span>
+                    <span className="text-gray-400 font-medium shrink-0 w-20 pt-0.5 text-xs leading-tight">
+                      {ev.timestamp
+                        ? <>
+                            <span className="block">{new Date(ev.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                            <span className="block">{new Date(ev.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                          </>
+                        : ev.time}
+                    </span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900">{ev.memberName}</p>
                       <p className="text-gray-500 truncate">{ev.location}</p>
@@ -720,7 +727,7 @@ const TrackingDashboard = () => {
                   </div>
                 ))
               ) : (
-                <div className="px-4 py-8 text-center text-sm text-gray-500">No activities in this time range</div>
+                <div className="px-4 py-8 text-center text-sm text-gray-500">No activities in this date range</div>
               )}
             </div>
           </div>
