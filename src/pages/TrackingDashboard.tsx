@@ -73,20 +73,6 @@ const squadCenter = (squad: Squad): [number, number] => {
   ];
 };
 
-const parseActivityTime = (t: string): number => {
-  const parts = t.trim().split(' ');
-  const [h, m] = parts[0].split(':').map(Number);
-  const ampm = parts[1];
-  let hours = h;
-  if (ampm === 'PM' && h !== 12) hours += 12;
-  if (ampm === 'AM' && h === 12) hours = 0;
-  return hours * 60 + m;
-};
-
-const hhmm = (t: string): number => {
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
-};
 
 // ─── Map fly-to component
 const MapFlyTo = ({ center }: { center: [number, number] }) => {
@@ -387,6 +373,9 @@ const ActivityDetailModal = ({
   );
 };
 
+// ─── Helpers
+const getTodayDate = () => new Date().toISOString().split('T')[0];
+
 // ─── Main component
 const TrackingDashboard = () => {
   const [squads, setSquads] = useState<Squad[]>([]);
@@ -397,19 +386,20 @@ const TrackingDashboard = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // Filter state
-  const [timeFrom, setTimeFrom] = useState('08:00');
-  const [timeTo, setTimeTo] = useState('17:00');
-  const [applied, setApplied] = useState({ timeFrom: '08:00', timeTo: '17:00' });
+  const todayDate = getTodayDate();
+  const [dateFrom, setDateFrom] = useState(todayDate);
+  const [dateTo, setDateTo] = useState(todayDate);
+  const [applied, setApplied] = useState({ dateFrom: todayDate, dateTo: todayDate });
 
-  // Load squads on mount
+  // Re-fetch whenever the applied date range changes
   useEffect(() => {
-    loadSquads();
-  }, []);
+    loadSquads(applied.dateFrom, applied.dateTo);
+  }, [applied.dateFrom, applied.dateTo]);
 
-  const loadSquads = async () => {
+  const loadSquads = async (from?: string, to?: string) => {
     try {
       setLoading(true);
-      const data = await trackingService.getSquadsWithLiveData(150);
+      const data = await trackingService.getSquadsWithLiveData(500, from, to);
       setSquads(data);
       if (data.length > 0 && !selectedSquadId) {
         setSelectedSquadId(data[0].id);
@@ -423,7 +413,7 @@ const TrackingDashboard = () => {
   };
 
   const handleRefresh = () => {
-    loadSquads();
+    loadSquads(applied.dateFrom, applied.dateTo);
     showToast('Refreshed', 'info');
   };
 
@@ -453,15 +443,10 @@ const TrackingDashboard = () => {
 
   const visibleActivities = useMemo(() => {
     if (!squad?.activities) return [];
-    const fromMins = hhmm(applied.timeFrom);
-    const toMins = hhmm(applied.timeTo);
-
-    return squad.activities.filter((ev) => {
-      const inTimeWindow = parseActivityTime(ev.time) >= fromMins && parseActivityTime(ev.time) <= toMins;
-      const inMember = selectedMemberId ? ev.memberId === selectedMemberId : true;
-      return inTimeWindow && inMember;
-    });
-  }, [squad, selectedMemberId, applied]);
+    return squad.activities.filter((ev) =>
+      selectedMemberId ? ev.memberId === selectedMemberId : true
+    );
+  }, [squad, selectedMemberId]);
 
   if (loading) {
     return (
@@ -512,29 +497,30 @@ const TrackingDashboard = () => {
 
         <div className="h-5 w-px bg-gray-200 shrink-0" />
 
-        {/* Time filter */}
+        {/* Date range filter */}
         <div className="flex items-center gap-2 shrink-0">
-          <label className="text-xs font-medium text-gray-500 whitespace-nowrap">Time</label>
-          <div className="flex items-center gap-1 border border-gray-200 rounded-lg px-2.5 py-1.5 bg-gray-50 text-xs">
-            <input
-              type="time"
-              value={timeFrom}
-              onChange={(e) => setTimeFrom(e.target.value)}
-              className="bg-transparent focus:outline-none text-gray-700"
-            />
-            <span className="text-gray-400">–</span>
-            <input
-              type="time"
-              value={timeTo}
-              onChange={(e) => setTimeTo(e.target.value)}
-              className="bg-transparent focus:outline-none text-gray-700"
-            />
-          </div>
+          <label className="text-xs font-medium text-gray-500 whitespace-nowrap">From</label>
+          <input
+            type="date"
+            value={dateFrom}
+            max={todayDate}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+          />
+          <label className="text-xs font-medium text-gray-500 whitespace-nowrap">To</label>
+          <input
+            type="date"
+            value={dateTo}
+            min={dateFrom}
+            max={todayDate}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+          />
         </div>
 
         <button
           onClick={() => {
-            setApplied({ timeFrom, timeTo });
+            setApplied({ dateFrom, dateTo });
             setSelectedMemberId(null);
           }}
           className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0"

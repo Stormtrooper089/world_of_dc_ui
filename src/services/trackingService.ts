@@ -25,11 +25,13 @@ const safeArray = <T,>(data: any): T[] => {
 /**
  * Get dashboard data with optional squad ID and activity limit
  */
-export const getDashboard = async (squadId?: string, activityLimit?: number): Promise<any> => {
+export const getDashboard = async (squadId?: string, activityLimit?: number, dateFrom?: string, dateTo?: string): Promise<any> => {
   try {
     const params: Record<string, any> = {};
     if (squadId) params.squadId = squadId;
     if (activityLimit) params.activityLimit = activityLimit;
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
 
     const response = await api.get('/tracking/dashboard', { params });
     return unwrapData<any>(response);
@@ -412,8 +414,8 @@ export const normalizeDashboard = (raw: any): { squads: Squad[]; stats: any } =>
   };
 };
 
-export const getSquadsWithLiveData = async (activityLimit = 100): Promise<Squad[]> => {
-  const dashboardRaw = await getDashboard(undefined, activityLimit);
+export const getSquadsWithLiveData = async (activityLimit = 100, dateFrom?: string, dateTo?: string): Promise<Squad[]> => {
+  const dashboardRaw = await getDashboard(undefined, activityLimit, dateFrom, dateTo);
   const dashboard = normalizeDashboard(dashboardRaw || {});
 
   if (dashboard.squads.length > 0) {
