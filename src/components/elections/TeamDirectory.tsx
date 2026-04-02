@@ -278,6 +278,9 @@ const TeamDirectory: React.FC = () => {
                               {vehicle.vehicleType && (
                                 <InfoRow label="Type" value={vehicle.vehicleType} />
                               )}
+                              {vehicle.capacity != null && (
+                                <InfoRow label="Capacity" value={vehicle.capacity} />
+                              )}
                               {vehicle.driverName && (
                                 <InfoRow label="Driver" value={vehicle.driverName} />
                               )}
@@ -298,6 +301,23 @@ const TeamDirectory: React.FC = () => {
                               )}
                               {vehicle.parkingAddress && (
                                 <InfoRow label="Parking" value={vehicle.parkingAddress} />
+                              )}
+                              {vehicle.location && (
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="font-medium text-gray-900">Location</span>
+                                  <a
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${vehicle.location.y},${vehicle.location.x}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex min-h-[36px] items-center rounded-full border border-blue-200 bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800 hover:bg-blue-200"
+                                  >
+                                    <MapPin className="mr-1.5 h-3 w-3" />
+                                    View on Maps
+                                  </a>
+                                </div>
+                              )}
+                              {vehicle.remarks && (
+                                <InfoRow label="Remarks" value={vehicle.remarks} />
                               )}
                             </div>
                           ))}
