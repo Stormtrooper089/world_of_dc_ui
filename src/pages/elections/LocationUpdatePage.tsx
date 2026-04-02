@@ -265,7 +265,7 @@ const LocationUpdatePage: React.FC = () => {
             )}
 
             {/* Submit */}
-            <div className="sticky bottom-2 z-10 rounded-xl bg-white/95 p-2 backdrop-blur sm:static sm:bg-transparent sm:p-0">
+            <div className="sticky bottom-16 z-10 rounded-xl bg-white/95 p-2 backdrop-blur sm:static sm:bg-transparent sm:p-0">
               <button
                 type="submit"
                 disabled={!canSubmit}

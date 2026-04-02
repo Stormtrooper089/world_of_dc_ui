@@ -100,7 +100,7 @@ const VehicleLocatorPage: React.FC = () => {
       </div>
 
       {/* Search Button */}
-      <div className="sticky bottom-2 z-10 mt-4 rounded-xl bg-white/95 p-2 backdrop-blur sm:static sm:bg-transparent sm:p-0">
+      <div className="sticky bottom-16 z-10 mt-4 rounded-xl bg-white/95 p-2 backdrop-blur sm:static sm:bg-transparent sm:p-0">
         <button
           type="button"
           onClick={handleSearch}

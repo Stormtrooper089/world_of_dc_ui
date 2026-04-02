@@ -124,7 +124,7 @@ const Elections: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 px-3 pb-24 pt-4 sm:px-4 sm:pt-5 lg:px-8 lg:pb-8 lg:pt-8">
+    <div className="min-h-screen bg-gray-50 px-2 pb-24 pt-3 sm:px-4 sm:pt-5 lg:px-8 lg:pb-8 lg:pt-8">
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="bg-gradient-to-r from-blue-700 to-blue-900 px-4 py-4 text-white sm:px-6 lg:px-10 lg:py-7">
           <div className="flex items-center justify-between gap-3">
