@@ -72,31 +72,31 @@ const TeamDirectory: React.FC = () => {
       setError("");
       setIsLoading(true);
       setSearched(true);
-      const [partyResults, vehicleResults] = await Promise.allSettled([
-        electionsService.searchPollingParties({
-          psName: psName.trim() || undefined,
-          mobile: mobile.trim() || undefined,
-        }),
-        psName.trim()
-          ? electionsService.searchVehicles({ psName: psName.trim() })
-          : Promise.resolve([]),
-      ]);
 
-      setParties(
-        partyResults.status === "fulfilled"
-          ? partyResults.value.slice(0, MAX_MEMBER_RESULTS)
-          : []
-      );
-      setVehicles(
-        vehicleResults.status === "fulfilled" ? vehicleResults.value : []
-      );
+      // Fetch party details first
+      const partyResults = await electionsService.searchPollingParties({
+        psName: psName.trim() || undefined,
+        mobile: mobile.trim() || undefined,
+      });
+      const resolvedParties = partyResults.slice(0, MAX_MEMBER_RESULTS);
+      setParties(resolvedParties);
 
-      if (partyResults.status === "rejected") {
-        setError(
-          partyResults.reason?.response?.data?.message ||
-            "Unable to fetch team details. Please try again."
-        );
+      // Resolve psName — from input or from party result (mobile search case)
+      const resolvedPsName = psName.trim() || resolvedParties[0]?.psName || "";
+
+      if (resolvedPsName) {
+        const vehicleResults = await electionsService.searchVehicles({ psName: resolvedPsName });
+        setVehicles(vehicleResults);
+      } else {
+        setVehicles([]);
       }
+    } catch (err: any) {
+      setParties([]);
+      setVehicles([]);
+      setError(
+        err?.response?.data?.message ||
+          "Unable to fetch team details. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -269,9 +269,13 @@ const TeamDirectory: React.FC = () => {
                       Call Driver
                     </a>
                   )}
-                  {v.location && (
+                  {(v.location || v.parkingAddress) && (
                     <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${v.location.y},${v.location.x}`}
+                      href={
+                        v.location
+                          ? `https://www.google.com/maps/dir/?api=1&destination=${v.location.y},${v.location.x}`
+                          : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.parkingAddress!)}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:scale-[0.98]"
