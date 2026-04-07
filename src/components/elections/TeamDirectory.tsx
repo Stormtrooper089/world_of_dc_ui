@@ -45,29 +45,29 @@ const TeamDirectory: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        setIsLoadingOptions(true);
-        const response = await electionsService.getPollingPartyOptions();
-        setOptions(response);
-      } catch (err: any) {
-        setError(
-          err?.response?.data?.message ||
-            "Unable to load polling station options."
-        );
-      } finally {
-        setIsLoadingOptions(false);
-      }
-    };
-    loadOptions();
-  }, []);
+  // useEffect(() => {
+  //   const loadOptions = async () => {
+  //     try {
+  //       setIsLoadingOptions(true);
+  //       const response = await electionsService.getPollingPartyOptions();
+  //       setOptions(response);
+  //     } catch (err: any) {
+  //       setError(
+  //         err?.response?.data?.message ||
+  //           "Unable to load polling station options."
+  //       );
+  //     } finally {
+  //       setIsLoadingOptions(false);
+  //     }
+  //   };
+  //   loadOptions();
+  // }, []);
 
   const handleSearch = async () => {
     const trimmedPs = psName.trim();
     const trimmedMobile = mobile.trim();
     if (!trimmedPs && !trimmedMobile) {
-      setError("Enter a polling station or mobile number to search.");
+      setError("Enter a mobile number to search.");
       return;
     }
     try {
@@ -153,8 +153,8 @@ const TeamDirectory: React.FC = () => {
             <Users className="h-5 w-5 text-blue-700" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 sm:text-xl">Find Your Team</h2>
-            <p className="text-xs text-gray-500">Search by polling station or mobile</p>
+            <h2 className="text-lg font-bold text-gray-900 sm:text-xl">Find Your Team & Vehicle</h2>
+            <p className="text-xs text-gray-500">Search by mobile number</p>
           </div>
         </div>
 
@@ -166,12 +166,12 @@ const TeamDirectory: React.FC = () => {
 
         <div className="mt-4 space-y-2.5">
           {/* Custom dropdown */}
-          <StationPicker
+          {/* <StationPicker
             value={psName}
             onChange={setPsName}
             options={options.pollingStations}
             disabled={isLoadingOptions}
-          />
+          /> */}
 
           {/* Mobile input */}
           <div className="relative">
@@ -180,7 +180,7 @@ const TeamDirectory: React.FC = () => {
               type="tel"
               value={mobile}
               onChange={(e) => setMobile(e.target.value)}
-              placeholder="Mobile number (optional)"
+              placeholder="Mobile Number"
               className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-9 pr-3 text-sm text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
           </div>
@@ -251,7 +251,7 @@ const TeamDirectory: React.FC = () => {
               Polling Station
             </p>
             <p className="mt-1 text-lg font-bold leading-snug">{party.psName || "—"}</p>
-            <p className="mt-0.5 text-sm text-blue-100">PS No: {party.psNo || "—"}</p>
+            {/* <p className="mt-0.5 text-sm text-blue-100">PS No: {party.psNo || "—"}</p> */}
           </div>
 
           {/* Vehicle card */}

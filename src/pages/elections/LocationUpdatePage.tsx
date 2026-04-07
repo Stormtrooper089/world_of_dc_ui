@@ -9,18 +9,18 @@ import {
 } from "lucide-react";
 import {
   electionsService,
-  VehicleIdMapping,
+  VehicleAcNoMapping,
 } from "../../services/electionsService";
 
 const LocationUpdatePage: React.FC = () => {
-  // Vehicle ID options
-  const [mappings, setMappings] = useState<VehicleIdMapping[]>([]);
+  // Vehicle AC No options
+  const [mappings, setMappings] = useState<VehicleAcNoMapping[]>([]);
   const [isLoadingMappings, setIsLoadingMappings] = useState(false);
   const [mappingsError, setMappingsError] = useState("");
 
   // Selected vehicle
-  const [vehicleId, setVehicleId] = useState("");
-  const lastFetchedId = useRef("");
+  const [acNo, setAcNo] = useState("");
+  const lastFetchedAcNo = useRef("");
 
   // Update fields
   const [remarks, setRemarks] = useState("");
@@ -38,8 +38,17 @@ const LocationUpdatePage: React.FC = () => {
     setIsLoadingMappings(true);
     setMappingsError("");
     try {
-      const data = await electionsService.getVehicleIdMappings();
-      setMappings(data);
+      const data = await electionsService.getVehicleAcNoMappings();
+
+      const uniqueMappings = Array.from(
+        new Map(
+          data
+            .filter((m) => m.acNo.trim().length > 0)
+            .map((m) => [m.acNo.trim(), { ...m, acNo: m.acNo.trim() }])
+        ).values()
+      );
+
+      setMappings(uniqueMappings);
     } catch {
       setMappingsError("Unable to load vehicle options.");
     } finally {
@@ -47,16 +56,16 @@ const LocationUpdatePage: React.FC = () => {
     }
   };
 
-  // Load vehicle ID mappings on mount
+  // Load vehicle AC No mappings on mount
   useEffect(() => {
     loadMappings();
   }, []);
 
-  const handleVehicleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAcNoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setVehicleId(val);
-    if (val.trim() !== lastFetchedId.current) {
-      lastFetchedId.current = val.trim();
+    setAcNo(val);
+    if (val.trim() !== lastFetchedAcNo.current) {
+      lastFetchedAcNo.current = val.trim();
       setRemarks("");
       setCoords(null);
       setLocationDisplay("");
@@ -94,7 +103,7 @@ const LocationUpdatePage: React.FC = () => {
   const gpsAvailable = coords !== null;
   const isLocationRequirementMet = gpsAvailable || !!remarks.trim();
 
-  const canSubmit = !!vehicleId.trim() && isLocationRequirementMet && !isSubmitting;
+  const canSubmit = !!acNo.trim() && isLocationRequirementMet && !isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +112,7 @@ const LocationUpdatePage: React.FC = () => {
       setIsSubmitting(true);
       setSubmitError("");
       setSubmitSuccess(false);
-      await electionsService.updateVehicleLocation(vehicleId.trim(), {
+      await electionsService.updateVehicleLocation(acNo.trim(), {
         remarks: remarks.trim(),
         ...(coords ? { location: coords } : {}),
       });
@@ -120,8 +129,8 @@ const LocationUpdatePage: React.FC = () => {
     }
   };
 
-  const selectedMapping = mappings.find((m) => m.vehicleId === vehicleId.trim());
-  const isVehicleSelected = !!vehicleId.trim();
+  const selectedMapping = mappings.find((m) => m.acNo === acNo.trim());
+  const isVehicleSelected = !!acNo.trim();
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
@@ -139,10 +148,10 @@ const LocationUpdatePage: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-5">
-        {/* Vehicle ID */}
+        {/* Vehicle AC No */}
         <div>
-          <label htmlFor="vehicle-id" className="mb-1.5 block text-sm font-semibold text-gray-700">
-            Vehicle ID (Sticker)
+          <label htmlFor="ac-no" className="mb-1.5 block text-sm font-semibold text-gray-700">
+            AC No
           </label>
           {mappingsError && (
             <div className="mb-2 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -163,18 +172,17 @@ const LocationUpdatePage: React.FC = () => {
             </p>
           )}
           <input
-            id="vehicle-id"
-            list="vehicle-id-list"
+            id="ac-no"
+            list="ac-no-list"
             type="text"
-            value={vehicleId}
-            onChange={handleVehicleIdChange}
-            placeholder="Search or select vehicle ID"
+            value={acNo}
+            onChange={handleAcNoChange}
+            placeholder="SIL/ 0123"
             className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base text-gray-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
           />
-          <datalist id="vehicle-id-list">
+          <datalist id="ac-no-list">
             {mappings.map((m) => (
-              <option key={m.vehicleId} value={m.vehicleId}>
-                {m.vehicleId} : {m.vehicleNo}
+              <option key={m.acNo} value={m.acNo}>
               </option>
             ))}
           </datalist>
@@ -259,7 +267,7 @@ const LocationUpdatePage: React.FC = () => {
               >
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  Location updated successfully for vehicle {selectedMapping?.vehicleNo ?? vehicleId}.
+                  Location updated successfully for vehicle {selectedMapping?.vehicleNo ?? acNo}.
                 </span>
               </div>
             )}

@@ -20,29 +20,29 @@ const Elections: React.FC = () => {
 
   const services = [
     {
-      title: "Find Your Team",
-      description: "Locate assigned polling teams quickly.",
+      title: "Find Your Team & Vehicle",
+      description: "Locate assigned polling team & vehicle quickly.",
       icon: Users,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-700",
       route: "/elections/team-directory",
     },
-    {
-      title: "Find Your Vehicle",
-      description: "Track and identify your allocated election vehicle.",
-      icon: Car,
-      iconBg: "bg-indigo-100",
-      iconColor: "text-indigo-700",
-      route: "/elections/vehicle-locator",
-    },
-    {
-      title: "Materials Status",
-      description: "Verify receipt of election materials.",
-      icon: PackageCheck,
-      iconBg: "bg-emerald-100",
-      iconColor: "text-emerald-700",
-      route: "/elections/materials",
-    },
+    // {
+    //   title: "Find Your Vehicle",
+    //   description: "Track and identify your allocated election vehicle.",
+    //   icon: Car,
+    //   iconBg: "bg-indigo-100",
+    //   iconColor: "text-indigo-700",
+    //   route: "/elections/vehicle-locator",
+    // },
+    // {
+    //   title: "Materials Status",
+    //   description: "Verify receipt of election materials.",
+    //   icon: PackageCheck,
+    //   iconBg: "bg-emerald-100",
+    //   iconColor: "text-emerald-700",
+    //   route: "/elections/materials",
+    // },
     {
       title: "Update Location",
       description: "Share current location with the election command center.",
@@ -51,22 +51,22 @@ const Elections: React.FC = () => {
       iconColor: "text-teal-700",
       route: "/elections/location-update",
     },
-    {
-      title: "Contact",
-      description: "Reach the control room for urgent operational help.",
-      icon: Headset,
-      iconBg: "bg-cyan-100",
-      iconColor: "text-cyan-700",
-      route: "/elections/control-room",
-    },
-    {
-      title: "Report an Issue",
-      description: "Log incidents and raise field-level election issues.",
-      icon: AlertTriangle,
-      iconBg: "bg-rose-100",
-      iconColor: "text-rose-700",
-      route: "/elections/issues/new",
-    },
+    // {
+    //   title: "Contact",
+    //   description: "Reach the control room for urgent operational help.",
+    //   icon: Headset,
+    //   iconBg: "bg-cyan-100",
+    //   iconColor: "text-cyan-700",
+    //   route: "/elections/control-room",
+    // },
+    // {
+    //   title: "Report an Issue",
+    //   description: "Log incidents and raise field-level election issues.",
+    //   icon: AlertTriangle,
+    //   iconBg: "bg-rose-100",
+    //   iconColor: "text-rose-700",
+    //   route: "/elections/issues/new",
+    // },
   ];
 
   const activeService =
@@ -83,36 +83,36 @@ const Elections: React.FC = () => {
   ].filter(Boolean) as typeof services;
 
   const mobileTabs = [
+    // {
+    //   label: "Contact",
+    //   icon: Headset,
+    //   route: "/elections/control-room",
+    //   active: ["/elections", "/elections/control-room"].includes(location.pathname),
+    // },
     {
-      label: "Contact",
-      icon: Headset,
-      route: "/elections/control-room",
-      active: ["/elections", "/elections/control-room"].includes(location.pathname),
-    },
-    {
-      label: "Search",
-      icon: Users,
+      label: "Team & Vehicle",
+      icon: Search,
       route: "/elections/team-directory",
       active: ["/elections/team-directory"].includes(
         location.pathname
       ),
     },
     {
-      label: "Track",
-      icon: Car,
-      route: "/elections/vehicle-locator",
-      active: ["/elections/vehicle-locator", "/elections/location-update"].includes(
+      label: "Update Location",
+      icon: MapPin,
+      route: "/elections/location-update",
+      active: ["/elections/location-update"].includes(
         location.pathname
       ),
     },
-    {
-      label: "Status",
-      icon: PackageCheck,
-      route: "/elections/materials",
-      active: ["/elections/materials", "/elections/location-update"].includes(
-        location.pathname
-      ),
-    },
+    // {
+    //   label: "Status",
+    //   icon: PackageCheck,
+    //   route: "/elections/materials",
+    //   active: ["/elections/materials", "/elections/location-update"].includes(
+    //     location.pathname
+    //   ),
+    // },
     // {
     //   label: "Emergency",
     //   icon: AlertTriangle,
