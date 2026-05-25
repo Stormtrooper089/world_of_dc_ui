@@ -62,13 +62,13 @@ const AppRoutes: React.FC = () => {
       {/* <Route path="/" element={<CustomerPage />} /> */}
       <Route path="/customer" element={<CustomerPage />} />
       <Route path="/elections/*" element={<Elections />}>
-        <Route index element={<Navigate to="control-room" replace />} />
+        <Route index element={<Navigate to="team-directory" replace />} />
         <Route path="team-directory" element={<TeamDirectoryPage />} />
-        <Route path="vehicle-locator" element={<VehicleLocatorPage />} />
+        {/* <Route path="vehicle-locator" element={<VehicleLocatorPage />} /> */}
         <Route path="location-update" element={<LocationUpdatePage />} />
-        <Route path="materials" element={<MaterialsReceivedPage />} />
+        {/* <Route path="materials" element={<MaterialsReceivedPage />} />
         <Route path="control-room" element={<ControlRoomPage />} />
-        <Route path="issues/new" element={<ReportIssuePage />} />
+        <Route path="issues/new" element={<ReportIssuePage />} /> */}
       </Route>
       <Route path="/officer-login" element={<Officer />} />
       <Route path="/customer2" element={<Home />} />

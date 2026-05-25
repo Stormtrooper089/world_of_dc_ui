@@ -17,13 +17,13 @@ export interface MaterialsData {
   submitted: boolean;
 }
 
-export interface VehicleIdMapping {
-  vehicleId: string;
+export interface VehicleAcNoMapping {
+  acNo: string;
   vehicleNo: string;
 }
 
 export interface VehicleLocation {
-  vehicleId?: string;
+  acNo?: string;
   vehicleNo?: string;
   parkingAddress?: string;
   statusComment?: string;
@@ -132,26 +132,26 @@ export const electionsService = {
     await api.put("/polling-parties/materials", { items }, { params: { psName } });
   },
 
-  async getVehicleIdMappings(): Promise<VehicleIdMapping[]> {
-    const response = await api.get<ApiResponse<VehicleIdMapping[]>>(
+  async getVehicleAcNoMappings(): Promise<VehicleAcNoMapping[]> {
+    const response = await api.get<ApiResponse<VehicleAcNoMapping[]>>(
       "/vehicles/vehicle-id-mappings"
     );
     return response.data?.data ?? [];
   },
 
-  async getVehicleLocation(vehicleId: string): Promise<VehicleLocation> {
+  async getVehicleLocation(acNo: string): Promise<VehicleLocation> {
     const response = await api.get<ApiResponse<VehicleLocation>>(
       "/vehicles/location",
-      { params: { vehicleId } }
+      { params: { acNo } }
     );
     return response.data?.data ?? {};
   },
 
   async updateVehicleLocation(
-    vehicleId: string,
+    acNo: string,
     payload: { remarks: string; location?: { x: number; y: number } }
   ): Promise<void> {
-    await api.put("/vehicles/location", payload, { params: { vehicleId } });
+    await api.put("/vehicles/location", payload, { params: { acNo } });
   },
 
   async getAllVehicleNos(): Promise<string[]> {
