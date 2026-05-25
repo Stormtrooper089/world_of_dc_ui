@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader, RefreshCw, Users, AlertCircle } from 'lucide-react';
+import { Loader, RefreshCw, Users, AlertCircle, ShieldCheck } from 'lucide-react';
 import SquadManagement from '../components/tracking/SquadManagement';
 import * as trackingService from '../services/trackingService';
 import { Squad } from '../types';
@@ -215,7 +215,12 @@ const SquadManagementPage = () => {
                           }`}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
+                            {m.isAdmin && (
+                              <ShieldCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Squad Supervisor" />
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500 truncate">{m.role}</p>
                         </div>
                       </button>
@@ -232,7 +237,14 @@ const SquadManagementPage = () => {
             {selectedMember ? (
               <>
                 <div className="mb-4">
-                  <h3 className="text-base font-semibold text-gray-900">{selectedMember.name}</h3>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="text-base font-semibold text-gray-900">{selectedMember.name}</h3>
+                    {selectedMember.isAdmin && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                        <ShieldCheck className="w-3 h-3" /> Supervisor
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500">{selectedMember.role}</p>
                   <p className="text-sm text-gray-500">{selectedMember.phone}</p>
                   <p className="text-sm text-gray-500">{selectedMember.location}</p>
