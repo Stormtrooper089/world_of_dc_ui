@@ -351,6 +351,7 @@ export const normalizeMember = (raw: any): Member => {
     location: addr,
     address: addr,
     lastUpdate: typeof lastUpdate === 'string' ? lastUpdate : new Date(lastUpdate).toLocaleTimeString(),
+    isAdmin: raw.admin ?? raw.isAdmin ?? false,
   };
 };
 

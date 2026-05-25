@@ -229,6 +229,7 @@ export interface Member {
   location: string;
   lastUpdate: string;
   address?: string;
+  isAdmin?: boolean;
 }
 
 export interface ActivityAttachment {
@@ -281,6 +282,7 @@ export interface CreateMemberInput {
   name: string;
   role: string;
   phone: string;
+  admin?: boolean;
 }
 
 export interface UpdateMemberInput {
@@ -289,6 +291,7 @@ export interface UpdateMemberInput {
   role?: string;
   phone?: string;
   status?: MemberStatus;
+  admin?: boolean;
 }
 
 export interface UpdateMemberLocationInput {

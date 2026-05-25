@@ -8,6 +8,7 @@ import {
   CheckCircle,
   X,
   ShieldAlert,
+  ShieldCheck,
   Search,
   UserPlus,
 } from 'lucide-react';
@@ -295,6 +296,30 @@ const CreateSquadModal = ({
 // ─── Create Independent Member Modal ─────────────────────────────────────────
 // Creates a member without linking to any squad
 
+const SupervisorToggle = ({
+  value,
+  onChange,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) => (
+  <label className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer select-none transition-colors ${
+    value ? 'border-amber-300 bg-amber-50' : 'border-gray-200 hover:bg-gray-50'
+  }`}>
+    <input
+      type="checkbox"
+      checked={value}
+      onChange={(e) => onChange(e.target.checked)}
+      className="w-4 h-4 accent-amber-500"
+    />
+    <ShieldCheck className={`w-4 h-4 shrink-0 ${value ? 'text-amber-600' : 'text-gray-400'}`} />
+    <div>
+      <p className={`text-sm font-medium ${value ? 'text-amber-800' : 'text-gray-700'}`}>Squad Supervisor</p>
+      <p className="text-xs text-gray-500">Can view squad attendance in the mobile app</p>
+    </div>
+  </label>
+);
+
 const CreateIndependentMemberModal = ({
   open,
   onClose,
@@ -306,12 +331,12 @@ const CreateIndependentMemberModal = ({
   onSubmit: (data: CreateMemberInput) => Promise<void>;
   loading: boolean;
 }) => {
-  const [formData, setFormData] = useState({ name: '', role: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', role: '', phone: '', isSupervisor: false });
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setFormData({ name: '', role: '', phone: '' });
+      setFormData({ name: '', role: '', phone: '', isSupervisor: false });
       setFormError(null);
     }
   }, [open]);
@@ -321,6 +346,7 @@ const CreateIndependentMemberModal = ({
       name: formData.name.trim(),
       role: formData.role.trim(),
       phone: formData.phone.trim(),
+      admin: formData.isSupervisor,
     };
 
     if (!payload.name || !payload.role || !payload.phone) {
@@ -378,6 +404,10 @@ const CreateIndependentMemberModal = ({
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <SupervisorToggle
+            value={formData.isSupervisor}
+            onChange={(v) => setFormData({ ...formData, isSupervisor: v })}
+          />
         </div>
 
         <div className="flex gap-2 justify-end">
@@ -427,7 +457,7 @@ const AddMemberModal = ({
   const [view, setView] = useState<AddMemberView>('existing');
   const [search, setSearch] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', role: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', role: '', phone: '', isSupervisor: false });
   const [formError, setFormError] = useState<string | null>(null);
   const [fetchedMembers, setFetchedMembers] = useState<Member[]>([]);
   const [fetchingMembers, setFetchingMembers] = useState(false);
@@ -437,7 +467,7 @@ const AddMemberModal = ({
       setView('existing');
       setSearch('');
       setSelectedMemberId(null);
-      setFormData({ name: '', role: '', phone: '' });
+      setFormData({ name: '', role: '', phone: '', isSupervisor: false });
       setFormError(null);
       setFetchingMembers(true);
       trackingService.getAllMembers()
@@ -490,6 +520,7 @@ const AddMemberModal = ({
       name: formData.name.trim(),
       role: formData.role.trim(),
       phone: formData.phone.trim(),
+      admin: formData.isSupervisor,
     };
 
     if (!payload.name || !payload.role || !payload.phone || !squadId) {
@@ -505,7 +536,7 @@ const AddMemberModal = ({
     try {
       setFormError(null);
       await onCreateNew({ ...payload, squadId });
-      setFormData({ name: '', role: '', phone: '' });
+      setFormData({ name: '', role: '', phone: '', isSupervisor: false });
     } catch (error) {
       setFormError(getErrorMessage(error, 'Unable to create member right now.'));
     }
@@ -642,6 +673,10 @@ const AddMemberModal = ({
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <SupervisorToggle
+                value={formData.isSupervisor}
+                onChange={(v) => setFormData({ ...formData, isSupervisor: v })}
+              />
             </div>
           )}
         </div>
@@ -698,11 +733,13 @@ const EditMemberModal = ({
     role: string;
     phone: string;
     status: MemberStatus;
+    isSupervisor: boolean;
   }>({
     name: member?.name || '',
     role: member?.role || '',
     phone: member?.phone || '',
     status: member?.status || 'ACTIVE',
+    isSupervisor: member?.isAdmin ?? false,
   });
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -713,6 +750,7 @@ const EditMemberModal = ({
         role: member.role,
         phone: member.phone,
         status: member.status,
+        isSupervisor: member.isAdmin ?? false,
       });
       setFormError(null);
     }
@@ -726,6 +764,7 @@ const EditMemberModal = ({
       role: formData.role.trim(),
       phone: formData.phone.trim(),
       status: formData.status,
+      admin: formData.isSupervisor,
     };
 
     if (!payload.name || !payload.role || !payload.phone) {
@@ -793,6 +832,10 @@ const EditMemberModal = ({
               </option>
             ))}
           </select>
+          <SupervisorToggle
+            value={formData.isSupervisor}
+            onChange={(v) => setFormData({ ...formData, isSupervisor: v })}
+          />
         </div>
         <div className="flex gap-2 justify-end">
           <button
