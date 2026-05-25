@@ -75,59 +75,30 @@ const TeamDirectory: React.FC = () => {
       setIsLoading(true);
       setSearched(true);
 
-      const searchPartyParams = {
-        psName: trimmedPs || undefined,
-        mobile: trimmedMobile || undefined,
-      };
+      // Fetch party details first
+      const partyResults = await electionsService.searchPollingParties({
+        psName: psName.trim() || undefined,
+        mobile: mobile.trim() || undefined,
+      });
+      const resolvedParties = partyResults.slice(0, MAX_MEMBER_RESULTS);
+      setParties(resolvedParties);
 
-      let nextParties: PollingParty[] = [];
-      let nextVehicles: VehicleDetails[] = [];
+      // Resolve psName — from input or from party result (mobile search case)
+      const resolvedPsName = psName.trim() || resolvedParties[0]?.psName || "";
 
-      if (trimmedPs) {
-        const [partyResults, vehicleResults] = await Promise.allSettled([
-          electionsService.searchPollingParties(searchPartyParams),
-          electionsService.searchVehicles({ psName: trimmedPs }),
-        ]);
-
-        nextParties =
-          partyResults.status === "fulfilled"
-            ? partyResults.value.slice(0, MAX_MEMBER_RESULTS)
-            : [];
-        nextVehicles =
-          vehicleResults.status === "fulfilled" ? vehicleResults.value : [];
-
-        if (partyResults.status === "rejected") {
-          setError(
-            partyResults.reason?.response?.data?.message ||
-              "Unable to fetch team details. Please try again."
-          );
-        }
+      if (resolvedPsName) {
+        const vehicleResults = await electionsService.searchVehicles({ psName: resolvedPsName });
+        setVehicles(vehicleResults);
       } else {
-        try {
-          const partiesResult = await electionsService.searchPollingParties({
-            mobile: trimmedMobile,
-          });
-          nextParties = partiesResult.slice(0, MAX_MEMBER_RESULTS);
-          const psFromParty = nextParties[0]?.psName?.trim();
-          if (psFromParty) {
-            try {
-              nextVehicles = await electionsService.searchVehicles({
-                psName: psFromParty,
-              });
-            } catch {
-              nextVehicles = [];
-            }
-          }
-        } catch (err: any) {
-          setError(
-            err?.response?.data?.message ||
-              "Unable to fetch team details. Please try again."
-          );
-        }
+        setVehicles([]);
       }
-
-      setParties(nextParties);
-      setVehicles(nextVehicles);
+    } catch (err: any) {
+      setParties([]);
+      setVehicles([]);
+      setError(
+        err?.response?.data?.message ||
+          "Unable to fetch team details. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -300,9 +271,13 @@ const TeamDirectory: React.FC = () => {
                       Call Driver
                     </a>
                   )}
-                  {v.location && (
+                  {(v.location || v.parkingAddress) && (
                     <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${v.location.y},${v.location.x}`}
+                      href={
+                        v.location
+                          ? `https://www.google.com/maps/dir/?api=1&destination=${v.location.y},${v.location.x}`
+                          : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.parkingAddress!)}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:scale-[0.98]"
