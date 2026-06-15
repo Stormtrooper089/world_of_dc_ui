@@ -4,11 +4,17 @@ import {
   Filter, RefreshCw, Search, LayoutList, Kanban,
   Clock, AlertCircle, CheckCircle, MoreHorizontal, ChevronRight, ChevronDown,
   ArrowUpRight, SlidersHorizontal, MapPin, Phone, Upload,
-  Edit2, Save, FileText, Loader2, Trash2, CalendarDays, Check
+  Edit2, Save, FileText, Loader2, Trash2, CalendarDays, Check, Tag, Navigation, Timer
 } from 'lucide-react';
 import { useAuth } from "../contexts/AuthContext";
 import { complaintService } from "../services/complaintService";
-import { UserRole, ComplaintPriority, ComplaintStatus, Department } from "../constants/enums";
+import {
+  UserRole,
+  ComplaintPriority,
+  ComplaintStatus,
+  Department,
+  getComplaintCategoryLabel,
+} from "../constants/enums";
 import { Complaint, ComplaintUpdateRequest, Officer, ComplaintDocument, Comment as ComplaintComment } from '../types';
 import { officerService } from "../services/officerService";
 import api from '../services/api';
@@ -1240,6 +1246,52 @@ export default function ComplaintCockpitBoard() {
                             <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
                               <Calendar className="w-4 h-4 text-gray-400" />
                               {selectedTicket.createdAt ? new Date(selectedTicket.createdAt).toLocaleString() : 'N/A'}
+                            </div>
+                         </div>
+                         <div>
+                            <span className="text-xs text-gray-400 block mb-1">Issue Type</span>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <Tag className="w-4 h-4 text-gray-400" />
+                              {selectedTicket.category ? getComplaintCategoryLabel(selectedTicket.category) : 'N/A'}
+                            </div>
+                         </div>
+                         <div>
+                            <span className="text-xs text-gray-400 block mb-1">Ward Mapping</span>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              {selectedTicket.wardNumber
+                                ? `Ward ${selectedTicket.wardNumber}${selectedTicket.wardName ? ` - ${selectedTicket.wardName}` : ''}`
+                                : 'N/A'}
+                            </div>
+                            {selectedTicket.zone && (
+                              <div className="mt-1 pl-6 text-xs text-gray-500">
+                                Zone: {selectedTicket.zone}
+                              </div>
+                            )}
+                         </div>
+                         <div>
+                            <span className="text-xs text-gray-400 block mb-1">GPS Coordinates</span>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <Navigation className="w-4 h-4 text-gray-400" />
+                              {selectedTicket.latitude != null && selectedTicket.longitude != null ? (
+                                <a
+                                  href={`https://www.google.com/maps?q=${selectedTicket.latitude},${selectedTicket.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-700"
+                                >
+                                  {selectedTicket.latitude}, {selectedTicket.longitude}
+                                </a>
+                              ) : (
+                                'N/A'
+                              )}
+                            </div>
+                         </div>
+                         <div>
+                            <span className="text-xs text-gray-400 block mb-1">SLA Due</span>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <Timer className="w-4 h-4 text-gray-400" />
+                              {selectedTicket.slaDueAt ? new Date(selectedTicket.slaDueAt).toLocaleString() : 'N/A'}
                             </div>
                          </div>
                       </div>
