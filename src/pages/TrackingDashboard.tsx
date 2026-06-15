@@ -64,7 +64,7 @@ const makeMarkerIcon = (status: MemberStatus, selected: boolean) =>
 // ─── Helper functions
 const squadCenter = (squad: Squad): [number, number] => {
   const members = squad.members || [];
-  if (members.length === 0) return [28.6139, 77.209]; // Default Delhi center
+  if (members.length === 0) return [24.8333, 92.7789]; // Silchar center
   const lats = members.map(m => m.coordinates[0]);
   const lngs = members.map(m => m.coordinates[1]);
   return [
@@ -423,7 +423,7 @@ const TrackingDashboard = () => {
   };
 
   const squad = selectedSquadId ? squads.find((s) => s.id === selectedSquadId) : null;
-  const center: [number, number] = squad ? squadCenter(squad) : [28.6139, 77.209];
+  const center: [number, number] = squad ? squadCenter(squad) : [24.8333, 92.7789];
   const selectedMember = selectedMemberId && squad
     ? squad.members?.find((m) => m.id === selectedMemberId) || null
     : null;

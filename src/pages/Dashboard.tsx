@@ -36,7 +36,7 @@ const Dashboard: React.FC = () => {
       // Calculate stats
       const total = response.data.length;
       const open = response.data.filter(
-        (c) => c.status === ComplaintStatus.OPEN
+        (c) => c.status === ComplaintStatus.CREATED
       ).length;
       const inProgress = response.data.filter(
         (c) => c.status === ComplaintStatus.IN_PROGRESS
@@ -160,7 +160,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {complaint.title}
+                        {complaint.subject}
                       </p>
                       <p className="text-sm text-gray-500">
                         {new Date(complaint.createdAt).toLocaleDateString()}
@@ -169,7 +169,7 @@ const Dashboard: React.FC = () => {
                     <div className="flex-shrink-0">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          complaint.status === ComplaintStatus.OPEN
+                          complaint.status === ComplaintStatus.CREATED
                             ? "bg-green-100 text-green-800"
                             : complaint.status === ComplaintStatus.IN_PROGRESS
                             ? "bg-yellow-100 text-yellow-800"

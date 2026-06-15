@@ -1,19 +1,48 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { complaintService } from "../../services/complaintService";
+import { wardsService } from "../../services/wardsService";
 import { useAuth } from "../../contexts/AuthContext";
-import { ComplaintPriority, Department, UserRole } from "../../constants/enums";
+import {
+  ComplaintCategory,
+  ComplaintPriority,
+  Department,
+  UserRole,
+  getComplaintCategoryLabel,
+} from "../../constants/enums";
 import { getDepartmentDisplayName } from "../../utils/departmentUtils";
+import { Ward } from "../../types";
 
 interface CreateComplaintData {
   subject: string;
   description: string;
+  category: ComplaintCategory;
   priority?: ComplaintPriority;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  wardNumber?: number;
   department?: Department;
   files?: FileList;
   mobileNumber?: string; // For citizen complaints
 }
+
+const SMC_CATEGORY_OPTIONS = [
+  ComplaintCategory.GARBAGE_NOT_COLLECTED,
+  ComplaintCategory.ILLEGAL_DUMPING,
+  ComplaintCategory.DRAIN_BLOCKAGE,
+  ComplaintCategory.WATER_LOGGING,
+  ComplaintCategory.STREET_LIGHT,
+  ComplaintCategory.ROAD_DAMAGE,
+  ComplaintCategory.PUBLIC_TOILET,
+  ComplaintCategory.STRAY_ANIMAL,
+  ComplaintCategory.WATER_SUPPLY,
+  ComplaintCategory.PROPERTY_TAX,
+  ComplaintCategory.TRADE_LICENSE,
+  ComplaintCategory.BUILDING_PERMISSION,
+  ComplaintCategory.BIRTH_DEATH_CERTIFICATE,
+  ComplaintCategory.OTHER,
+];
 
 interface CreateComplaintProps {
   onSuccess?: () => void;
@@ -27,12 +56,15 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [error, setError] = useState("");
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [gpsMessage, setGpsMessage] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
   const { user, isAuthenticated } = useAuth();
 
   // Determine if this is a citizen complaint
   const isCitizen =
     isCitizenMode ||
-    (user && (user.role === UserRole.CUSTOMER || !user.employeeId));
+    (user && (user.role === UserRole.CITIZEN || !user.employeeId));
 
   // Hardcoded citizen for officer to create complaints on behalf of
   const HARDCODED_CITIZEN_MOBILE = "9876543210";
@@ -42,7 +74,38 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
+    watch,
   } = useForm<CreateComplaintData>();
+
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
+
+  useEffect(() => {
+    wardsService.getWards().then(setWards);
+  }, []);
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsMessage("Location capture is not supported on this device.");
+      return;
+    }
+    setIsLocating(true);
+    setGpsMessage("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setValue("latitude", Number(position.coords.latitude.toFixed(6)));
+        setValue("longitude", Number(position.coords.longitude.toFixed(6)));
+        setGpsMessage("GPS location captured.");
+        setIsLocating(false);
+      },
+      () => {
+        setGpsMessage("Unable to capture GPS. You can still submit with a written location.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const onSubmit = async (data: CreateComplaintData) => {
     try {
@@ -74,6 +137,7 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({
       }
       formData.append("subject", data.subject);
       formData.append("description", data.description);
+      formData.append("category", data.category || ComplaintCategory.OTHER);
 
       // Priority and department only for officer complaints
       if (!isCitizen && data.priority) {
@@ -82,6 +146,15 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({
 
       if (data.location) {
         formData.append("location", data.location);
+      }
+      if (Number.isFinite(data.latitude)) {
+        formData.append("latitude", String(data.latitude));
+      }
+      if (Number.isFinite(data.longitude)) {
+        formData.append("longitude", String(data.longitude));
+      }
+      if (Number.isFinite(data.wardNumber)) {
+        formData.append("wardNumber", String(data.wardNumber));
       }
 
       if (!isCitizen && data.department) {
@@ -222,6 +295,60 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({
               )}
             </div>
 
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="category"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Municipal Issue Type *
+                </label>
+                <select
+                  {...register("category", {
+                    required: "Issue type is required",
+                  })}
+                  defaultValue={ComplaintCategory.GARBAGE_NOT_COLLECTED}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                    errors.category ? "border-red-500" : ""
+                  }`}
+                >
+                  {SMC_CATEGORY_OPTIONS.map((category) => (
+                    <option key={category} value={category}>
+                      {getComplaintCategoryLabel(category)}
+                    </option>
+                  ))}
+                </select>
+                {errors.category && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.category.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="wardNumber"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Ward
+                </label>
+                <select
+                  {...register("wardNumber", { valueAsNumber: true })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  defaultValue=""
+                >
+                  <option value="">Select ward if known</option>
+                  {wards.map((ward) => (
+                    <option key={ward.wardNumber} value={ward.wardNumber}>
+                      Ward {ward.wardNumber}
+                      {ward.name ? ` - ${ward.name}` : ""}
+                      {ward.zone ? ` (${ward.zone})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Priority - Only for officer complaints */}
             {!isCitizen && (
               <div>
@@ -267,6 +394,26 @@ const CreateComplaint: React.FC<CreateComplaintProps> = ({
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Specific location or address (optional)"
               />
+              <input type="hidden" {...register("latitude", { valueAsNumber: true })} />
+              <input type="hidden" {...register("longitude", { valueAsNumber: true })} />
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={captureLocation}
+                  disabled={isLocating}
+                  className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLocating ? "Capturing..." : "Capture Current Location"}
+                </button>
+                {(latitude || longitude) && (
+                  <span className="text-sm text-gray-600">
+                    {latitude}, {longitude}
+                  </span>
+                )}
+                {gpsMessage && (
+                  <span className="text-sm text-gray-500">{gpsMessage}</span>
+                )}
+              </div>
             </div>
 
             {/* Department - Only for officer complaints */}

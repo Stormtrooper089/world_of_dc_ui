@@ -1,4 +1,4 @@
-import { ComplaintPriority, ComplaintStatus, Department, UserRole } from "../constants/enums";
+import { ComplaintCategory, ComplaintPriority, ComplaintStatus, Department, UserRole } from "../constants/enums";
 
 // User and Authentication Types
 export interface User {
@@ -91,6 +91,18 @@ export interface OfficerUpdateData {
   department: import("../constants/enums").Department;
 }
 
+export interface Ward {
+  id?: string;
+  wardNumber: number;
+  name?: string;
+  zone?: string;
+  councillorName?: string;
+  councillorPhone?: string;
+  centerLatitude?: number;
+  centerLongitude?: number;
+  active?: boolean;
+}
+
 // Complaint Types
 export interface Complaint {
   id: string;
@@ -99,9 +111,19 @@ export interface Complaint {
   citizenId: string;
   subject: string;
   description: string;
+  category?: ComplaintCategory;
   status: ComplaintStatus;
   priority: ComplaintPriority;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  wardNumber?: number;
+  wardName?: string;
+  zone?: string;
+  slaDueAt?: string;
+  citizenConfirmedResolved?: boolean;
+  citizenRating?: number;
+  citizenFeedback?: string;
 
   // Department assignment
   assignedDepartment?: Department;
@@ -153,8 +175,12 @@ export interface CreateComplaintData {
   mobileNumber: string;
   subject: string;
   description: string;
+  category?: ComplaintCategory;
   priority: ComplaintPriority;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  wardNumber?: number;
   files?: FileList;
 }
 
@@ -172,6 +198,10 @@ export interface ComplaintUpdateRequest {
   subject?: string;
   description?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  wardNumber?: number;
+  category?: ComplaintCategory;
   priority?: ComplaintPriority;
   status?: ComplaintStatus;
   assignedDepartment?: Department;

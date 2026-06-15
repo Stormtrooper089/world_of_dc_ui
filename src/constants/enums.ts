@@ -95,6 +95,17 @@ export enum ComplaintPriority {
 }
 
 export enum ComplaintCategory {
+  GARBAGE_NOT_COLLECTED = "GARBAGE_NOT_COLLECTED",
+  ILLEGAL_DUMPING = "ILLEGAL_DUMPING",
+  DRAIN_BLOCKAGE = "DRAIN_BLOCKAGE",
+  WATER_LOGGING = "WATER_LOGGING",
+  STREET_LIGHT = "STREET_LIGHT",
+  ROAD_DAMAGE = "ROAD_DAMAGE",
+  PUBLIC_TOILET = "PUBLIC_TOILET",
+  STRAY_ANIMAL = "STRAY_ANIMAL",
+  TRADE_LICENSE = "TRADE_LICENSE",
+  PROPERTY_TAX = "PROPERTY_TAX",
+  BUILDING_PERMISSION = "BUILDING_PERMISSION",
   WATER_SUPPLY = "WATER_SUPPLY",
   ELECTRICITY = "ELECTRICITY",
   ROADS_INFRASTRUCTURE = "ROADS_INFRASTRUCTURE",
@@ -230,6 +241,17 @@ export const getComplaintCategoryLabel = (
   category: ComplaintCategory
 ): string => {
   const labels: Record<ComplaintCategory, string> = {
+    [ComplaintCategory.GARBAGE_NOT_COLLECTED]: "Garbage Not Collected",
+    [ComplaintCategory.ILLEGAL_DUMPING]: "Illegal Dumping",
+    [ComplaintCategory.DRAIN_BLOCKAGE]: "Drain Blockage",
+    [ComplaintCategory.WATER_LOGGING]: "Water Logging",
+    [ComplaintCategory.STREET_LIGHT]: "Street Light",
+    [ComplaintCategory.ROAD_DAMAGE]: "Road Damage",
+    [ComplaintCategory.PUBLIC_TOILET]: "Public Toilet",
+    [ComplaintCategory.STRAY_ANIMAL]: "Stray Animal",
+    [ComplaintCategory.TRADE_LICENSE]: "Trade License",
+    [ComplaintCategory.PROPERTY_TAX]: "Property Tax",
+    [ComplaintCategory.BUILDING_PERMISSION]: "Building Permission",
     [ComplaintCategory.WATER_SUPPLY]: "Water Supply",
     [ComplaintCategory.ELECTRICITY]: "Electricity",
     [ComplaintCategory.ROADS_INFRASTRUCTURE]: "Roads & Infrastructure",

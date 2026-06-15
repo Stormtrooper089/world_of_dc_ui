@@ -31,21 +31,7 @@ const ComplaintList: React.FC = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      loadComplaints();
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const results = await complaintService.searchComplaints(searchTerm);
-      setComplaints(results);
-    } catch (err: any) {
-      setError("Search failed. Please try again.");
-      console.error("Error searching complaints:", err);
-    } finally {
-      setLoading(false);
-    }
+    loadComplaints();
   };
 
   const handleView = (complaint: Complaint) => {
@@ -71,7 +57,7 @@ const ComplaintList: React.FC = () => {
 
   const filteredComplaints = complaints.filter((complaint) => {
     const matchesSearch =
-      complaint.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
       complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
       filterStatus === "all" || complaint.status === filterStatus;
@@ -128,7 +114,7 @@ const ComplaintList: React.FC = () => {
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Status</option>
-              <option value="OPEN">Open</option>
+              <option value="CREATED">Created</option>
               <option value="IN_PROGRESS">In Progress</option>
               <option value="RESOLVED">Resolved</option>
               <option value="CLOSED">Closed</option>

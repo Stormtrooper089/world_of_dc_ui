@@ -1,6 +1,10 @@
 import React from "react";
 import { Complaint } from "../../types";
-import { ComplaintStatus, ComplaintPriority } from "../../constants/enums";
+import {
+  ComplaintPriority,
+  ComplaintStatus,
+  getComplaintCategoryLabel,
+} from "../../constants/enums";
 import {
   Calendar,
   User,
@@ -8,7 +12,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  MoreHorizontal,
+  MapPin,
 } from "lucide-react";
 
 interface ComplaintCardProps {
@@ -108,6 +112,21 @@ const ComplaintCard: React.FC<ComplaintCardProps> = ({
           <p className="text-gray-600 text-sm mb-4 line-clamp-2">
             {complaint.description}
           </p>
+
+          <div className="mb-4 flex flex-wrap gap-2 text-xs text-gray-600">
+            {complaint.category && (
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+                {getComplaintCategoryLabel(complaint.category)}
+              </span>
+            )}
+            {complaint.wardNumber && (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
+                <MapPin className="mr-1 h-3.5 w-3.5" />
+                Ward {complaint.wardNumber}
+                {complaint.zone ? ` · ${complaint.zone}` : ""}
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <div className="flex items-center space-x-1">
