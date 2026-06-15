@@ -253,6 +253,15 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
         )}
       </div>
 
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+        <p className="text-sm font-semibold text-blue-900">
+          Silchar Municipal Corporation Details
+        </p>
+        <p className="mt-1 text-xs text-blue-700">
+          Choose the municipal issue type, ward and GPS location for faster SMC routing.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label

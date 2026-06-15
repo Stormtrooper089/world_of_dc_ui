@@ -161,9 +161,9 @@ const CitizenHome: React.FC = () => {
       action: "elections2026",
     },
     {
-      name: "File Grievance",
+      name: "File SMC Grievance",
       icon: Plus,
-      description: "Submit new case in minutes",
+      description: "Ward, issue type & GPS enabled",
       accentBg: "bg-[#f45d5d] text-white",
       iconColor: "text-white",
       action: "grievance",
@@ -837,7 +837,7 @@ const CitizenHome: React.FC = () => {
                     Government of Assam
                   </p>
                   <p className="text-xs text-white/80 font-medium drop-shadow-md mt-0.5">
-                    Citizen Grievance Portal
+                    Silchar Municipal Corporation Portal
                   </p>
                 </div>
               </div>
