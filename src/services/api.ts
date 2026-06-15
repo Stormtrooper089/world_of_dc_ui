@@ -15,7 +15,18 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   (requestConfig) => {
     const token = localStorage.getItem("token");
-    if (token) {
+    const url = requestConfig.url || "";
+    const isPublicAuthEndpoint =
+      url.includes("/auth/login") ||
+      url.includes("/auth/send-otp") ||
+      url.includes("/citizen/send-otp") ||
+      url.includes("/citizen/login") ||
+      url.includes("/citizen/verify-otp") ||
+      url.includes("/citizen/register") ||
+      url.includes("/officer/login") ||
+      url.includes("/officer/signup");
+
+    if (token && !isPublicAuthEndpoint) {
       requestConfig.headers.Authorization = `Bearer ${token}`;
     }
     return requestConfig;
