@@ -9,11 +9,17 @@
  * Environment variables must be prefixed with VITE_ to be accessible in the browser.
  * Vite automatically loads the appropriate .env file based on the NODE_ENV.
  */
+const withApiPrefix = (baseUrl: string) => {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+};
+
 export const config = {
   // API base URL - defaults to production URL if not specified
-  apiBaseUrl:
+  apiBaseUrl: withApiPrefix(
     import.meta.env.VITE_API_BASE_URL ||
-    "https://world-of-dc-election.onrender.com",
+      "https://world-of-dc-election.onrender.com"
+  ),
 
   // File/media base URL - always points to remote storage server
   fileBaseUrl:
