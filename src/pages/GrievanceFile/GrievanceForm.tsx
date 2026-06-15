@@ -1,19 +1,46 @@
-import { Upload, X } from "lucide-react";
-import React, { useState } from "react";
+import { LocateFixed, Upload, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Department } from "../../constants/enums";
+import {
+  ComplaintCategory,
+  Department,
+  getComplaintCategoryLabel,
+} from "../../constants/enums";
 import { useAuth } from "../../contexts/AuthContext";
 import { complaintService } from "../../services/complaintService";
+import { wardsService } from "../../services/wardsService";
+import { Ward } from "../../types";
 import { getDepartmentDisplayName } from "../../utils/departmentUtils";
 
 export interface GrievanceFormData {
   subject: string;
   description: string;
+  category: ComplaintCategory;
   location: string;
+  latitude?: number;
+  longitude?: number;
+  wardNumber?: number;
   department: Department;
   files?: FileList;
   mobileNumber: string;
 }
+
+const SMC_CATEGORY_OPTIONS = [
+  ComplaintCategory.GARBAGE_NOT_COLLECTED,
+  ComplaintCategory.ILLEGAL_DUMPING,
+  ComplaintCategory.DRAIN_BLOCKAGE,
+  ComplaintCategory.WATER_LOGGING,
+  ComplaintCategory.STREET_LIGHT,
+  ComplaintCategory.ROAD_DAMAGE,
+  ComplaintCategory.PUBLIC_TOILET,
+  ComplaintCategory.STRAY_ANIMAL,
+  ComplaintCategory.WATER_SUPPLY,
+  ComplaintCategory.PROPERTY_TAX,
+  ComplaintCategory.TRADE_LICENSE,
+  ComplaintCategory.BUILDING_PERMISSION,
+  ComplaintCategory.BIRTH_DEATH_CERTIFICATE,
+  ComplaintCategory.OTHER,
+];
 
 interface GrievanceFormProps {
   onSubmit?: (data: GrievanceFormData) => void;
@@ -29,6 +56,9 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [error, setError] = useState("");
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [isLocating, setIsLocating] = useState(false);
+  const [gpsMessage, setGpsMessage] = useState("");
   const { user } = useAuth();
 
   const mobileNumber = user?.mobileNumber || "";
@@ -38,15 +68,47 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
+    watch,
   } = useForm<GrievanceFormData>({
     defaultValues: {
       subject: "",
       description: "",
+      category: ComplaintCategory.GARBAGE_NOT_COLLECTED,
       location: "",
       department: Department.ELECTRICITY_DEPARTMENT,
       mobileNumber: mobileNumber || "",
     },
   });
+
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
+
+  useEffect(() => {
+    wardsService.getWards().then(setWards);
+  }, []);
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsMessage("Location capture is not supported on this device.");
+      return;
+    }
+    setIsLocating(true);
+    setGpsMessage("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setValue("latitude", Number(position.coords.latitude.toFixed(6)));
+        setValue("longitude", Number(position.coords.longitude.toFixed(6)));
+        setGpsMessage("GPS location captured.");
+        setIsLocating(false);
+      },
+      () => {
+        setGpsMessage("Unable to capture GPS. You can still submit with a written location.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -72,9 +134,19 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
       const formData = new FormData();
       formData.append("subject", data.subject);
       formData.append("description", data.description);
+      formData.append("category", data.category || ComplaintCategory.OTHER);
       formData.append("location", data.location);
       formData.append("department", data.department);
       formData.append("mobileNumber", data.mobileNumber);
+      if (Number.isFinite(data.latitude)) {
+        formData.append("latitude", String(data.latitude));
+      }
+      if (Number.isFinite(data.longitude)) {
+        formData.append("longitude", String(data.longitude));
+      }
+      if (Number.isFinite(data.wardNumber)) {
+        formData.append("wardNumber", String(data.wardNumber));
+      }
 
       // Add files if any
       if (selectedFiles.length > 0) {
@@ -181,6 +253,61 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
         )}
       </div>
 
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label
+            htmlFor="category"
+            className="block text-sm font-medium text-purple-900"
+          >
+            Municipal Issue Type *
+          </label>
+          <select
+            {...register("category", { required: "Issue type is required" })}
+            id="category"
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white ${
+              errors.category ? "border-red-500" : ""
+            }`}
+            disabled={isSubmitting}
+          >
+            {SMC_CATEGORY_OPTIONS.map((category) => (
+              <option key={category} value={category}>
+                {getComplaintCategoryLabel(category)}
+              </option>
+            ))}
+          </select>
+          {errors.category && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.category.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="wardNumber"
+            className="block text-sm font-medium text-purple-900"
+          >
+            Ward
+          </label>
+          <select
+            {...register("wardNumber", { valueAsNumber: true })}
+            id="wardNumber"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white"
+            disabled={isSubmitting}
+            defaultValue=""
+          >
+            <option value="">Select ward if known</option>
+            {wards.map((ward) => (
+              <option key={ward.wardNumber} value={ward.wardNumber}>
+                Ward {ward.wardNumber}
+                {ward.name ? ` - ${ward.name}` : ""}
+                {ward.zone ? ` (${ward.zone})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Location */}
       <div>
         <label
@@ -199,6 +326,27 @@ const GrievanceForm: React.FC<GrievanceFormProps> = ({
           placeholder="Enter location"
           disabled={isSubmitting}
         />
+        <input type="hidden" {...register("latitude", { valueAsNumber: true })} />
+        <input type="hidden" {...register("longitude", { valueAsNumber: true })} />
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={captureLocation}
+            disabled={isSubmitting || isLocating}
+            className="inline-flex items-center gap-2 rounded-md border border-purple-300 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <LocateFixed className="h-4 w-4" />
+            {isLocating ? "Capturing..." : "Capture Current Location"}
+          </button>
+          {(latitude || longitude) && (
+            <span className="text-sm text-purple-700">
+              {latitude}, {longitude}
+            </span>
+          )}
+          {gpsMessage && (
+            <span className="text-sm text-purple-600">{gpsMessage}</span>
+          )}
+        </div>
         {errors.location && (
           <p className="mt-1 text-sm text-red-600">{errors.location.message}</p>
         )}
