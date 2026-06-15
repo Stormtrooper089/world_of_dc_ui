@@ -4,7 +4,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { complaintService } from "../services/complaintService";
 import { officerService } from "../services/officerService";
 import { Complaint, Officer } from "../types";
-import { ComplaintStatus, ComplaintPriority } from "../constants/enums";
+import {
+  ComplaintStatus,
+  ComplaintPriority,
+  getComplaintCategoryLabel,
+} from "../constants/enums";
 import ComplaintEditModal from "../components/complaints/ComplaintEditModal";
 import CommentSection from "../components/complaints/CommentSection";
 import {
@@ -22,6 +26,10 @@ import {
   Image,
   Video,
   Download,
+  MapPin,
+  Navigation,
+  Tag,
+  Timer,
 } from "lucide-react";
 import { getDepartmentDisplayName } from "../utils/departmentUtils";
 import { statusDisplay } from "../utils/statusUtils";
@@ -168,6 +176,18 @@ const ComplaintDetail: React.FC = () => {
     setComplaint(updatedComplaint);
     setIsEditModalOpen(false);
   };
+
+  const hasSmcDetails =
+    complaint?.category ||
+    complaint?.wardNumber ||
+    complaint?.wardName ||
+    complaint?.zone ||
+    complaint?.slaDueAt ||
+    complaint?.latitude != null ||
+    complaint?.longitude != null;
+
+  const hasCoordinates =
+    complaint?.latitude != null && complaint?.longitude != null;
 
   if (loading) {
     return (
@@ -316,6 +336,93 @@ const ComplaintDetail: React.FC = () => {
                 Location
               </h3>
               <p className="text-gray-700">{complaint.location}</p>
+            </div>
+          )}
+
+          {/* SMC Captured Parameters */}
+          {hasSmcDetails && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    SMC Routing Details
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Captured municipal parameters for faster ward-level action.
+                  </p>
+                </div>
+                {hasCoordinates && (
+                  <a
+                    href={`https://www.google.com/maps?q=${complaint.latitude},${complaint.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-medium text-blue-700 shadow-sm ring-1 ring-blue-100 hover:bg-blue-50"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    Open Map
+                  </a>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {complaint.category && (
+                  <div className="rounded-md bg-white p-3 ring-1 ring-blue-100">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      <Tag className="h-4 w-4" />
+                      Issue Type
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-gray-900">
+                      {getComplaintCategoryLabel(complaint.category)}
+                    </p>
+                  </div>
+                )}
+
+                {(complaint.wardNumber ||
+                  complaint.wardName ||
+                  complaint.zone) && (
+                  <div className="rounded-md bg-white p-3 ring-1 ring-blue-100">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      <MapPin className="h-4 w-4" />
+                      Ward Mapping
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-gray-900">
+                      {complaint.wardNumber
+                        ? `Ward ${complaint.wardNumber}`
+                        : "Ward not selected"}
+                      {complaint.wardName ? ` - ${complaint.wardName}` : ""}
+                    </p>
+                    {complaint.zone && (
+                      <p className="mt-1 text-xs text-gray-600">
+                        Zone: {complaint.zone}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {hasCoordinates && (
+                  <div className="rounded-md bg-white p-3 ring-1 ring-blue-100">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      <Navigation className="h-4 w-4" />
+                      GPS Coordinates
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-gray-900">
+                      {complaint.latitude}, {complaint.longitude}
+                    </p>
+                  </div>
+                )}
+
+                {complaint.slaDueAt && (
+                  <div className="rounded-md bg-white p-3 ring-1 ring-blue-100">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      <Timer className="h-4 w-4" />
+                      SLA Due
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-gray-900">
+                      {new Date(complaint.slaDueAt).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
