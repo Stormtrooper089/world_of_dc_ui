@@ -169,6 +169,67 @@ export interface ComplaintHistory {
   updatedAt: string;
 }
 
+export interface GovernanceDashboard {
+  summary: GovernanceSummary;
+  wardPerformance: WardPerformance[];
+  categoryPerformance: CategoryPerformance[];
+  statusBreakdown: StatusBreakdown[];
+  priorityItems: GovernancePriorityItem[];
+}
+
+export interface GovernanceSummary {
+  totalComplaints: number;
+  openComplaints: number;
+  resolvedComplaints: number;
+  slaBreached: number;
+  dueToday: number;
+  geoTaggedComplaints: number;
+  resolutionRate: number;
+  geoTagCoverage: number;
+  averageCitizenRating: number;
+}
+
+export interface WardPerformance {
+  wardNumber?: number;
+  wardName?: string;
+  zone?: string;
+  totalComplaints: number;
+  openComplaints: number;
+  resolvedComplaints: number;
+  slaBreached: number;
+  resolutionRate: number;
+  topCategory?: string;
+}
+
+export interface CategoryPerformance {
+  category: string;
+  label: string;
+  totalComplaints: number;
+  openComplaints: number;
+  slaBreached: number;
+  resolutionRate: number;
+}
+
+export interface StatusBreakdown {
+  status: string;
+  label: string;
+  count: number;
+}
+
+export interface GovernancePriorityItem {
+  id: string;
+  complaintNumber: string;
+  subject: string;
+  category?: string;
+  priority?: string;
+  status?: string;
+  wardNumber?: number;
+  wardName?: string;
+  location?: string;
+  slaDueAt?: string;
+  slaBreached: boolean;
+}
+
 // Enums are now imported from constants/enums.ts
 
 export interface CreateComplaintData {

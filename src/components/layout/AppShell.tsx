@@ -4,7 +4,8 @@ import {
   ShieldCheck,
   SquareActivity,
   NotebookPen,
-  Users
+  Users,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../constants/enums"; 
@@ -16,6 +17,7 @@ import TrackingDashboard from '../../pages/TrackingDashboard';
 import Profile from '../../pages/Profile';
 import TaskBoard from '../../pages/TaskBoard';
 import SquadManagementPage from '../../pages/SquadManagementPage';
+import GovernanceDashboard from '../../pages/GovernanceDashboard';
 
 // Helper for Rail Icons (Light Mode Updated)
 const NavIcon = ({ icon: Icon, label, isActive, onClick, badge }: any) => (
@@ -81,6 +83,13 @@ export default function AppShell() {
             onClick={() => setActiveView('TRACKING')} 
             badge={0} 
           />
+          <NavIcon
+            icon={BarChart3}
+            label="Governance Dashboard"
+            isActive={activeView === 'GOVERNANCE'}
+            onClick={() => setActiveView('GOVERNANCE')}
+            badge={0}
+          />
           <NavIcon 
             icon={Users} 
             label="Squad Management" 
@@ -128,6 +137,7 @@ export default function AppShell() {
         {activeView === 'APPROVALS' && <Approvals />}
         {activeView === 'TASK_BOARD' && <TaskBoard />}
         {activeView === 'TRACKING' && <TrackingDashboard />}
+        {activeView === 'GOVERNANCE' && <GovernanceDashboard />}
         {activeView === 'SQUAD_MANAGEMENT' && <SquadManagementPage />}
         {activeView === 'PROFILE' && <Profile />}
       </div>
