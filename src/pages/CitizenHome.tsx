@@ -2088,7 +2088,10 @@ const CitizenHome: React.FC = () => {
           title="SMC Waste Pickup Request"
           size="lg"
         >
-          <WastePickupRequestForm onCancel={() => setIsWastePickupDialogOpen(false)} />
+          <WastePickupRequestForm
+            onCancel={() => setIsWastePickupDialogOpen(false)}
+            onSubmitted={() => setIsWastePickupDialogOpen(false)}
+          />
         </DialogBox>
       )}
     </div>

@@ -16,7 +16,10 @@ const categoryOptions = Object.keys(wasteCategoryLabels) as WasteCategory[];
 const quantityOptions = Object.keys(wasteQuantityLabels) as WasteQuantityEstimate[];
 const urgencyOptions = Object.keys(wasteUrgencyLabels) as WasteUrgency[];
 
-const WastePickupRequestForm: React.FC<{ onCancel?: () => void }> = ({ onCancel }) => {
+const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (trackingId: string) => void }> = ({
+  onCancel,
+  onSubmitted,
+}) => {
   const [wards, setWards] = useState<Ward[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -99,6 +102,9 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void }> = ({ onCancel 
 
       const request = await wastePickupService.createRequest(formData);
       setSuccessTrackingId(request.trackingId);
+      if (onSubmitted) {
+        window.setTimeout(() => onSubmitted(request.trackingId), 900);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || "Unable to submit waste pickup request.");
     } finally {
