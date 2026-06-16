@@ -7,9 +7,21 @@ export interface User {
   name: string;
   role: UserRole;
   employeeId?: string;
+  employeeCategory?: EmployeeCategory;
   mobileNumber?: string; // For citizens
   createdAt: string;
   updatedAt: string;
+}
+
+export enum EmployeeCategory {
+  ADMINISTRATION = "ADMINISTRATION",
+  FINANCE = "FINANCE",
+  SANITATION = "SANITATION",
+  DRIVER = "DRIVER",
+  ENGINEERING = "ENGINEERING",
+  FIELD_STAFF = "FIELD_STAFF",
+  IT_SUPPORT = "IT_SUPPORT",
+  OTHER = "OTHER",
 }
 
 export interface Citizen {
@@ -65,6 +77,7 @@ export interface OfficerSignupData {
   mobileNumber: string;
   designation: string;
   department: string;
+  employeeCategory: EmployeeCategory;
   role: string;
   password: string;
 }
@@ -77,6 +90,7 @@ export interface Officer {
   mobileNumber: string;
   designation: string;
   department: string;
+  employeeCategory?: EmployeeCategory;
   role: UserRole;
   isApproved: boolean;
   createdAt: string;

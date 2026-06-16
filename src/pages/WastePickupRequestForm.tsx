@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Camera, LocateFixed, Truck } from "lucide-react";
 import { wardsService } from "../services/wardsService";
 import { wastePickupService } from "../services/wastePickupService";
+import { useAuth } from "../contexts/AuthContext";
 import { Ward } from "../types";
 import {
   WasteCategory,
@@ -20,6 +21,7 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (t
   onCancel,
   onSubmitted,
 }) => {
+  const { user } = useAuth();
   const [wards, setWards] = useState<Ward[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -31,7 +33,6 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (t
     mobileNumber: "",
     wardNumber: "",
     locality: "",
-    landmark: "",
     fullAddress: "",
     latitude: "",
     longitude: "",
@@ -47,6 +48,14 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (t
   useEffect(() => {
     wardsService.getWards().then(setWards);
   }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      citizenName: prev.citizenName || user?.name || "",
+      mobileNumber: user?.mobileNumber || prev.mobileNumber,
+    }));
+  }, [user?.mobileNumber, user?.name]);
 
   const updateField = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -87,7 +96,6 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (t
       formData.append("mobileNumber", form.mobileNumber);
       if (form.wardNumber) formData.append("wardNumber", form.wardNumber);
       formData.append("locality", form.locality);
-      formData.append("landmark", form.landmark);
       formData.append("fullAddress", form.fullAddress);
       if (form.latitude) formData.append("latitude", form.latitude);
       if (form.longitude) formData.append("longitude", form.longitude);
@@ -137,7 +145,7 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (t
 
       <div className="grid gap-4 md:grid-cols-2">
         <Input label="Citizen name *" value={form.citizenName} onChange={(value) => updateField("citizenName", value)} />
-        <Input label="Mobile number *" value={form.mobileNumber} maxLength={10} onChange={(value) => updateField("mobileNumber", value.replace(/\D/g, "").slice(0, 10))} />
+        <Input label="Mobile number *" value={form.mobileNumber} maxLength={10} readOnly onChange={(value) => updateField("mobileNumber", value.replace(/\D/g, "").slice(0, 10))} />
         <div>
           <label className="block text-sm font-semibold text-slate-700">Ward</label>
           <select value={form.wardNumber} onChange={(e) => updateField("wardNumber", e.target.value)} className="mt-1 w-full rounded-lg border-slate-300 px-3 py-2.5">
@@ -147,8 +155,7 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (t
             ))}
           </select>
         </div>
-        <Input label="Locality / road" value={form.locality} onChange={(value) => updateField("locality", value)} />
-        <Input label="Landmark" value={form.landmark} onChange={(value) => updateField("landmark", value)} />
+        <Input label="Locality / road / landmark" value={form.locality} onChange={(value) => updateField("locality", value)} />
         <Input label="Preferred pickup time slot" value={form.preferredPickupSlot} placeholder="Tomorrow 9 AM - 12 PM" onChange={(value) => updateField("preferredPickupSlot", value)} />
       </div>
 
@@ -205,10 +212,10 @@ const WastePickupRequestForm: React.FC<{ onCancel?: () => void; onSubmitted?: (t
   );
 };
 
-const Input = ({ label, value, onChange, placeholder, maxLength }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; maxLength?: number }) => (
+const Input = ({ label, value, onChange, placeholder, maxLength, readOnly }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; maxLength?: number; readOnly?: boolean }) => (
   <div>
     <label className="block text-sm font-semibold text-slate-700">{label}</label>
-    <input value={value} maxLength={maxLength} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-lg border-slate-300 px-3 py-2.5" />
+    <input value={value} maxLength={maxLength} placeholder={placeholder} readOnly={readOnly} onChange={(e) => onChange(e.target.value)} className={`mt-1 w-full rounded-lg border-slate-300 px-3 py-2.5 ${readOnly ? "bg-slate-100 text-slate-600" : ""}`} />
   </div>
 );
 

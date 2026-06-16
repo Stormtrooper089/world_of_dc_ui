@@ -79,6 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: response.data.name || '',
           role: response.data.role as any || 'OFFICER',
           employeeId: response.data.employeeId,
+          employeeCategory: response.data.employeeCategory as any,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

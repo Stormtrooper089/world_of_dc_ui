@@ -3,12 +3,23 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import { useAuth } from "../contexts/AuthContext";
-import { OfficerLoginCredentials, OfficerSignupData } from "../types";
+import { EmployeeCategory, OfficerLoginCredentials, OfficerSignupData } from "../types";
 import { 
   User, Lock, Mail, Phone, Building, Briefcase, 
   Shield, Loader2, AlertCircle, CheckCircle2, ArrowRight 
 } from "lucide-react";
 import { Department, UserRole, getDepartmentLabel, getUserRoleLabel } from "../constants/enums";
+
+const employeeCategoryLabels: Record<EmployeeCategory, string> = {
+  [EmployeeCategory.ADMINISTRATION]: "Administration",
+  [EmployeeCategory.FINANCE]: "Finance",
+  [EmployeeCategory.SANITATION]: "Sanitation",
+  [EmployeeCategory.DRIVER]: "Driver",
+  [EmployeeCategory.ENGINEERING]: "Engineering",
+  [EmployeeCategory.FIELD_STAFF]: "Field Staff",
+  [EmployeeCategory.IT_SUPPORT]: "IT Support",
+  [EmployeeCategory.OTHER]: "Other",
+};
 
 const Officer: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -228,6 +239,27 @@ const Officer: React.FC = () => {
                   </select>
                 </div>
                 {errors.department && <p className="text-xs text-red-600 mt-1">{errors.department.message}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee Category</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Briefcase className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    {...register("employeeCategory", { required: "Required" })}
+                    className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                  >
+                    <option value="">Select Employee Category</option>
+                    {Object.values(EmployeeCategory).map((category) => (
+                      <option key={category} value={category}>
+                        {employeeCategoryLabels[category]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {errors.employeeCategory && <p className="text-xs text-red-600 mt-1">{errors.employeeCategory.message}</p>}
               </div>
 
               <div className="space-y-1.5">

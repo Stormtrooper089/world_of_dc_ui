@@ -85,6 +85,7 @@ export const authService = {
       name?: string;
       email?: string;
       employeeId?: string;
+      employeeCategory?: string;
       role?: string;
     }>
   > {
@@ -95,6 +96,7 @@ export const authService = {
         name?: string;
         email?: string;
         employeeId?: string;
+        employeeCategory?: string;
         role?: string;
       }>
     >("/officer/login", credentials);

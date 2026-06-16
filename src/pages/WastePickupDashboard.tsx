@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, LocateFixed, RefreshCw, Save, Trash2, Truck, X } from "lucide-react";
+import { officerService } from "../services/officerService";
 import { wastePickupService } from "../services/wastePickupService";
+import { EmployeeCategory, Officer } from "../types";
 import {
   WasteCategory,
   WastePickupDashboard as WastePickupDashboardData,
@@ -28,6 +30,7 @@ const statusStyles: Record<WastePickupStatus, string> = {
 const WastePickupDashboard: React.FC = () => {
   const [dashboard, setDashboard] = useState<WastePickupDashboardData | null>(null);
   const [requests, setRequests] = useState<WastePickupRequest[]>([]);
+  const [sanitationOfficers, setSanitationOfficers] = useState<Officer[]>([]);
   const [selected, setSelected] = useState<WastePickupRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -86,7 +89,23 @@ const WastePickupDashboard: React.FC = () => {
 
   useEffect(() => {
     load();
+    officerService
+      .getAllOfficers(undefined, EmployeeCategory.SANITATION)
+      .then((officers) => setSanitationOfficers(officers.filter((officer) => officer.isApproved)))
+      .catch(() => setSanitationOfficers([]));
   }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    setAssignment({
+      assignedOfficerId: selected.assignedOfficerId || "",
+      assignedSanitationStaffId: selected.assignedSanitationStaffId || "",
+      assignedVehicleNumber: selected.assignedVehicleNumber || "",
+      sanitationTeamName: selected.sanitationTeamName || "",
+      remarks: "",
+      preferredPickupSlot: selected.preferredPickupSlot || "",
+    });
+  }, [selected?.id]);
 
   const visibleRequests = useMemo(() => requests.slice(0, 50), [requests]);
 
@@ -250,12 +269,24 @@ const WastePickupDashboard: React.FC = () => {
                 <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <h3 className="font-bold text-slate-950">Assignment</h3>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <input placeholder="Officer ID" value={assignment.assignedOfficerId} onChange={(e) => setAssignment({ ...assignment, assignedOfficerId: e.target.value })} className="rounded-lg border-slate-200 px-3 py-2 text-sm" />
+                    <select value={assignment.assignedOfficerId} onChange={(e) => setAssignment({ ...assignment, assignedOfficerId: e.target.value })} className="rounded-lg border-slate-200 px-3 py-2 text-sm">
+                      <option value="">Assign sanitation officer</option>
+                      {sanitationOfficers.map((officer) => (
+                        <option key={officer.id} value={officer.id}>
+                          {officer.name} ({officer.employeeId})
+                        </option>
+                      ))}
+                    </select>
                     <input placeholder="Sanitation staff ID" value={assignment.assignedSanitationStaffId} onChange={(e) => setAssignment({ ...assignment, assignedSanitationStaffId: e.target.value })} className="rounded-lg border-slate-200 px-3 py-2 text-sm" />
                     <input placeholder="Vehicle number" value={assignment.assignedVehicleNumber} onChange={(e) => setAssignment({ ...assignment, assignedVehicleNumber: e.target.value })} className="rounded-lg border-slate-200 px-3 py-2 text-sm" />
                     <input placeholder="Team name" value={assignment.sanitationTeamName} onChange={(e) => setAssignment({ ...assignment, sanitationTeamName: e.target.value })} className="rounded-lg border-slate-200 px-3 py-2 text-sm" />
                     <input placeholder="Pickup schedule" value={assignment.preferredPickupSlot} onChange={(e) => setAssignment({ ...assignment, preferredPickupSlot: e.target.value })} className="rounded-lg border-slate-200 px-3 py-2 text-sm sm:col-span-2" />
                   </div>
+                  {sanitationOfficers.length === 0 && (
+                    <p className="mt-2 text-xs font-semibold text-amber-700">
+                      No approved sanitation employees found. Update employee category to SANITATION for staff who should receive pickup assignments.
+                    </p>
+                  )}
                   <div className="mt-3 flex gap-2">
                     <button onClick={assign} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white"><Save className="h-4 w-4" />Assign</button>
                     <button onClick={schedule} className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white">Schedule</button>

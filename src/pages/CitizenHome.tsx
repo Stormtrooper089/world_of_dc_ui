@@ -589,7 +589,11 @@ const CitizenHome: React.FC = () => {
         }
         break;
       case "wastePickup":
-        setIsWastePickupDialogOpen(true);
+        if (!isAuthenticated) {
+          openLoginModal();
+        } else {
+          setIsWastePickupDialogOpen(true);
+        }
         break;
       case "services":
         window.open(
