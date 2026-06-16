@@ -17,6 +17,7 @@ import {
   Search,
   TrendingUp,
   Twitter,
+  Trash2,
   User,
   Vote,
   X,
@@ -43,6 +44,7 @@ import {
   ComplaintHistory,
 } from "../types";
 import GrievanceForm from "./GrievanceFile/GrievanceForm";
+import WastePickupRequestForm from "./WastePickupRequestForm";
 
 const heroImages = [image7, image5, image6, image1, image2, image3];
 
@@ -72,6 +74,7 @@ const CitizenHome: React.FC = () => {
   });
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [isGrievanceDialogOpen, setIsGrievanceDialogOpen] = useState(false);
+  const [isWastePickupDialogOpen, setIsWastePickupDialogOpen] = useState(false);
   const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
   const [citizenComplaints, setCitizenComplaints] = useState<Complaint[]>([]);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(
@@ -176,12 +179,12 @@ const CitizenHome: React.FC = () => {
       action: "track",
     },
     {
-      name: "Web Services",
-      icon: Globe,
-      description: "Websites & online tools",
+      name: "Waste Pickup",
+      icon: Trash2,
+      description: "SMC sanitation request",
       accentBg: "bg-sky-50 text-sky-700",
       iconColor: "text-sky-700",
-      action: "services",
+      action: "wastePickup",
     },
     {
       name: "News",
@@ -584,6 +587,9 @@ const CitizenHome: React.FC = () => {
         } else {
           openTrackModal();
         }
+        break;
+      case "wastePickup":
+        setIsWastePickupDialogOpen(true);
         break;
       case "services":
         window.open(
@@ -2072,6 +2078,17 @@ const CitizenHome: React.FC = () => {
             }}
             onCancel={() => setIsGrievanceDialogOpen(false)}
           />
+        </DialogBox>
+      )}
+
+      {isWastePickupDialogOpen && (
+        <DialogBox
+          isOpen={isWastePickupDialogOpen}
+          onClose={() => setIsWastePickupDialogOpen(false)}
+          title="SMC Waste Pickup Request"
+          size="lg"
+        >
+          <WastePickupRequestForm onCancel={() => setIsWastePickupDialogOpen(false)} />
         </DialogBox>
       )}
     </div>

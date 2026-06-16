@@ -5,7 +5,8 @@ import {
   SquareActivity,
   NotebookPen,
   Users,
-  BarChart3
+  BarChart3,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../constants/enums"; 
@@ -18,6 +19,7 @@ import Profile from '../../pages/Profile';
 import TaskBoard from '../../pages/TaskBoard';
 import SquadManagementPage from '../../pages/SquadManagementPage';
 import GovernanceDashboard from '../../pages/GovernanceDashboard';
+import WastePickupDashboard from '../../pages/WastePickupDashboard';
 
 // Helper for Rail Icons (Light Mode Updated)
 const NavIcon = ({ icon: Icon, label, isActive, onClick, badge }: any) => (
@@ -90,6 +92,13 @@ export default function AppShell() {
             onClick={() => setActiveView('GOVERNANCE')}
             badge={0}
           />
+          <NavIcon
+            icon={Trash2}
+            label="Solid Waste"
+            isActive={activeView === 'WASTE_PICKUP'}
+            onClick={() => setActiveView('WASTE_PICKUP')}
+            badge={0}
+          />
           <NavIcon 
             icon={Users} 
             label="Squad Management" 
@@ -138,6 +147,7 @@ export default function AppShell() {
         {activeView === 'TASK_BOARD' && <TaskBoard />}
         {activeView === 'TRACKING' && <TrackingDashboard />}
         {activeView === 'GOVERNANCE' && <GovernanceDashboard />}
+        {activeView === 'WASTE_PICKUP' && <WastePickupDashboard />}
         {activeView === 'SQUAD_MANAGEMENT' && <SquadManagementPage />}
         {activeView === 'PROFILE' && <Profile />}
       </div>

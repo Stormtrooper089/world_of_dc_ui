@@ -10,9 +10,11 @@ import {
   RotateCcw,
   ShieldCheck,
   Star,
+  Trash2,
   TrendingUp,
 } from "lucide-react";
 import { governanceService } from "../services/governanceService";
+import { wastePickupService } from "../services/wastePickupService";
 import {
   CategoryPerformance,
   DepartmentPerformance,
@@ -21,6 +23,7 @@ import {
   OfficerPerformance,
   WardPerformance,
 } from "../types";
+import { WastePickupDashboard as WastePickupDashboardData } from "../types/wastePickupTypes";
 
 const formatNumber = (value?: number) => (value ?? 0).toLocaleString("en-IN");
 
@@ -88,6 +91,7 @@ const ProgressBar = ({ value, tone = "blue" }: { value: number; tone?: "blue" | 
 
 const GovernanceDashboard: React.FC = () => {
   const [dashboard, setDashboard] = useState<GovernanceDashboardData | null>(null);
+  const [wasteDashboard, setWasteDashboard] = useState<WastePickupDashboardData | null>(null);
   const [selectedSlaDays, setSelectedSlaDays] = useState<number | undefined>(undefined);
   const [customSlaDays, setCustomSlaDays] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -97,8 +101,12 @@ const GovernanceDashboard: React.FC = () => {
     try {
       setError("");
       setIsLoading(true);
-      const data = await governanceService.getDashboard(selectedSlaDays);
+      const [data, wasteData] = await Promise.all([
+        governanceService.getDashboard(selectedSlaDays),
+        wastePickupService.dashboard(),
+      ]);
       setDashboard(data);
+      setWasteDashboard(wasteData);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Unable to load governance dashboard.");
     } finally {
@@ -326,6 +334,28 @@ const GovernanceDashboard: React.FC = () => {
                 Showing only complaints with status not resolved/closed and age greater than or equal to {summary?.selectedSlaDays} days.
               </div>
             )}
+
+            <section className="mt-5 rounded-xl border border-emerald-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-emerald-50 p-2.5 text-emerald-700">
+                    <Trash2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-950">SMC Solid Waste Snapshot</h2>
+                    <p className="text-sm text-slate-500">
+                      Waste pickup requests, sanitation SLA breaches and repeat hotspots.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+                  <MetricPill label="Requests" value={wasteDashboard?.totalRequests || 0} />
+                  <MetricPill label="Pending" value={wasteDashboard?.pendingRequests || 0} />
+                  <MetricPill label="SLA" value={wasteDashboard?.slaBreachedRequests || 0} danger />
+                  <MetricPill label="Hotspots" value={wasteDashboard?.repeatHotspots?.length || 0} danger />
+                </div>
+              </div>
+            </section>
 
             <section className="mt-5 grid gap-5 xl:grid-cols-[1.35fr,0.9fr]">
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
