@@ -130,6 +130,8 @@ const SMC_CATEGORY_OPTIONS: ComplaintCategory[] = [
   ComplaintCategory.OTHER,
 ];
 
+const PAGE_SIZE = 20;
+
 // --- SUB-COMPONENTS ---
 const MetricCard = ({ title, value, trend, type = 'neutral' }: {
   title: string;
@@ -611,6 +613,7 @@ export default function ComplaintCockpitBoard() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -820,6 +823,21 @@ export default function ComplaintCockpitBoard() {
       return matchesSearch && matchesPriority && matchesStatus && matchesDept && matchesOfficer && matchesLocation && matchesDate;
     });
   }, [complaints, searchQuery, activeFilters, filteredOfficers]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeFilters]);
+
+  const sortedFilteredData = useMemo(() => {
+    return filteredData
+      .slice()
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [filteredData]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedFilteredData.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * PAGE_SIZE;
+  const paginatedData = sortedFilteredData.slice(pageStart, pageStart + PAGE_SIZE);
 
   const stats = useMemo(() => {
     return {
@@ -1243,14 +1261,13 @@ export default function ComplaintCockpitBoard() {
               <button onClick={() => setShowFilters(!showFilters)} className={`p-2 rounded hover:bg-gray-100 ${showFilters ? 'text-blue-600' : 'text-gray-400'}`}>
                 <SlidersHorizontal className="w-4 h-4" />
               </button>
-              <span className="text-sm text-gray-500 font-medium pl-2 border-l border-gray-200">Showing {filteredData.length} tickets</span>
+              <span className="text-sm text-gray-500 font-medium pl-2 border-l border-gray-200">
+                Showing {sortedFilteredData.length === 0 ? 0 : pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, sortedFilteredData.length)} of {sortedFilteredData.length} tickets
+              </span>
             </div>
           </div>
           <div className="md:hidden flex-1 overflow-y-auto divide-y divide-gray-100">
-            {filteredData
-              .slice()
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map(complaint => (
+            {paginatedData.map(complaint => (
                 <button
                   key={complaint.id}
                   type="button"
@@ -1302,14 +1319,7 @@ export default function ComplaintCockpitBoard() {
                 </tr>
               </thead>
                 <tbody className="divide-y divide-gray-100">
-                {filteredData
-                  // 1. Create a shallow copy to avoid mutating the original data
-                  .slice() 
-                  // 2. Sort by Date: Descending (Newest first). 
-                  // Switch a and b to (a.createdAt - b.createdAt) for Oldest first.
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  // 3. Map the sorted data
-                  .map(complaint => (
+                {paginatedData.map(complaint => (
                     <tr 
                       key={complaint.id} 
                       onClick={() => { 
@@ -1351,6 +1361,29 @@ export default function ComplaintCockpitBoard() {
                   ))}
               </tbody>
             </table>
+          </div>
+          <div className="flex flex-col gap-2 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Page {safeCurrentPage} of {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={safeCurrentPage === 1}
+                className="rounded-lg border border-gray-200 px-3 py-2 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={safeCurrentPage === totalPages}
+                className="rounded-lg border border-gray-200 px-3 py-2 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
         
