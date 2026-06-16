@@ -8,14 +8,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from "../contexts/AuthContext";
 import { complaintService } from "../services/complaintService";
+import { wardsService } from "../services/wardsService";
 import {
   UserRole,
   ComplaintPriority,
   ComplaintStatus,
   Department,
+  ComplaintCategory,
   getComplaintCategoryLabel,
 } from "../constants/enums";
-import { Complaint, ComplaintUpdateRequest, Officer, ComplaintDocument, Comment as ComplaintComment } from '../types';
+import { Complaint, ComplaintUpdateRequest, Officer, ComplaintDocument, Comment as ComplaintComment, Ward } from '../types';
 import { officerService } from "../services/officerService";
 import api from '../services/api';
 
@@ -112,6 +114,21 @@ const DEPARTMENT_NAMES = {
   OTHER: 'Other',
   UNASSIGNED: 'Unassigned'
 };
+
+const SMC_CATEGORY_OPTIONS: ComplaintCategory[] = [
+  ComplaintCategory.GARBAGE_NOT_COLLECTED,
+  ComplaintCategory.ILLEGAL_DUMPING,
+  ComplaintCategory.DRAIN_BLOCKAGE,
+  ComplaintCategory.WATER_LOGGING,
+  ComplaintCategory.STREET_LIGHT,
+  ComplaintCategory.ROAD_DAMAGE,
+  ComplaintCategory.PUBLIC_TOILET,
+  ComplaintCategory.STRAY_ANIMAL,
+  ComplaintCategory.TRADE_LICENSE,
+  ComplaintCategory.PROPERTY_TAX,
+  ComplaintCategory.BUILDING_PERMISSION,
+  ComplaintCategory.OTHER,
+];
 
 // --- SUB-COMPONENTS ---
 const MetricCard = ({ title, value, trend, type = 'neutral' }: {
@@ -229,13 +246,23 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
+    category: ComplaintCategory.GARBAGE_NOT_COLLECTED,
     priority: 'MEDIUM',
     location: '',
     department: '',
-    mobileNumber: '9876543210'
+    mobileNumber: '9876543210',
+    wardNumber: '',
+    latitude: '',
+    longitude: ''
   });
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [isLocating, setIsLocating] = useState(false);
   const isCitizen = user.role === 'CUSTOMER';
+
+  useEffect(() => {
+    wardsService.getWards().then(setWards);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -256,6 +283,31 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
     }
   };
 
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      showToast('Location is not supported on this device', 'error');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: position.coords.latitude.toFixed(6),
+          longitude: position.coords.longitude.toFixed(6),
+        }));
+        showToast('GPS location captured', 'success');
+        setIsLocating(false);
+      },
+      () => {
+        showToast('Unable to capture GPS location', 'error');
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -264,7 +316,10 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
     try {
       const formDataToSend = new FormData();
       Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key as keyof typeof formData]);
+        const value = formData[key as keyof typeof formData];
+        if (value !== '') {
+          formDataToSend.append(key, value);
+        }
       });
       
       if (attachment) {
@@ -283,9 +338,13 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
           citizenId: user.id,
           subject: formData.subject,
           description: formData.description,
+          category: formData.category as ComplaintCategory,
           priority: formData.priority as ComplaintPriority,
           status: response.data.status as ComplaintStatus,
           location: formData.location,
+          wardNumber: formData.wardNumber ? Number(formData.wardNumber) : undefined,
+          latitude: formData.latitude ? Number(formData.latitude) : undefined,
+          longitude: formData.longitude ? Number(formData.longitude) : undefined,
           assignedDepartment: formData.department ? (formData.department as Department) : undefined,
           assignedToId: undefined,
           createdAt: new Date().toISOString(),
@@ -316,9 +375,9 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center p-0 animate-in fade-in duration-200 sm:items-center sm:p-4">
+      <div className="bg-white rounded-t-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[96vh] sm:rounded-xl sm:max-h-[90vh]">
+        <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 sm:px-6">
           <div>
             <h2 className="text-lg font-bold text-gray-900">New Complaint Ticket</h2>
             <p className="text-xs text-gray-500">Fill in the details to create a new ticket.</p>
@@ -328,8 +387,8 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <form onSubmit={handleSubmit} className="p-4 overflow-y-auto flex-1 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
             {/* LEFT SECTION: Core Details */}
             <div className="space-y-4">
               <div>
@@ -438,6 +497,39 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Municipal Issue Type</label>
+                <select
+                  value={formData.category}
+                  onChange={e => setFormData({...formData, category: e.target.value as ComplaintCategory})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  {SMC_CATEGORY_OPTIONS.map((category) => (
+                    <option key={category} value={category}>
+                      {getComplaintCategoryLabel(category)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Ward Mapping</label>
+                <select
+                  value={formData.wardNumber}
+                  onChange={e => setFormData({...formData, wardNumber: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Select ward if known</option>
+                  {wards.map((ward) => (
+                    <option key={ward.wardNumber} value={ward.wardNumber}>
+                      Ward {ward.wardNumber}
+                      {ward.name ? ` - ${ward.name}` : ''}
+                      {ward.zone ? ` (${ward.zone})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {!isCitizen && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase">Priority</label>
@@ -467,10 +559,31 @@ const CreateComplaintModal = ({ onClose, onSuccess, user, showToast }: {
                   />
                 </div>
               </div>
+
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-blue-900 uppercase">GPS Coordinates</label>
+                    <p className="text-xs text-blue-700 mt-1">
+                      {formData.latitude && formData.longitude
+                        ? `${formData.latitude}, ${formData.longitude}`
+                        : 'Capture location for map-based routing'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isLocating}
+                    className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 hover:bg-blue-100 disabled:opacity-60"
+                  >
+                    {isLocating ? 'Capturing...' : 'Use GPS'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
+          <div className="flex flex-col-reverse justify-end gap-3 pt-6 mt-6 border-t border-gray-100 sm:flex-row">
             <button 
               type="button" 
               onClick={onClose} 
@@ -961,7 +1074,7 @@ export default function ComplaintCockpitBoard() {
   : Object.keys(STATUS_CONFIG);
 
   return (  
-    <div className="h-screen flex flex-col bg-slate-50 text-slate-900 font-sans relative">
+    <div className="min-h-screen md:h-screen flex flex-col bg-slate-50 text-slate-900 font-sans relative">
       {toast && (
         <Toast 
           message={toast.message} 
@@ -970,27 +1083,35 @@ export default function ComplaintCockpitBoard() {
         />
       )}
 
-      <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 z-20">
-        <div className="flex items-center gap-4">
+      <header className="bg-white border-b border-gray-200 flex flex-col gap-3 px-4 py-3 shrink-0 z-20 md:h-16 md:flex-row md:items-center md:justify-between md:px-6 md:py-0">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">DO</div>
-          <h1 className="font-semibold text-gray-800">Admin Console</h1>
+            <div>
+              <h1 className="font-semibold text-gray-800 leading-tight">SMC Admin Console</h1>
+              <p className="text-xs text-gray-500 md:hidden">Complaints, wards and assignments</p>
+            </div>
+          </div>
+          <button onClick={() => setIsCreateModalOpen(true)} className="md:hidden bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors">
+            <Plus className="w-4 h-4" /> New
+          </button>
         </div>
-        <div className="flex-1 max-w-xl mx-8 relative">
+        <div className="w-full md:flex-1 md:max-w-xl md:mx-8 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search tickets by subject or ticket number..."
+            placeholder="Search tickets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
           />
         </div>
-        <button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-colors">
+        <button onClick={() => setIsCreateModalOpen(true)} className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium items-center gap-2 shadow-sm transition-colors">
           <Plus className="w-4 h-4" /> New Ticket
         </button>
       </header>
 
-      <div className="px-6 py-4 grid grid-cols-5 gap-4 shrink-0">
+      <div className="px-4 py-3 flex gap-3 overflow-x-auto shrink-0 md:px-6 md:py-4 md:grid md:grid-cols-5 md:overflow-visible md:gap-4">
         <MetricCard title="Total" value={stats.total} trend="All Tickets" type="neutral" />
         <MetricCard title="Created" value={facets.status.CREATED || 0} trend="New" type="warning" />
         <MetricCard title="In Progress" value={facets.status.IN_PROGRESS || 0} trend="Active" type="neutral" />
@@ -998,12 +1119,13 @@ export default function ComplaintCockpitBoard() {
         <MetricCard title="Resolved" value={facets.status.RESOLVED || 0} trend="Completed" type="success" /> 
       </div>
 
-      <div className="flex flex-1 overflow-hidden px-6 pb-6 gap-4 mt-2">
+      <div className="flex flex-1 min-h-0 px-4 pb-4 gap-4 mt-1 md:overflow-hidden md:px-6 md:pb-6 md:mt-2">
         
         {showFilters && (
-          <aside className="w-64 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col shrink-0 overflow-hidden">
+          <aside className="fixed inset-x-4 top-32 bottom-4 z-40 bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden md:static md:z-auto md:w-64 md:shadow-sm md:shrink-0">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wider">Filters</h3>
+              <button onClick={() => setShowFilters(false)} className="md:hidden text-xs text-gray-500 hover:text-gray-800">Close</button>
               <button onClick={() => {
                 setActiveFilters({ priority: [], status: [], department: [], officer: [], location: [], dateRange: { start: '', end: '' } });
                 setSearchQuery('');
@@ -1100,7 +1222,7 @@ export default function ComplaintCockpitBoard() {
           </aside>
         )}
 
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
+        <div className="flex-1 min-w-0 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
           <div className="p-3 border-b border-gray-100 flex justify-between items-center">
             <div className="flex items-center gap-2">
               <button onClick={() => setShowFilters(!showFilters)} className={`p-2 rounded hover:bg-gray-100 ${showFilters ? 'text-blue-600' : 'text-gray-400'}`}>
@@ -1109,7 +1231,50 @@ export default function ComplaintCockpitBoard() {
               <span className="text-sm text-gray-500 font-medium pl-2 border-l border-gray-200">Showing {filteredData.length} tickets</span>
             </div>
           </div>
-          <div className="overflow-auto flex-1">
+          <div className="md:hidden flex-1 overflow-y-auto divide-y divide-gray-100">
+            {filteredData
+              .slice()
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map(complaint => (
+                <button
+                  key={complaint.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTicketId(complaint.id);
+                    fetchFullTicketData(complaint.id, complaint.complaintId.toString());
+                    setTempChanges({});
+                  }}
+                  className="w-full text-left p-4 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs font-semibold text-blue-600">#{complaint.complaintNumber.slice(-6)}</p>
+                      <h3 className="mt-1 text-sm font-semibold text-gray-900 break-words">{complaint.subject}</h3>
+                      <p className="mt-1 text-xs text-gray-500 truncate">{complaint.location || 'No location captured'}</p>
+                    </div>
+                    <ChevronRight className="mt-4 h-4 w-4 shrink-0 text-gray-400" />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_CONFIG[complaint.status]?.color}`}>
+                      {STATUS_CONFIG[complaint.status]?.label || complaint.status}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${PRIORITY_STYLES[complaint.priority]?.bg || 'bg-gray-50'} ${PRIORITY_STYLES[complaint.priority]?.text || 'text-gray-700'} ${PRIORITY_STYLES[complaint.priority]?.border || 'border-gray-200'}`}>
+                      {complaint.priority || 'MEDIUM'}
+                    </span>
+                    {complaint.wardNumber && (
+                      <span className="px-2 py-1 rounded-full bg-blue-50 text-xs font-medium text-blue-700">
+                        Ward {complaint.wardNumber}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                    <span>{complaint.assignedDepartment || 'Unassigned'}</span>
+                    <span>{new Date(complaint.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </button>
+              ))}
+          </div>
+          <div className="hidden md:block overflow-auto flex-1">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
@@ -1176,14 +1341,14 @@ export default function ComplaintCockpitBoard() {
         
         {/* --- EDIT COMPLAINT MODAL (Replaced Drawer) --- */}
         {selectedTicket && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center p-0 animate-in fade-in duration-200 sm:items-center sm:p-4">
+            <div className="bg-white rounded-t-2xl shadow-2xl w-full max-w-6xl h-[96vh] flex flex-col overflow-hidden sm:h-auto sm:max-h-[90vh] sm:rounded-xl">
               
               {/* MODAL HEADER */}
-              <div className="px-6 py-4 border-b border-gray-200 flex items-start justify-between bg-gray-50/80">
-                <div>
-                   <div className="flex items-center gap-3 mb-1">
-                    <span className="font-mono text-sm font-bold text-gray-500">#{selectedTicket.complaintNumber}</span>
+              <div className="px-4 py-4 border-b border-gray-200 flex flex-col gap-3 bg-gray-50/80 sm:px-6 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                   <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="font-mono text-xs sm:text-sm font-bold text-gray-500">#{selectedTicket.complaintNumber}</span>
                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase border ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].bg} ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].text} ${PRIORITY_STYLES[selectedTicket.priority || 'MEDIUM'].border}`}>
                         {selectedTicket.priority || 'MEDIUM'}
                       </span>
@@ -1191,18 +1356,18 @@ export default function ComplaintCockpitBoard() {
                         {STATUS_CONFIG[selectedTicket.status || 'CREATED']?.label || selectedTicket.status}
                       </span>
                    </div>
-                   <h2 className="text-xl font-bold text-gray-900">{selectedTicket.subject}</h2>
+                   <h2 className="text-lg sm:text-xl font-bold text-gray-900 break-words">{selectedTicket.subject}</h2>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
                    <button 
                       onClick={handleSaveChanges} 
                       disabled={isSaving || Object.keys(tempChanges).length === 0}
-                      className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm disabled:opacity-70 mr-2"
+                      className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm disabled:opacity-70 sm:mr-2"
                     >
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       {isSaving ? 'Saving Changes' : 'Save Changes'}
                     </button>
-                    <div className="h-8 w-px bg-gray-300 mx-2"></div>
+                    <div className="hidden sm:block h-8 w-px bg-gray-300 mx-2"></div>
                     <button onClick={() => setSelectedTicketId(null)} className="p-2 rounded-full hover:bg-gray-200 text-gray-500 transition-colors">
                       <X className="w-6 h-6" />
                     </button>
@@ -1210,7 +1375,7 @@ export default function ComplaintCockpitBoard() {
               </div>
 
               {/* MODAL BODY (Grid Layout) */}
-              <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+              <div className="flex-1 overflow-y-auto p-4 bg-slate-50 sm:p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   
                   {/* --- LEFT COLUMN: Main Details & Comments --- */}
@@ -1226,7 +1391,7 @@ export default function ComplaintCockpitBoard() {
 
                     {/* Attributes Card */}
                     <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-                      <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                      <div className="grid grid-cols-1 gap-y-4 gap-x-8 sm:grid-cols-2">
                          <div>
                             <span className="text-xs text-gray-400 block mb-1">Location</span>
                             <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
@@ -1418,7 +1583,7 @@ export default function ComplaintCockpitBoard() {
                   <div className="space-y-6">
                     
                     {/* Management Card */}
-                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-5 sticky top-6">
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-5 lg:sticky lg:top-6">
                        
                        <div>
                           <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Status</label>
