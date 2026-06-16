@@ -612,7 +612,10 @@ export default function ComplaintCockpitBoard() {
   const [loading, setLoading] = useState(true);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 768px)').matches;
+  });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filteredOfficers, setFilteredOfficers] = useState<Officer[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -1122,9 +1125,21 @@ export default function ComplaintCockpitBoard() {
       <div className="flex flex-1 min-h-0 px-4 pb-4 gap-4 mt-1 md:overflow-hidden md:px-6 md:pb-6 md:mt-2">
         
         {showFilters && (
-          <aside className="fixed inset-x-4 top-32 bottom-4 z-40 bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden md:static md:z-auto md:w-64 md:shadow-sm md:shrink-0">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wider">Filters</h3>
+          <button
+            type="button"
+            aria-label="Close filters"
+            onClick={() => setShowFilters(false)}
+            className="fixed inset-0 z-30 bg-slate-900/30 backdrop-blur-[1px] md:hidden"
+          />
+        )}
+
+        {showFilters && (
+          <aside className="fixed inset-x-0 bottom-0 z-40 max-h-[76vh] bg-white rounded-t-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden md:static md:z-auto md:max-h-none md:w-64 md:rounded-xl md:shadow-sm md:shrink-0">
+            <div className="sticky top-0 z-10 p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <div>
+                <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wider">Filters</h3>
+                <p className="text-xs text-gray-400 md:hidden">Refine tickets by date, status and ward work.</p>
+              </div>
               <button onClick={() => setShowFilters(false)} className="md:hidden text-xs text-gray-500 hover:text-gray-800">Close</button>
               <button onClick={() => {
                 setActiveFilters({ priority: [], status: [], department: [], officer: [], location: [], dateRange: { start: '', end: '' } });
