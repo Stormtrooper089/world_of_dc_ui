@@ -7,6 +7,7 @@ import {
   Download,
   MapPinned,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
   Star,
   TrendingUp,
@@ -14,8 +15,10 @@ import {
 import { governanceService } from "../services/governanceService";
 import {
   CategoryPerformance,
+  DepartmentPerformance,
   GovernanceDashboard as GovernanceDashboardData,
   GovernancePriorityItem,
+  OfficerPerformance,
   WardPerformance,
 } from "../types";
 
@@ -85,7 +88,8 @@ const ProgressBar = ({ value, tone = "blue" }: { value: number; tone?: "blue" | 
 
 const GovernanceDashboard: React.FC = () => {
   const [dashboard, setDashboard] = useState<GovernanceDashboardData | null>(null);
-  const [days, setDays] = useState(30);
+  const [selectedSlaDays, setSelectedSlaDays] = useState<number | undefined>(undefined);
+  const [customSlaDays, setCustomSlaDays] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -93,7 +97,7 @@ const GovernanceDashboard: React.FC = () => {
     try {
       setError("");
       setIsLoading(true);
-      const data = await governanceService.getDashboard(days);
+      const data = await governanceService.getDashboard(selectedSlaDays);
       setDashboard(data);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Unable to load governance dashboard.");
@@ -104,7 +108,21 @@ const GovernanceDashboard: React.FC = () => {
 
   useEffect(() => {
     loadDashboard();
-  }, [days]);
+  }, [selectedSlaDays]);
+
+  const applyPreset = (days?: number) => {
+    setCustomSlaDays("");
+    setSelectedSlaDays(days);
+  };
+
+  const applyCustomSlaDays = () => {
+    const parsedDays = Number(customSlaDays);
+    if (!Number.isFinite(parsedDays) || parsedDays < 1) {
+      setError("Please enter a valid pending day count.");
+      return;
+    }
+    setSelectedSlaDays(Math.floor(parsedDays));
+  };
 
   const maxWardOpen = useMemo(
     () => Math.max(...(dashboard?.wardPerformance ?? []).map((ward) => ward.openComplaints), 1),
@@ -116,10 +134,22 @@ const GovernanceDashboard: React.FC = () => {
     [dashboard?.categoryPerformance]
   );
 
+  const maxDepartmentOpen = useMemo(
+    () => Math.max(...(dashboard?.departmentPerformance ?? []).map((department) => department.openComplaints), 1),
+    [dashboard?.departmentPerformance]
+  );
+
+  const maxOfficerOpen = useMemo(
+    () => Math.max(...(dashboard?.officerPerformance ?? []).map((officer) => officer.openComplaints), 1),
+    [dashboard?.officerPerformance]
+  );
+
   const exportCsv = () => {
     if (!dashboard) return;
     const rows = [
-      ["Ward", "Zone", "Total", "Open", "Resolved", "SLA Breached", "Resolution Rate", "Top Category"],
+      ["Mode", dashboard.summary.slaFilterApplied ? `Pending >= ${dashboard.summary.selectedSlaDays} days` : "All-time"],
+      [],
+      ["Ward", "Zone", "Total", "Pending", "Resolved", "SLA Breached", "Resolution Rate", "Top Category"],
       ...dashboard.wardPerformance.map((ward) => [
         ward.wardNumber ? `Ward ${ward.wardNumber}` : ward.wardName || "Unmapped",
         ward.zone || "",
@@ -136,12 +166,15 @@ const GovernanceDashboard: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `smc-governance-dashboard-${days}-days.csv`;
+    link.download = dashboard.summary.slaFilterApplied
+      ? `smc-governance-dashboard-pending-${dashboard.summary.selectedSlaDays}-days.csv`
+      : "smc-governance-dashboard-all-time.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
 
   const summary = dashboard?.summary;
+  const isSlaMode = Boolean(summary?.slaFilterApplied);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
@@ -159,26 +192,68 @@ const GovernanceDashboard: React.FC = () => {
                 Commissioner Control Dashboard
               </h1>
               <p className="text-sm text-slate-500">
-                Ward pendency, SLA risk, category hotspots and field accountability.
+                All-time governance view with optional pending-age SLA analysis.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={days}
-              onChange={(event) => setDays(Number(event.target.value))}
-              className="min-h-[42px] rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+            <button
+              type="button"
+              onClick={() => applyPreset(undefined)}
+              className={`inline-flex min-h-[38px] items-center gap-2 rounded-lg px-3 text-sm font-semibold ${
+                !selectedSlaDays
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-white text-slate-700 hover:bg-slate-100"
+              }`}
             >
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
-              <option value={180}>Last 180 days</option>
-            </select>
+              All-time
+            </button>
+            {[3, 7, 15, 30].map((days) => (
+              <button
+                key={days}
+                type="button"
+                onClick={() => applyPreset(days)}
+                className={`inline-flex min-h-[38px] items-center rounded-lg px-3 text-sm font-semibold ${
+                  selectedSlaDays === days
+                    ? "bg-red-600 text-white shadow-sm"
+                    : "bg-white text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                {days}d SLA
+              </button>
+            ))}
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min={1}
+                value={customSlaDays}
+                onChange={(event) => setCustomSlaDays(event.target.value)}
+                placeholder="Custom"
+                className="min-h-[38px] w-24 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={applyCustomSlaDays}
+                className="inline-flex min-h-[38px] items-center rounded-lg bg-slate-800 px-3 text-sm font-semibold text-white hover:bg-slate-900"
+              >
+                Apply
+              </button>
+            </div>
+            {selectedSlaDays && (
+              <button
+                type="button"
+                onClick={() => applyPreset(undefined)}
+                className="inline-flex min-h-[38px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset
+              </button>
+            )}
             <button
               type="button"
               onClick={loadDashboard}
-              className="inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+              className="inline-flex min-h-[38px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
@@ -187,7 +262,7 @@ const GovernanceDashboard: React.FC = () => {
               type="button"
               onClick={exportCsv}
               disabled={!dashboard}
-              className="inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-[38px] items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               Export
@@ -213,40 +288,52 @@ const GovernanceDashboard: React.FC = () => {
           <>
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
-                label="Open grievances"
-                value={formatNumber(summary?.openComplaints)}
-                helper={`${formatNumber(summary?.totalComplaints)} total in selected period`}
+                label={isSlaMode ? "Pending beyond SLA" : "Total complaints"}
+                value={formatNumber(summary?.totalComplaints)}
+                helper={
+                  isSlaMode
+                    ? `Pending for ${summary?.selectedSlaDays}+ days`
+                    : "All complaints irrespective of age or SLA"
+                }
                 icon={Clock3}
                 tone="blue"
               />
               <StatCard
-                label="SLA breached"
-                value={formatNumber(summary?.slaBreached)}
-                helper={`${formatNumber(summary?.dueToday)} more due today`}
+                label="Pending"
+                value={formatNumber(summary?.pendingComplaints ?? summary?.openComplaints)}
+                helper={isSlaMode ? `${summary?.slaBreachPercentage ?? 0}% of pending workload` : "Created, assigned, in progress or blocked"}
                 icon={AlertTriangle}
-                tone={summary?.slaBreached ? "red" : "green"}
+                tone={isSlaMode || summary?.slaBreached ? "red" : "amber"}
               />
               <StatCard
-                label="Resolution rate"
-                value={`${summary?.resolutionRate ?? 0}%`}
-                helper={`${formatNumber(summary?.resolvedComplaints)} resolved or closed`}
+                label="Resolved / rejected"
+                value={`${formatNumber(summary?.resolvedComplaints)} / ${formatNumber(summary?.rejectedComplaints)}`}
+                helper={`${summary?.resolutionRate ?? 0}% resolution rate`}
                 icon={CheckCircle2}
                 tone="green"
               />
               <StatCard
-                label="Field evidence"
-                value={`${summary?.geoTagCoverage ?? 0}%`}
-                helper={`${formatNumber(summary?.geoTaggedComplaints)} geo-tagged complaints`}
+                label="Escalated / avg time"
+                value={`${formatNumber(summary?.escalatedComplaints)} / ${summary?.averageResolutionDays ?? 0}d`}
+                helper={isSlaMode ? "Escalated pending cases and avg resolution time" : "SLA-overdue or blocked, plus avg resolution time"}
                 icon={MapPinned}
                 tone="amber"
               />
             </section>
 
+            {isSlaMode && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+                Showing only complaints with status not resolved/closed and age greater than or equal to {summary?.selectedSlaDays} days.
+              </div>
+            )}
+
             <section className="mt-5 grid gap-5 xl:grid-cols-[1.35fr,0.9fr]">
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-100 px-4 py-3">
                   <h2 className="text-base font-bold text-slate-950">Ward-Wise Accountability</h2>
-                  <p className="text-sm text-slate-500">Sorted by SLA breach and open workload.</p>
+                  <p className="text-sm text-slate-500">
+                    {isSlaMode ? "Ward-wise pending cases beyond selected SLA days." : "All-time ward pendency and workload."}
+                  </p>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {(dashboard?.wardPerformance ?? []).length === 0 ? (
@@ -264,8 +351,8 @@ const GovernanceDashboard: React.FC = () => {
                             </p>
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-center text-xs sm:min-w-[260px]">
-                            <MetricPill label="Open" value={ward.openComplaints} />
-                            <MetricPill label="SLA" value={ward.slaBreached} danger />
+                            <MetricPill label="Pending" value={ward.openComplaints} />
+                            <MetricPill label={isSlaMode ? "Filtered" : "SLA"} value={isSlaMode ? ward.totalComplaints : ward.slaBreached} danger />
                             <MetricPill label="Resolved" value={`${ward.resolutionRate}%`} />
                           </div>
                         </div>
@@ -281,7 +368,9 @@ const GovernanceDashboard: React.FC = () => {
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-100 px-4 py-3">
                   <h2 className="text-base font-bold text-slate-950">Service Hotspots</h2>
-                  <p className="text-sm text-slate-500">Categories needing intervention.</p>
+                  <p className="text-sm text-slate-500">
+                    {isSlaMode ? "Category-wise pending beyond SLA." : "Categories needing intervention."}
+                  </p>
                 </div>
                 <div className="space-y-4 p-4">
                   {(dashboard?.categoryPerformance ?? []).length === 0 ? (
@@ -300,6 +389,70 @@ const GovernanceDashboard: React.FC = () => {
                         <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
                           <span>{category.totalComplaints} total</span>
                           <span>{category.slaBreached} SLA breached</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="mt-5 grid gap-5 xl:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-4 py-3">
+                  <h2 className="text-base font-bold text-slate-950">Department-Wise Pendency</h2>
+                  <p className="text-sm text-slate-500">
+                    {isSlaMode ? "Departments with pending complaints beyond selected SLA days." : "All-time pending load by assigned department."}
+                  </p>
+                </div>
+                <div className="space-y-4 p-4">
+                  {(dashboard?.departmentPerformance ?? []).length === 0 ? (
+                    <EmptyState label="No department pendency available yet." />
+                  ) : (
+                    dashboard?.departmentPerformance.map((department: DepartmentPerformance) => (
+                      <div key={department.department}>
+                        <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                          <span className="font-semibold text-slate-800">{department.label}</span>
+                          <span className="text-slate-500">{department.openComplaints} pending</span>
+                        </div>
+                        <ProgressBar
+                          value={(department.openComplaints / maxDepartmentOpen) * 100}
+                          tone={department.slaBreached ? "red" : "blue"}
+                        />
+                        <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                          <span>{department.totalComplaints} total</span>
+                          <span>{isSlaMode ? department.totalComplaints : department.slaBreached} SLA flagged</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-4 py-3">
+                  <h2 className="text-base font-bold text-slate-950">Officer-Wise Pendency</h2>
+                  <p className="text-sm text-slate-500">
+                    {isSlaMode ? "Assigned officer workload beyond selected SLA days." : "All-time assigned officer workload."}
+                  </p>
+                </div>
+                <div className="space-y-4 p-4">
+                  {(dashboard?.officerPerformance ?? []).length === 0 ? (
+                    <EmptyState label="No officer pendency available yet." />
+                  ) : (
+                    dashboard?.officerPerformance.map((officer: OfficerPerformance) => (
+                      <div key={officer.officerId || "unassigned"}>
+                        <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                          <span className="font-semibold text-slate-800">{officer.label}</span>
+                          <span className="text-slate-500">{officer.openComplaints} pending</span>
+                        </div>
+                        <ProgressBar
+                          value={(officer.openComplaints / maxOfficerOpen) * 100}
+                          tone={officer.slaBreached ? "red" : "blue"}
+                        />
+                        <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                          <span>{officer.totalComplaints} assigned</span>
+                          <span>{isSlaMode ? officer.totalComplaints : officer.slaBreached} SLA flagged</span>
                         </div>
                       </div>
                     ))
@@ -336,15 +489,17 @@ const GovernanceDashboard: React.FC = () => {
                 <div className="border-b border-slate-100 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-red-600" />
-                    <h2 className="text-base font-bold text-slate-950">Priority Watchlist</h2>
+                    <h2 className="text-base font-bold text-slate-950">Oldest Pending Complaints</h2>
                   </div>
-                  <p className="text-sm text-slate-500">Breached SLA, urgent and high priority complaints.</p>
+                  <p className="text-sm text-slate-500">
+                    {isSlaMode ? "Oldest complaints inside the selected pending-age filter." : "Oldest unresolved complaints across the system."}
+                  </p>
                 </div>
                 <div className="divide-y divide-slate-100">
-                  {(dashboard?.priorityItems ?? []).length === 0 ? (
-                    <EmptyState label="No urgent SLA watchlist items right now." />
+                  {(dashboard?.oldestPendingComplaints ?? []).length === 0 ? (
+                    <EmptyState label="No pending complaints found for this view." />
                   ) : (
-                    dashboard?.priorityItems.map((item: GovernancePriorityItem) => (
+                    dashboard?.oldestPendingComplaints.map((item: GovernancePriorityItem) => (
                       <div key={item.id} className="p-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
@@ -360,7 +515,7 @@ const GovernanceDashboard: React.FC = () => {
                               {item.status}
                             </span>
                             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.slaBreached ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
-                              {item.slaBreached ? "SLA breached" : "SLA risk"}
+                              {item.ageDays} days old
                             </span>
                           </div>
                         </div>

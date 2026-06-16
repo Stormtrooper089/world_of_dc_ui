@@ -2,10 +2,10 @@ import api from "./api";
 import { ApiResponse, GovernanceDashboard } from "../types";
 
 export const governanceService = {
-  async getDashboard(days = 30): Promise<GovernanceDashboard> {
+  async getDashboard(pendingAgeDays?: number): Promise<GovernanceDashboard> {
     const response = await api.get<ApiResponse<GovernanceDashboard>>(
       "/governance/dashboard",
-      { params: { days } }
+      { params: pendingAgeDays ? { pendingAgeDays } : undefined }
     );
     return response.data.data;
   },

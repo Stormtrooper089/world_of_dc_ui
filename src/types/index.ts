@@ -173,20 +173,30 @@ export interface GovernanceDashboard {
   summary: GovernanceSummary;
   wardPerformance: WardPerformance[];
   categoryPerformance: CategoryPerformance[];
+  departmentPerformance: DepartmentPerformance[];
+  officerPerformance: OfficerPerformance[];
   statusBreakdown: StatusBreakdown[];
   priorityItems: GovernancePriorityItem[];
+  oldestPendingComplaints: GovernancePriorityItem[];
 }
 
 export interface GovernanceSummary {
+  slaFilterApplied: boolean;
+  selectedSlaDays?: number;
   totalComplaints: number;
   openComplaints: number;
+  pendingComplaints: number;
   resolvedComplaints: number;
+  rejectedComplaints: number;
+  escalatedComplaints: number;
   slaBreached: number;
   dueToday: number;
   geoTaggedComplaints: number;
   resolutionRate: number;
+  slaBreachPercentage: number;
   geoTagCoverage: number;
   averageCitizenRating: number;
+  averageResolutionDays: number;
 }
 
 export interface WardPerformance {
@@ -210,6 +220,23 @@ export interface CategoryPerformance {
   resolutionRate: number;
 }
 
+export interface DepartmentPerformance {
+  department: string;
+  label: string;
+  totalComplaints: number;
+  openComplaints: number;
+  slaBreached: number;
+  resolutionRate: number;
+}
+
+export interface OfficerPerformance {
+  officerId?: string;
+  label: string;
+  totalComplaints: number;
+  openComplaints: number;
+  slaBreached: number;
+}
+
 export interface StatusBreakdown {
   status: string;
   label: string;
@@ -228,6 +255,7 @@ export interface GovernancePriorityItem {
   location?: string;
   slaDueAt?: string;
   slaBreached: boolean;
+  ageDays: number;
 }
 
 // Enums are now imported from constants/enums.ts
