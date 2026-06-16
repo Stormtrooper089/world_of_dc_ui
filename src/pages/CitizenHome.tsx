@@ -91,23 +91,23 @@ const CitizenHome: React.FC = () => {
   // Default slides to show when backend returns no data
   const defaultSlides: CarouselSlide[] = [
     {
-      title: "Digital Assam Initiative",
+      title: "Silchar Municipal Corporation Portal",
       description:
-        "Empowering citizens through digital governance and e-services",
+        "File civic grievances, track ward-level action and access municipal services from one place.",
       backgroundImage: heroImages[0],
       backgroundColor: "blue",
     },
     {
-      title: "Quick Grievance Resolution",
-      description: "File and track your complaints seamlessly online",
+      title: "Faster Ward-Level Resolution",
+      description: "SMC teams receive issue type, ward and GPS details for quicker assignment.",
       backgroundImage: heroImages[1],
       backgroundColor: "green",
     },
     {
-      title: "Citizen-Centric Services",
-      description: "Access government schemes and programs with ease",
+      title: "Citizen Services Built For Mobile",
+      description: "Use the portal comfortably on phone, tablet or desktop without losing context.",
       backgroundImage: heroImages[2],
-      backgroundColor: "purple",
+      backgroundColor: "blue",
     },
   ];
   const statsTemplate = [
@@ -115,30 +115,29 @@ const CitizenHome: React.FC = () => {
       label: "Grievances Filed",
       description: "Total submissions this year",
       icon: FileText,
-      iconBg: "bg-gradient-to-br from-rose-100 to-rose-200 text-rose-600",
-      accent: "text-rose-600",
+      iconBg: "bg-blue-50 text-blue-700",
+      accent: "text-blue-700",
     },
     {
       label: "Resolved",
       description: "Closed with citizen confirmation",
       icon: FileCheck,
-      iconBg:
-        "bg-gradient-to-br from-green-100 to-emerald-200 text-emerald-600",
-      accent: "text-emerald-600",
+      iconBg: "bg-emerald-50 text-emerald-700",
+      accent: "text-emerald-700",
     },
     {
       label: "Avg Resolution Time",
       description: "Working days per grievance",
       icon: Clock,
-      iconBg: "bg-gradient-to-br from-amber-100 to-orange-200 text-orange-600",
-      accent: "text-orange-600",
+      iconBg: "bg-amber-50 text-amber-700",
+      accent: "text-amber-700",
     },
     {
       label: "Satisfaction Rate",
       description: "Feedback above 4★ rating",
       icon: TrendingUp,
-      iconBg: "bg-gradient-to-br from-indigo-100 to-purple-200 text-indigo-600",
-      accent: "text-indigo-600",
+      iconBg: "bg-sky-50 text-sky-700",
+      accent: "text-sky-700",
     },
   ];
 
@@ -156,15 +155,15 @@ const CitizenHome: React.FC = () => {
       name: "Elections 2026",
       icon: BriefcaseMedical,
       description: "Information and updates",
-      accentBg: "bg-[#fdecec] text-[#f45d5d]",
-      iconColor: "text-[#f45d5d]",
+      accentBg: "bg-slate-100 text-slate-700",
+      iconColor: "text-slate-700",
       action: "elections2026",
     },
     {
       name: "File SMC Grievance",
       icon: Plus,
       description: "Ward, issue type & GPS enabled",
-      accentBg: "bg-[#f45d5d] text-white",
+      accentBg: "bg-blue-600 text-white",
       iconColor: "text-white",
       action: "grievance",
     },
@@ -172,32 +171,32 @@ const CitizenHome: React.FC = () => {
       name: "Track Grievance",
       icon: Search,
       description: "Check live case status",
-      accentBg: "bg-[#fdecec] text-[#f45d5d]",
-      iconColor: "text-[#f45d5d]",
+      accentBg: "bg-blue-50 text-blue-700",
+      iconColor: "text-blue-700",
       action: "track",
     },
     {
       name: "Web Services",
       icon: Globe,
       description: "Websites & online tools",
-      accentBg: "bg-[#fdecec] text-[#f45d5d]",
-      iconColor: "text-[#f45d5d]",
+      accentBg: "bg-sky-50 text-sky-700",
+      iconColor: "text-sky-700",
       action: "services",
     },
     {
       name: "News",
       icon: FileText,
       description: "Latest updates & alerts",
-      accentBg: "bg-[#fdecec] text-[#f45d5d]",
-      iconColor: "text-[#f45d5d]",
+      accentBg: "bg-amber-50 text-amber-700",
+      iconColor: "text-amber-700",
       action: "schemes",
     },
     {
       name: "Government",
       icon: BookOpen,
       description: "Ministers & departments",
-      accentBg: "bg-[#fdecec] text-[#f45d5d]",
-      iconColor: "text-[#f45d5d]",
+      accentBg: "bg-emerald-50 text-emerald-700",
+      iconColor: "text-emerald-700",
       action: "government",
     },
   ];
@@ -205,32 +204,32 @@ const CitizenHome: React.FC = () => {
   const news = [
     {
       date: "Nov 15, 2025",
-      title: "New e-Governance portal launched for citizen services",
+      title: "SMC grievance portal updated with ward and GPS capture",
     },
     {
       date: "Nov 14, 2025",
-      title: "Digital literacy program extended to rural areas",
+      title: "Mobile-friendly dashboard improvements released for officers",
     },
     {
       date: "Nov 13, 2025",
-      title: "Online grievance redressal system upgraded",
+      title: "Citizens can now track complaints from the same portal",
     },
   ];
 
   const schemes = [
     {
-      name: "Farmer Welfare Scheme",
-      desc: "Financial assistance for agricultural development",
+      name: "Ward-Based Grievance Routing",
+      desc: "Complaints are categorized by issue type, ward and zone for faster SMC action.",
       status: "Active",
     },
     {
-      name: "Student Scholarship Program",
-      desc: "Merit-based scholarships for higher education",
+      name: "Citizen Tracking",
+      desc: "Residents can log in with OTP and monitor the latest status of submitted grievances.",
       status: "Active",
     },
     {
-      name: "Healthcare Initiative",
-      desc: "Free medical services in rural health centers",
+      name: "Officer Task Coordination",
+      desc: "Municipal employees can manage complaint and task boards across devices.",
       status: "Active",
     },
   ];
@@ -255,10 +254,10 @@ const CitizenHome: React.FC = () => {
       green: "bg-gradient-to-r from-green-600 to-green-800",
       yellow: "bg-gradient-to-r from-yellow-600 to-yellow-800",
       red: "bg-gradient-to-r from-red-600 to-red-800",
-      purple: "bg-gradient-to-r from-purple-600 to-purple-800",
+      purple: "bg-gradient-to-r from-blue-700 to-slate-900",
       orange: "bg-gradient-to-r from-orange-600 to-orange-800",
-      pink: "bg-gradient-to-r from-pink-600 to-pink-800",
-      indigo: "bg-gradient-to-r from-indigo-600 to-indigo-800",
+      pink: "bg-gradient-to-r from-blue-600 to-sky-800",
+      indigo: "bg-gradient-to-r from-blue-700 to-slate-900",
       teal: "bg-gradient-to-r from-teal-600 to-teal-800",
       cyan: "bg-gradient-to-r from-cyan-600 to-cyan-800",
     };
@@ -742,10 +741,10 @@ const CitizenHome: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* Hero Carousel - Background Layer */}
       <div
-        className="relative h-[420px] sm:h-[520px] lg:h-[620px] overflow-hidden bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 pt-14 sm:pt-18"
+        className="relative h-[500px] sm:h-[560px] lg:h-[620px] overflow-hidden bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 pt-14 sm:pt-18"
         onMouseEnter={() => setIsHeroHovered(true)}
         onMouseLeave={() => setIsHeroHovered(false)}
         id="home"
@@ -805,17 +804,36 @@ const CitizenHome: React.FC = () => {
                 aria-label={`${index + 1} of ${slides.length}`}
               >
                 {/* Elegant gradient overlay for better text contrast */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-950/85 via-blue-900/55 to-slate-900/40"></div>
 
                 {/* Content spacing keeps quick services visible without extra scroll */}
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-start z-10 pl-16 sm:pl-20 md:pl-24 lg:pl-28 pr-16 sm:pr-20 md:pr-24 lg:pr-28">
+                <div className="relative max-w-7xl mx-auto px-4 pl-4 pr-4 sm:px-6 sm:pl-24 sm:pr-24 lg:px-8 lg:pl-28 lg:pr-28 h-full flex items-center justify-start z-10 pt-12 pb-24 sm:pb-28">
                   <div className="text-white max-w-3xl w-full">
+                    <p className="mb-3 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-100 backdrop-blur">
+                      Silchar Municipal Corporation
+                    </p>
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 leading-tight drop-shadow-2xl">
                       {slide.title}
                     </h2>
                     <p className="text-sm sm:text-base text-blue-100 leading-relaxed drop-shadow-lg max-w-2xl">
                       {slide.description}
                     </p>
+                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => handleNavigateToService("grievance")}
+                        className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-bold text-blue-700 shadow-lg transition hover:bg-blue-50"
+                      >
+                        File Grievance
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigateToService("track")}
+                        className="inline-flex min-h-[48px] items-center justify-center rounded-lg border border-white/30 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
+                      >
+                        Track Status
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -824,54 +842,54 @@ const CitizenHome: React.FC = () => {
         )}
 
         {/* Header Overlay - Fully Transparent on top of carousel */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-blue-900/90 via-blue-900/60 to-transparent backdrop-blur-sm">
+        <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-blue-950/85 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-20">
+            <div className="flex items-center justify-between h-16 sm:h-20">
               {/* Logo */}
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center shadow-lg border-2 border-white/50">
-                  <span className="text-blue-700 font-bold text-xl">AS</span>
+              <div className="flex min-w-0 items-center space-x-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/40 bg-white text-blue-700 shadow-lg sm:h-14 sm:w-14">
+                  <span className="text-base font-bold sm:text-xl">SMC</span>
                 </div>
-                <div className="hidden sm:block">
-                  <p className="text-xs text-white/90 font-medium drop-shadow-md">
+                <div className="min-w-0">
+                  <p className="hidden text-xs text-white/90 font-medium drop-shadow-md sm:block">
                     Government of Assam
                   </p>
-                  <p className="text-xs text-white/80 font-medium drop-shadow-md mt-0.5">
+                  <p className="truncate text-xs font-semibold text-white/90 drop-shadow-md sm:text-sm">
                     Silchar Municipal Corporation Portal
                   </p>
                 </div>
               </div>
-              <h1 className="text-lg font-bold text-white leading-tight drop-shadow-lg">বলবে কাছাড়</h1>
+              <h1 className="hidden text-lg font-bold text-white leading-tight drop-shadow-lg lg:block">বলবে কাছাড়</h1>
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex space-x-1" aria-label="Primary">
                 <a
                   href="/elections"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
+                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Elections 2026
                 </a>
                 <a
                   href="#home"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
+                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Home
                 </a>
                 <a
                   href="#services"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
+                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Services
                 </a>
                 <a
                   href="#schemes"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
+                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Schemes
                 </a>
                 <a
                   href="#about"
-                  className="px-4 py-2 text-white/90 hover:text-white font-semibold transition-colors"
+                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   About
                 </a>
@@ -998,14 +1016,14 @@ const CitizenHome: React.FC = () => {
         {/* Carousel Controls - Enhanced */}
         <button
           onClick={prevSlide}
-          className="absolute left-2 sm:left-4 md:left-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all z-40 shadow-lg hover:shadow-xl"
+          className="absolute left-2 sm:left-4 md:left-6 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/20 p-2 shadow-lg backdrop-blur-md transition-all hover:bg-white/40 hover:shadow-xl sm:flex sm:p-3"
           aria-label="Previous slide"
         >
           <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
         </button>
         <button
           onClick={nextSlide}
-          className="absolute right-2 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all z-40 shadow-lg hover:shadow-xl"
+          className="absolute right-2 sm:right-4 md:right-6 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/20 p-2 shadow-lg backdrop-blur-md transition-all hover:bg-white/40 hover:shadow-xl sm:flex sm:p-3"
           aria-label="Next slide"
         >
           <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
@@ -1013,10 +1031,10 @@ const CitizenHome: React.FC = () => {
       </div>
 
       {/* Quick Services - Overlaying on Carousel */}
-      <section className="relative -mt-28 sm:-mt-36 z-20 mb-12" id="services">
+      <section className="relative -mt-20 sm:-mt-24 z-20 mb-10" id="services">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-[28px] shadow-[0_20px_40px_rgba(16,24,40,0.08)] border border-gray-100 px-4 py-4 sm:px-6 sm:py-6">
-            <div className="grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+          <div className="rounded-2xl border border-blue-100 bg-white p-3 shadow-[0_20px_40px_rgba(15,23,42,0.12)] sm:p-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {quickServices.map((service, index) => {
                 const isInteractive = Boolean(service.action);
                 return (
@@ -1027,23 +1045,23 @@ const CitizenHome: React.FC = () => {
                       if (!isInteractive) return;
                       handleNavigateToService(service.action);
                     }}
-                    className={`group flex flex-col items-center text-center px-4 py-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors ${
+                    className={`group flex min-h-[140px] flex-col items-center rounded-xl px-3 py-4 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors ${
                       isInteractive
-                        ? "hover:bg-gray-50 cursor-pointer"
+                        ? "hover:bg-blue-50 cursor-pointer"
                         : "cursor-default"
                     }`}
                   >
                     <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-md ${service.accentBg}`}
+                      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mb-3 shadow-sm ${service.accentBg}`}
                     >
                       <service.icon
                         className={`h-6 w-6 ${service.iconColor}`}
                       />
                     </div>
-                    <p className="text-xs font-semibold text-gray-900 uppercase tracking-[0.15em]">
+                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-[0.1em]">
                       {service.name}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 leading-snug">
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
                       {service.description}
                     </p>
                   </button>
@@ -1057,7 +1075,7 @@ const CitizenHome: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Analytics Cards - Government Portal Style */}
-        <section className="relative mb-10 overflow-hidden rounded-2xl bg-white p-6 text-gray-900 shadow-[0_20px_45px_rgba(15,23,42,0.08)] border border-gray-100">
+        <section className="relative mb-10 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-5 text-slate-900 shadow-[0_20px_45px_rgba(15,23,42,0.08)] sm:p-6">
           <div
             className="pointer-events-none absolute inset-0 opacity-20"
             style={{
@@ -1066,14 +1084,19 @@ const CitizenHome: React.FC = () => {
             }}
           />
           <div className="relative mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Live Summary</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+              Municipal dashboard
+            </p>
+            <h2 className="mt-1 text-2xl font-bold text-slate-950">
+              Live Grievance Summary
+            </h2>
           </div>
           {isLoadingStats ? (
             <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[1, 2, 3, 4].map((index) => (
                 <div
                   key={index}
-                  className="rounded-2xl bg-gray-50 backdrop-blur-sm border border-gray-100 p-5 flex items-center justify-center shadow-md"
+                  className="rounded-2xl bg-white backdrop-blur-sm border border-blue-100 p-5 flex items-center justify-center shadow-sm"
                 >
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                 </div>
@@ -1084,20 +1107,20 @@ const CitizenHome: React.FC = () => {
               {analyticsData.map((item, index) => (
                 <div
                   key={index}
-                  className="group rounded-2xl bg-white text-gray-900 p-5 shadow-lg border border-gray-100 hover:-translate-y-0.5 transition"
+                  className="group rounded-2xl bg-white text-slate-900 p-5 shadow-sm border border-blue-100 hover:-translate-y-0.5 hover:shadow-md transition"
                 >
                   <div
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${item.iconBg}`}
                   >
                     <item.icon className="h-6 w-6" />
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-500">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                     {item.label}
                   </p>
                   <p className={`mt-2 text-3xl font-bold ${item.accent}`}>
                     {item.value}
                   </p>
-                  <p className="mt-1 text-sm text-gray-500 leading-snug">
+                  <p className="mt-1 text-sm text-slate-500 leading-snug">
                     {item.description}
                   </p>
                 </div>
@@ -1106,53 +1129,51 @@ const CitizenHome: React.FC = () => {
           )}
         </section>
 
-        {/* About Assam Section */}
+        {/* About SMC Section */}
         <section className="mb-10" id="about">
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 sm:p-7">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                  About Assam
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+                  Citizen services
+                </p>
+                <h2 className="mt-1 text-2xl font-bold text-slate-950">
+                  About Silchar Municipal Corporation
                 </h2>
-                <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
               <div className="space-y-3">
-                <p className="text-gray-700 leading-relaxed text-base">
-                  Assam, the land of the mighty Brahmaputra, is one of the most
-                  beautiful states in Northeast India. Known for its rich
-                  cultural heritage, diverse wildlife, and tea plantations,
-                  Assam is a state that beautifully blends tradition with
-                  modernity.
+                <p className="text-slate-700 leading-relaxed text-base">
+                  The SMC portal brings citizen requests, ward information and
+                  municipal employee workflows into a single digital service
+                  experience for Silchar.
                 </p>
-                <p className="text-gray-700 leading-relaxed text-base">
-                  The state is home to the famous Kaziranga National Park, a
-                  UNESCO World Heritage Site, which is home to the one-horned
-                  rhinoceros. Assam's tea gardens produce some of the finest tea
-                  in the world, and the state's vibrant festivals like Bihu
-                  showcase its rich cultural traditions.
+                <p className="text-slate-700 leading-relaxed text-base">
+                  Citizens can file grievances with issue category, location,
+                  ward and contact details. Officers receive richer context,
+                  making assignment and follow-up easier from desktop or phone.
                 </p>
-                <p className="text-gray-700 leading-relaxed text-base">
-                  With a commitment to digital transformation and
-                  citizen-centric governance, the Government of Assam is working
-                  towards making the state a model of development and progress
-                  in the region.
+                <p className="text-slate-700 leading-relaxed text-base">
+                  The goal is a calmer, more readable civic interface where
+                  high-priority municipal work is visible and easy to act on.
                 </p>
                 <div className="flex flex-wrap gap-3 mt-4">
-                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                    <h4 className="font-bold text-blue-900 mb-1">Capital</h4>
-                    <p className="text-gray-700">Dispur</p>
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                    <h4 className="font-bold text-blue-900 mb-1">Coverage</h4>
+                    <p className="text-slate-700">28 wards</p>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                    <h4 className="font-bold text-green-900 mb-1">Area</h4>
-                    <p className="text-gray-700">78,438 sq km</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                    <h4 className="font-bold text-purple-900 mb-1">
-                      Population
+                  <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                    <h4 className="font-bold text-emerald-900 mb-1">
+                      Routing
                     </h4>
-                    <p className="text-gray-700">31.2 Million</p>
+                    <p className="text-slate-700">Ward and GPS</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <h4 className="font-bold text-slate-900 mb-1">
+                      Access
+                    </h4>
+                    <p className="text-slate-700">OTP login</p>
                   </div>
                 </div>
               </div>
@@ -1160,20 +1181,20 @@ const CitizenHome: React.FC = () => {
                 <div className="rounded-2xl shadow-xl border-2 border-blue-100 overflow-hidden h-full">
                   <img
                     src={assamHeroImage}
-                    alt="Scenic view of Assam"
+                    alt="Scenic view representing Silchar civic services"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <p className="text-sm uppercase tracking-[0.35em] text-blue-200">
-                      Assam
+                    <p className="text-sm uppercase tracking-[0.28em] text-blue-200">
+                      SMC digital services
                     </p>
                     <h3 className="text-2xl font-bold mb-2">
-                      Gateway to Northeast India
+                      Built Around Citizen Action
                     </h3>
                     <p className="text-sm text-blue-100">
-                      From the Brahmaputra valley to the lush tea estates,
-                      discover how digital services connect every district.
+                      File issues, add location context and follow municipal
+                      progress without visiting multiple counters.
                     </p>
                   </div>
                 </div>
@@ -1188,13 +1209,13 @@ const CitizenHome: React.FC = () => {
           <section>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                <h2 className="text-2xl font-bold text-slate-950 mb-1">
                   Latest Updates
                 </h2>
                 <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
               <div className="relative pl-8">
                 {/* vertical line */}
                 <div className="absolute left-3 top-0 bottom-0 w-1 bg-blue-600 rounded-full" />
@@ -1203,10 +1224,10 @@ const CitizenHome: React.FC = () => {
                     <div key={index} className="relative">
                       <div className="absolute left-[-29px] top-1 w-6 h-6 bg-blue-600 rounded-full border-4 border-white shadow-md"></div>
                       <div className="cursor-pointer rounded-lg p-3 -m-3 hover:bg-blue-50 transition-colors border-l-4 border-transparent hover:border-blue-600">
-                        <p className="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wide">
+                        <p className="text-xs text-slate-500 mb-2 font-semibold uppercase tracking-wide">
                           {item.date}
                         </p>
-                        <p className="text-gray-900 font-semibold text-[15px] leading-snug">
+                        <p className="text-slate-900 font-semibold text-[15px] leading-snug">
                           {item.title}
                         </p>
                       </div>
@@ -1225,28 +1246,28 @@ const CitizenHome: React.FC = () => {
           <section id="schemes">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                  Featured Schemes
+                <h2 className="text-2xl font-bold text-slate-950 mb-1">
+                  Service Highlights
                 </h2>
                 <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
               <div className="space-y-3">
                 {schemes.map((scheme, index) => (
                   <div
                     key={index}
-                    className="border border-gray-200 hover:border-blue-500 rounded-lg p-4 hover:shadow-md transition-all bg-gradient-to-r from-white to-gray-50"
+                    className="border border-slate-200 hover:border-blue-500 rounded-xl p-4 hover:shadow-md transition-all bg-gradient-to-r from-white to-slate-50"
                   >
                     <div className="flex items-start justify-between mb-2.5">
-                      <h3 className="font-semibold text-gray-900 text-base">
+                      <h3 className="font-semibold text-slate-900 text-base">
                         {scheme.name}
                       </h3>
                       <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full font-bold uppercase tracking-wide shadow-sm">
                         {scheme.status}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 leading-snug">
+                    <p className="text-sm text-slate-700 leading-snug">
                       {scheme.desc}
                     </p>
                   </div>

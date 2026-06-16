@@ -87,12 +87,12 @@ const DialogBox: React.FC<DialogBoxProps> = ({
       aria-labelledby={title ? "dialog-title" : undefined}
     >
       <div
-        className={`bg-purple-50/95 backdrop-blur-md rounded-2xl border border-purple-200/40 shadow-2xl w-full ${widthClass} max-h-[90vh] flex flex-col overflow-hidden ${className}`}
+        className={`bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-2xl w-full ${widthClass} max-h-[90vh] flex flex-col overflow-hidden ${className}`}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
           <div
-            className={`bg-gradient-to-r from-purple-500 to-purple-400 px-6 py-4 flex justify-between items-center ${headerClassName}`}
+            className={`bg-gradient-to-r from-blue-700 to-blue-600 px-6 py-4 flex justify-between items-center ${headerClassName}`}
           >
             {title && (
               <h2
@@ -117,7 +117,7 @@ const DialogBox: React.FC<DialogBoxProps> = ({
 
         {/* Body */}
         <div
-          className={`flex-1 overflow-y-auto px-6 py-5 bg-purple-50/50 ${bodyClassName}`}
+          className={`flex-1 overflow-y-auto px-6 py-5 bg-slate-50 ${bodyClassName}`}
         >
           {children}
         </div>
