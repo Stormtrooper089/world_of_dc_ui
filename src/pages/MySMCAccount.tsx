@@ -2,7 +2,9 @@ import {
   ArrowLeft,
   BadgeIndianRupee,
   CheckCircle2,
+  ClipboardList,
   CreditCard,
+  FileSearch,
   FileText,
   Home,
   Landmark,
@@ -25,6 +27,9 @@ const MySMCAccount: React.FC = () => {
   const navigate = useNavigate();
   const [account, setAccount] = useState<MySmcAccount | null>(null);
   const [holdingNumber, setHoldingNumber] = useState("");
+  const [serviceHoldingNumber, setServiceHoldingNumber] = useState("");
+  const [serviceRequestType, setServiceRequestType] = useState("MUTATION_CORRECTION");
+  const [serviceRemarks, setServiceRemarks] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
   const [error, setError] = useState("");
@@ -90,6 +95,30 @@ const MySMCAccount: React.FC = () => {
     }
   };
 
+  const handleServiceRequest = async () => {
+    if (!serviceHoldingNumber.trim()) {
+      setError("Enter a holding number for the service request");
+      return;
+    }
+    try {
+      setActionLoading("service-request");
+      setError("");
+      await propertyTaxService.createServiceRequest(
+        serviceHoldingNumber.trim(),
+        serviceRequestType,
+        serviceRemarks.trim()
+      );
+      setSuccess("Property service request submitted");
+      setServiceHoldingNumber("");
+      setServiceRemarks("");
+      await loadAccount();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Unable to submit service request");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <header className="border-b border-slate-200 bg-white">
@@ -138,7 +167,7 @@ const MySMCAccount: React.FC = () => {
                   {account?.smcCitizenId}
                 </p>
                 <p className="mt-1 text-sm text-blue-100">
-                  {account?.citizen?.name} · {account?.citizen?.mobileNumber}
+                  {account?.citizen?.name} · {account?.citizen?.mobileNumber} · {account?.provider || "MOCK"}
                 </p>
               </div>
               <SummaryCard icon={Home} label="Linked Properties" value={String(totalProperties)} />
@@ -235,6 +264,50 @@ const MySMCAccount: React.FC = () => {
               <div className="space-y-5">
                 <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
+                    <FileSearch className="h-5 w-5 text-blue-700" />
+                    <h2 className="text-lg font-bold">Property Services</h2>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Submit transfer, correction, bifurcation or amalgamation requests for officer review.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <input
+                      value={serviceHoldingNumber}
+                      onChange={(event) => setServiceHoldingNumber(event.target.value)}
+                      placeholder="Holding number"
+                      className="min-h-[44px] w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                    <select
+                      value={serviceRequestType}
+                      onChange={(event) => setServiceRequestType(event.target.value)}
+                      className="min-h-[44px] w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="MUTATION_CORRECTION">Mutation / owner correction</option>
+                      <option value="PROPERTY_TRANSFER">Property transfer</option>
+                      <option value="BIFURCATION">Bifurcation</option>
+                      <option value="AMALGAMATION">Amalgamation</option>
+                      <option value="ASSESSMENT_CORRECTION">Assessment correction</option>
+                    </select>
+                    <textarea
+                      value={serviceRemarks}
+                      onChange={(event) => setServiceRemarks(event.target.value)}
+                      rows={3}
+                      placeholder="Remarks or correction details"
+                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                    <button
+                      onClick={handleServiceRequest}
+                      disabled={actionLoading === "service-request"}
+                      className="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      {actionLoading === "service-request" ? "Submitting..." : "Submit Request"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-blue-700" />
                     <h2 className="text-lg font-bold">My Services</h2>
                   </div>
@@ -297,6 +370,28 @@ const MySMCAccount: React.FC = () => {
                         <p className="text-xs text-slate-500">
                           {receipt.transactionReference}
                         </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <h2 className="text-lg font-bold">Service Requests</h2>
+                  <div className="mt-4 space-y-3">
+                    {(!account?.propertyServiceRequests || account.propertyServiceRequests.length === 0) && (
+                      <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                        Mutation, transfer and correction requests will appear here.
+                      </p>
+                    )}
+                    {account?.propertyServiceRequests?.map((request) => (
+                      <div key={request.requestNumber} className="rounded-lg border border-slate-200 p-3">
+                        <p className="font-semibold">{request.requestNumber}</p>
+                        <p className="text-sm text-slate-500">
+                          {request.requestType.replace(/_/g, " ")} · {request.holdingNumber}
+                        </p>
+                        <span className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
+                          {request.status}
+                        </span>
                       </div>
                     ))}
                   </div>

@@ -5,6 +5,7 @@ import {
   PropertyTaxAccount,
   PropertyTaxDashboard,
   PropertyTaxReceipt,
+  PropertyTaxServiceRequest,
 } from "../types";
 
 export const propertyTaxService = {
@@ -37,6 +38,32 @@ export const propertyTaxService = {
   async getOfficerDashboard(): Promise<PropertyTaxDashboard> {
     const response = await api.get<ApiResponse<PropertyTaxDashboard>>(
       "/officer/property-tax/dashboard"
+    );
+    return response.data.data;
+  },
+
+  async verifyReceipt(receiptNumber: string): Promise<PropertyTaxReceipt> {
+    const response = await api.get<ApiResponse<PropertyTaxReceipt>>(
+      `/property-tax/receipt/${encodeURIComponent(receiptNumber)}`
+    );
+    return response.data.data;
+  },
+
+  async createServiceRequest(
+    holdingNumber: string,
+    requestType: string,
+    remarks: string
+  ): Promise<PropertyTaxServiceRequest> {
+    const response = await api.post<ApiResponse<PropertyTaxServiceRequest>>(
+      "/property-tax/service-request",
+      { holdingNumber, requestType, remarks }
+    );
+    return response.data.data;
+  },
+
+  async getDefaulters(): Promise<PropertyTaxAccount[]> {
+    const response = await api.get<ApiResponse<PropertyTaxAccount[]>>(
+      "/officer/property-tax/defaulters"
     );
     return response.data.data;
   },

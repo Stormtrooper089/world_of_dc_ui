@@ -37,7 +37,7 @@ const PropertyTaxDashboard: React.FC = () => {
     <div className="h-full overflow-y-auto bg-slate-50 p-4 sm:p-6">
       <div className="mb-5">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
-          Revenue Services
+          Revenue Services · {dashboard?.provider || "MOCK"}
         </p>
         <h1 className="text-2xl font-bold text-slate-950">Property Tax Dashboard</h1>
       </div>
@@ -86,6 +86,55 @@ const PropertyTaxDashboard: React.FC = () => {
                 </p>
               </div>
             ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_0.8fr]">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-bold">Defaulter List</h2>
+          <div className="mt-4 space-y-3">
+            {dashboard?.defaulters?.slice(0, 8).map((property) => (
+              <div key={property.holdingNumber} className="rounded-lg border border-slate-200 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{property.holdingNumber}</p>
+                    <p className="text-sm text-slate-500">
+                      {property.ownerName} · Ward {property.wardNumber}
+                    </p>
+                  </div>
+                  <p className="font-bold text-red-700">{formatCurrency(property.amountDue)}</p>
+                </div>
+              </div>
+            ))}
+            {(!dashboard?.defaulters || dashboard.defaulters.length === 0) && (
+              <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                No defaulters in current data.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-bold">Property Service Requests</h2>
+          <div className="mt-4 space-y-3">
+            {dashboard?.propertyServiceRequests?.slice(0, 8).map((request) => (
+              <div key={request.requestNumber} className="rounded-lg border border-slate-200 p-3">
+                <p className="font-semibold">{request.requestNumber}</p>
+                <p className="text-sm text-slate-500">
+                  {request.requestType.replace(/_/g, " ")} · {request.holdingNumber}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{request.applicantName}</p>
+                <span className="mt-2 inline-flex rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
+                  {request.status}
+                </span>
+              </div>
+            ))}
+            {(!dashboard?.propertyServiceRequests || dashboard.propertyServiceRequests.length === 0) && (
+              <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                No property service requests yet.
+              </p>
+            )}
           </div>
         </section>
       </div>

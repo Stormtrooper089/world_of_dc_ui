@@ -77,11 +77,28 @@ export interface PropertyTaxReceipt {
   paidAt: string;
 }
 
+export interface PropertyTaxServiceRequest {
+  id: string;
+  requestNumber: string;
+  citizenId: string;
+  smcCitizenId?: string;
+  holdingNumber: string;
+  requestType: string;
+  applicantName?: string;
+  mobileNumber?: string;
+  remarks?: string;
+  status: string;
+  submittedAt: string;
+  updatedAt: string;
+}
+
 export interface MySmcAccount {
+  provider?: string;
   citizen: Citizen;
   smcCitizenId: string;
   linkedProperties: PropertyTaxAccount[];
   paymentReceipts: PropertyTaxReceipt[];
+  propertyServiceRequests?: PropertyTaxServiceRequest[];
   totalDue: number;
   services: Array<{
     name: string;
@@ -91,6 +108,7 @@ export interface MySmcAccount {
 }
 
 export interface PropertyTaxDashboard {
+  provider?: string;
   totalProperties: number;
   linkedProperties: number;
   paidProperties: number;
@@ -105,6 +123,8 @@ export interface PropertyTaxDashboard {
     outstanding: number;
   }>;
   recentReceipts: PropertyTaxReceipt[];
+  defaulters?: PropertyTaxAccount[];
+  propertyServiceRequests?: PropertyTaxServiceRequest[];
 }
 
 export interface CitizenUpdateData {
