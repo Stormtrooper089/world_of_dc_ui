@@ -316,6 +316,20 @@ const CitizenHome: React.FC = () => {
     setMobileMenuOpen(false); // Close mobile menu if open
   };
 
+  const handleCitizenSessionExpired = () => {
+    logout();
+    setCitizenProfile(null);
+    setIsEditingProfile(false);
+    setIsProfileModalOpen(false);
+    setProfileError("");
+    setProfileSuccess("");
+    setOtp("");
+    setOtpSent(false);
+    setError("Your session has expired. Please login again.");
+    setIsLoginModalOpen(true);
+    setMobileMenuOpen(false);
+  };
+
   const closeLoginModal = () => {
     setIsLoginModalOpen(false);
     setMobileNumber("");
@@ -383,6 +397,10 @@ const CitizenHome: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error fetching profile:", err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        handleCitizenSessionExpired();
+        return;
+      }
       setProfileError(
         err.response?.data?.message || "Failed to load profile data"
       );
@@ -437,6 +455,10 @@ const CitizenHome: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error updating profile:", err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        handleCitizenSessionExpired();
+        return;
+      }
       setProfileError(
         err.response?.data?.message ||
           "Failed to update profile. Please try again."

@@ -26,6 +26,23 @@ export const useAuth = () => {
   return context;
 };
 
+const isJwtExpired = (jwt: string) => {
+  try {
+    const [, payload] = jwt.split(".");
+    if (!payload) return true;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "="
+    );
+    const decoded = JSON.parse(atob(padded));
+    if (!decoded.exp) return false;
+    return decoded.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+};
+
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -41,8 +58,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      if (isJwtExpired(storedToken)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } else {
+        try {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+        } catch {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
     }
     setIsLoading(false);
   }, []);
