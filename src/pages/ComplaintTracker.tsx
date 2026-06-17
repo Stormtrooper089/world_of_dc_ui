@@ -881,6 +881,15 @@ export default function ComplaintCockpitBoard() {
         return;
       }
 
+      const nextStatus = (tempChanges.status || selectedTicket.status) as ComplaintStatus;
+      const statusChanged = Boolean(tempChanges.status && tempChanges.status !== selectedTicket.status);
+      const closureNeedsRemark = statusChanged && ['RESOLVED', 'CLOSED', 'REJECTED'].includes(nextStatus);
+
+      if (closureNeedsRemark && !commentText.trim()) {
+        showToast('Please enter officer remarks before closing, resolving or rejecting this complaint.', 'error');
+        return;
+      }
+
       setIsSaving(true);
 
       try {
@@ -895,9 +904,7 @@ export default function ComplaintCockpitBoard() {
           status: currentData.status,
           assignedDepartment: currentData.assignedDepartment,
           assignedToId: currentData.assignedToId,
-          
-          // Handle remarks/comments added during save
-          // ...(commentText.trim() && { actionRemarks: commentText }),
+          ...(commentText.trim() && { actionRemarks: commentText.trim() }),
 
           ...(isAdminRole && 
             tempChanges.assignedDepartment && 
@@ -948,7 +955,7 @@ export default function ComplaintCockpitBoard() {
       } finally {
         setIsSaving(false);
         setTempChanges({});
-        // setCommentText(''); // Clear comment box
+        setCommentText('');
       }
     };
 

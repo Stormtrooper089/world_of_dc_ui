@@ -602,6 +602,56 @@ const CitizenHome: React.FC = () => {
   const formatStatusLabel = (value?: string) =>
     value ? value.replace(/_/g, " ") : "Not available";
 
+  const getHistoryStatus = (entry: ComplaintHistory) =>
+    entry.newStatus || entry.status;
+
+  const getHistoryDate = (entry: ComplaintHistory) =>
+    entry.timestamp || entry.updatedAt;
+
+  const getLatestOfficerUpdate = (history?: ComplaintHistory[]) =>
+    history?.find(
+      (entry) =>
+        entry.remarks &&
+        entry.remarks.trim() &&
+        (entry.actorName || "").toLowerCase() !== "citizen"
+    ) || history?.find((entry) => entry.remarks && entry.remarks.trim());
+
+  const getCitizenStatusTitle = (status?: string) => {
+    switch ((status || "").toUpperCase()) {
+      case "IN_PROGRESS":
+        return "Work is in progress";
+      case "ASSIGNED":
+        return "Assigned for action";
+      case "RESOLVED":
+      case "CLOSED":
+        return "Complaint closed by SMC";
+      case "REJECTED":
+        return "Complaint rejected";
+      case "BLOCKED":
+        return "Action is currently blocked";
+      default:
+        return "Complaint received";
+    }
+  };
+
+  const getCitizenStatusMessage = (status?: string) => {
+    switch ((status || "").toUpperCase()) {
+      case "IN_PROGRESS":
+        return "SMC staff have started work on this complaint. Latest officer update is shown below.";
+      case "ASSIGNED":
+        return "Your complaint has been assigned to the responsible SMC team.";
+      case "RESOLVED":
+      case "CLOSED":
+        return "The officer closure remark is shown below for your reference.";
+      case "REJECTED":
+        return "The reason entered by the officer is shown below.";
+      case "BLOCKED":
+        return "SMC has marked this complaint as blocked pending external dependency or field condition.";
+      default:
+        return "Your complaint is registered and waiting for review.";
+    }
+  };
+
   const getStatusBadgeClasses = (status?: string) => {
     if (!status) return "bg-gray-100 text-gray-700";
 
@@ -1418,6 +1468,54 @@ const CitizenHome: React.FC = () => {
                         <p className="mt-4 text-sm text-gray-700">
                           {complaintDetails.complaint.description}
                         </p>
+                        {(() => {
+                          const latestUpdate = getLatestOfficerUpdate(
+                            complaintDetails.history
+                          );
+                          const status = complaintDetails.complaint.status;
+                          const isClosedStatus = ["RESOLVED", "CLOSED", "REJECTED"].includes(
+                            (status || "").toUpperCase()
+                          );
+
+                          return (
+                            <div
+                              className={`mt-5 rounded-2xl border px-4 py-3 ${
+                                isClosedStatus
+                                  ? "border-emerald-200 bg-emerald-50"
+                                  : status === "IN_PROGRESS"
+                                    ? "border-amber-200 bg-amber-50"
+                                    : "border-blue-100 bg-blue-50"
+                              }`}
+                            >
+                              <p className="text-sm font-bold text-gray-950">
+                                {getCitizenStatusTitle(status)}
+                              </p>
+                              <p className="mt-1 text-xs leading-relaxed text-gray-700">
+                                {getCitizenStatusMessage(status)}
+                              </p>
+                              {latestUpdate?.remarks && (
+                                <div className="mt-3 rounded-xl bg-white/80 p-3 text-sm text-gray-800 shadow-sm">
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gray-500">
+                                    {isClosedStatus
+                                      ? "Officer closure remark"
+                                      : "Latest officer update"}
+                                  </p>
+                                  <p className="mt-1 leading-relaxed">
+                                    {latestUpdate.remarks}
+                                  </p>
+                                  <p className="mt-2 text-[11px] text-gray-500">
+                                    {latestUpdate.actorName
+                                      ? `${latestUpdate.actorName} · `
+                                      : ""}
+                                    {formatReadableDate(
+                                      getHistoryDate(latestUpdate)
+                                    )}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div className="mt-5 grid grid-cols-1 gap-3 text-sm text-gray-700 sm:grid-cols-2">
                           <div className="rounded-xl border border-white bg-white/80 p-3">
                             <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">
@@ -1475,10 +1573,14 @@ const CitizenHome: React.FC = () => {
                                 >
                                   <div className="flex items-center justify-between">
                                     <span className="font-semibold text-gray-900">
-                                      {formatStatusLabel(entry.status)}
+                                      {formatStatusLabel(
+                                        getHistoryStatus(entry)
+                                      )}
                                     </span>
                                     <span className="text-xs text-gray-500">
-                                      {formatReadableDate(entry.updatedAt)}
+                                      {formatReadableDate(
+                                        getHistoryDate(entry)
+                                      )}
                                     </span>
                                   </div>
                                   {entry.remarks && (

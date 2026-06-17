@@ -178,9 +178,13 @@ export interface ComplaintHistory {
   id: string;
   complaintNumber: string;
   status: ComplaintStatus;
+  newStatus?: ComplaintStatus;
+  previousStatus?: ComplaintStatus;
   remarks?: string;
   updatedBy: string;
+  actorName?: string;
   updatedAt: string;
+  timestamp?: string;
 }
 
 export interface GovernanceDashboard {
@@ -309,6 +313,7 @@ export interface ComplaintUpdateRequest {
   status?: ComplaintStatus;
   assignedDepartment?: Department;
   departmentRemarks?: string;
+  actionRemarks?: string;
   assignedToId?: string; // Officer ID to assign/reassign the complaint to
 }
 
