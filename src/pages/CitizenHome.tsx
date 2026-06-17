@@ -1,15 +1,11 @@
 import {
-  BookOpen,
-  BriefcaseBusiness,
   BriefcaseMedical,
-  ChevronLeft,
   ChevronRight,
   Clock,
   Facebook,
   FileCheck,
   FileText,
   Globe,
-  Hospital,
   Mail,
   Menu,
   Phone,
@@ -19,22 +15,16 @@ import {
   Twitter,
   Trash2,
   User,
-  Vote,
   X,
   Youtube,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import image1 from "../assets/image-1.jpg";
-import image2 from "../assets/image-2.jpg";
-import image3 from "../assets/image-3.jpg";
 import assamHeroImage from "../assets/image-4.jpg";
-import image5 from "../assets/image-5.jpg";
-import image6 from "../assets/image-6.jpg";
-import image7 from "../assets/image-7.jpg";
+import smcCivicHero from "../assets/smc-civic-hero.png";
 import DialogBox from "../components/common/DialogBox";
 import { useAuth } from "../contexts/AuthContext";
-import { authService, CarouselSlide } from "../services/authService";
+import { authService } from "../services/authService";
 import { complaintService } from "../services/complaintService";
 import {
   Citizen,
@@ -46,14 +36,10 @@ import {
 import GrievanceForm from "./GrievanceFile/GrievanceForm";
 import WastePickupRequestForm from "./WastePickupRequestForm";
 
-const heroImages = [image7, image5, image6, image1, image2, image3];
-
 const CitizenHome: React.FC = () => {
   const navigate = useNavigate();
   const { setAuth, isAuthenticated, user, logout, updateUser } = useAuth();
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isHeroHovered, setIsHeroHovered] = useState(false); // 2) pause on hover
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [mobileNumber, setMobileNumber] = useState("");
@@ -72,7 +58,6 @@ const CitizenHome: React.FC = () => {
     address: "",
     pincode: "",
   });
-  const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [isGrievanceDialogOpen, setIsGrievanceDialogOpen] = useState(false);
   const [isWastePickupDialogOpen, setIsWastePickupDialogOpen] = useState(false);
   const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
@@ -91,28 +76,6 @@ const CitizenHome: React.FC = () => {
   const [trackError, setTrackError] = useState("");
   const [trackSearchQuery, setTrackSearchQuery] = useState("");
 
-  // Default slides to show when backend returns no data
-  const defaultSlides: CarouselSlide[] = [
-    {
-      title: "Silchar Municipal Corporation Portal",
-      description:
-        "File civic grievances, track ward-level action and access municipal services from one place.",
-      backgroundImage: heroImages[0],
-      backgroundColor: "blue",
-    },
-    {
-      title: "Faster Ward-Level Resolution",
-      description: "SMC teams receive issue type, ward and GPS details for quicker assignment.",
-      backgroundImage: heroImages[1],
-      backgroundColor: "green",
-    },
-    {
-      title: "Citizen Services Built For Mobile",
-      description: "Use the portal comfortably on phone, tablet or desktop without losing context.",
-      backgroundImage: heroImages[2],
-      backgroundColor: "blue",
-    },
-  ];
   const statsTemplate = [
     {
       label: "Grievances Filed",
@@ -150,10 +113,33 @@ const CitizenHome: React.FC = () => {
       value: "0",
     }))
   );
-  const [isLoadingCarousel, setIsLoadingCarousel] = useState(true);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const quickServices = [
+    {
+      name: "File Complaint",
+      icon: Plus,
+      description: "Ward, category & GPS",
+      accentBg: "bg-blue-600 text-white",
+      iconColor: "text-white",
+      action: "grievance",
+    },
+    {
+      name: "Waste Pickup",
+      icon: Trash2,
+      description: "Sanitation request",
+      accentBg: "bg-emerald-50 text-emerald-700",
+      iconColor: "text-emerald-700",
+      action: "wastePickup",
+    },
+    {
+      name: "Track Complaint",
+      icon: Search,
+      description: "Live case status",
+      accentBg: "bg-blue-50 text-blue-700",
+      iconColor: "text-blue-700",
+      action: "track",
+    },
     {
       name: "Elections 2026",
       icon: BriefcaseMedical,
@@ -162,46 +148,13 @@ const CitizenHome: React.FC = () => {
       iconColor: "text-slate-700",
       action: "elections2026",
     },
-    {
-      name: "File SMC Grievance",
-      icon: Plus,
-      description: "Ward, issue type & GPS enabled",
-      accentBg: "bg-blue-600 text-white",
-      iconColor: "text-white",
-      action: "grievance",
-    },
-    {
-      name: "Track Grievance",
-      icon: Search,
-      description: "Check live case status",
-      accentBg: "bg-blue-50 text-blue-700",
-      iconColor: "text-blue-700",
-      action: "track",
-    },
-    {
-      name: "Waste Pickup",
-      icon: Trash2,
-      description: "SMC sanitation request",
-      accentBg: "bg-sky-50 text-sky-700",
-      iconColor: "text-sky-700",
-      action: "wastePickup",
-    },
-    {
-      name: "News",
-      icon: FileText,
-      description: "Latest updates & alerts",
-      accentBg: "bg-amber-50 text-amber-700",
-      iconColor: "text-amber-700",
-      action: "schemes",
-    },
-    {
-      name: "Government",
-      icon: BookOpen,
-      description: "Ministers & departments",
-      accentBg: "bg-emerald-50 text-emerald-700",
-      iconColor: "text-emerald-700",
-      action: "government",
-    },
+  ];
+
+  const civicStats = [
+    { value: "OTP", label: "Citizen Login" },
+    { value: "GPS", label: "Location Capture" },
+    { value: "SLA", label: "Officer Tracking" },
+    { value: "WARD", label: "Smart Routing" },
   ];
 
   const news = [
@@ -236,50 +189,6 @@ const CitizenHome: React.FC = () => {
       status: "Active",
     },
   ];
-
-  // Map color names to Tailwind gradient classes
-  // Supports simple color names (e.g., "blue", "yellow") and converts them to gradient classes
-  const getGradientClass = (colorName: string | null | undefined): string => {
-    if (!colorName) {
-      return "bg-gradient-to-r from-blue-600 to-blue-800";
-    }
-
-    const color = colorName.toLowerCase().trim();
-
-    // If it's already a Tailwind class (legacy support), use it directly
-    if (color.startsWith("bg-gradient")) {
-      return colorName;
-    }
-
-    // Map simple color names to gradient classes
-    const gradientMap: Record<string, string> = {
-      blue: "bg-gradient-to-r from-blue-600 to-blue-800",
-      green: "bg-gradient-to-r from-green-600 to-green-800",
-      yellow: "bg-gradient-to-r from-yellow-600 to-yellow-800",
-      red: "bg-gradient-to-r from-red-600 to-red-800",
-      purple: "bg-gradient-to-r from-blue-700 to-slate-900",
-      orange: "bg-gradient-to-r from-orange-600 to-orange-800",
-      pink: "bg-gradient-to-r from-blue-600 to-sky-800",
-      indigo: "bg-gradient-to-r from-blue-700 to-slate-900",
-      teal: "bg-gradient-to-r from-teal-600 to-teal-800",
-      cyan: "bg-gradient-to-r from-cyan-600 to-cyan-800",
-    };
-
-    return gradientMap[color] || "bg-gradient-to-r from-blue-600 to-blue-800";
-  };
-
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
-  const prevSlide = () =>
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-
-  // 2) Auto-rotate hero every 5s (pause on hover)
-  useEffect(() => {
-    if (isHeroHovered || slides.length === 0) return;
-    const id = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(id);
-  }, [isHeroHovered, slides.length]);
 
   const handleSendOtp = async () => {
     if (!mobileNumber.trim() || mobileNumber.trim().length < 10) {
@@ -418,11 +327,6 @@ const CitizenHome: React.FC = () => {
   const handleOfficerLogin = () => {
     navigate("/officer-login");
   };
-  // Fetch carousel slides on component mount
-  useEffect(() => {
-    fetchCarouselSlides();
-  }, []);
-
   // Fetch portal statistics on component mount
   useEffect(() => {
     fetchPortalStatistics();
@@ -434,25 +338,6 @@ const CitizenHome: React.FC = () => {
       fetchCitizenProfile();
     }
   }, [isProfileModalOpen, isAuthenticated]);
-
-  const fetchCarouselSlides = async () => {
-    try {
-      setIsLoadingCarousel(true);
-      const response = await authService.getCarouselSlides();
-      if (response.success && response.data && response.data.length > 0) {
-        setSlides(response.data);
-      } else {
-        // Use default slides when no data is available
-        setSlides(defaultSlides);
-      }
-    } catch (error) {
-      console.error("Error fetching carousel slides:", error);
-      // Use default slides on error
-      setSlides(defaultSlides);
-    } finally {
-      setIsLoadingCarousel(false);
-    }
-  };
 
   const fetchPortalStatistics = async () => {
     try {
@@ -751,107 +636,23 @@ const CitizenHome: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Hero Carousel - Background Layer */}
+    <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
+      {/* Compact citizen-service hero */}
       <div
-        className="relative h-[500px] sm:h-[560px] lg:h-[620px] overflow-hidden bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 pt-14 sm:pt-18"
-        onMouseEnter={() => setIsHeroHovered(true)}
-        onMouseLeave={() => setIsHeroHovered(false)}
+        className="relative h-[350px] overflow-hidden bg-slate-950 pt-16 sm:h-[430px] lg:h-[480px]"
         id="home"
-        aria-roledescription="carousel"
-        aria-label="Highlights"
+        aria-label="Citizen services portal"
       >
-        {/* Decorative overlay pattern */}
-        <div className="absolute inset-0 opacity-5 z-0">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.1) 35px, rgba(255,255,255,.1) 70px)`,
-            }}
-          ></div>
-        </div>
+        <img
+          src={smcCivicHero}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/70 to-slate-900/25" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:64px_64px] opacity-20" />
 
-        {isLoadingCarousel ? (
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-900 flex items-center justify-center z-0">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent"></div>
-          </div>
-        ) : (
-          slides.map((slide, index) => {
-            // Determine background style: use image if available, otherwise use color/gradient
-            const hasBackgroundImage =
-              slide.backgroundImage &&
-              typeof slide.backgroundImage === "string" &&
-              slide.backgroundImage.trim() !== "";
-
-            const fallbackImage = heroImages[index % heroImages.length];
-            const imageToUse =
-              hasBackgroundImage && slide.backgroundImage
-                ? slide.backgroundImage
-                : fallbackImage;
-
-            const backgroundStyle = imageToUse
-              ? {
-                  backgroundImage: `url(${imageToUse})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : {};
-
-            // Convert color name to Tailwind gradient class
-            const backgroundClass = hasBackgroundImage
-              ? ""
-              : getGradientClass(slide.backgroundColor);
-
-            return (
-              <div
-                key={index}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out z-0 ${
-                  index === currentSlide ? "opacity-100" : "opacity-0"
-                } ${backgroundClass}`}
-                style={backgroundStyle}
-                role="group"
-                aria-roledescription="slide"
-                aria-label={`${index + 1} of ${slides.length}`}
-              >
-                {/* Elegant gradient overlay for better text contrast */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-950/85 via-blue-900/55 to-slate-900/40"></div>
-
-                {/* Content spacing keeps quick services visible without extra scroll */}
-                <div className="relative max-w-7xl mx-auto px-4 pl-4 pr-4 sm:px-6 sm:pl-24 sm:pr-24 lg:px-8 lg:pl-28 lg:pr-28 h-full flex items-center justify-start z-10 pt-12 pb-24 sm:pb-28">
-                  <div className="text-white max-w-3xl w-full">
-                    <p className="mb-3 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-100 backdrop-blur">
-                      Silchar Municipal Corporation
-                    </p>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 leading-tight drop-shadow-2xl">
-                      {slide.title}
-                    </h2>
-                    <p className="text-sm sm:text-base text-blue-100 leading-relaxed drop-shadow-lg max-w-2xl">
-                      {slide.description}
-                    </p>
-                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => handleNavigateToService("grievance")}
-                        className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-bold text-blue-700 shadow-lg transition hover:bg-blue-50"
-                      >
-                        File Grievance
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleNavigateToService("track")}
-                        className="inline-flex min-h-[48px] items-center justify-center rounded-lg border border-white/30 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
-                      >
-                        Track Status
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-
-        {/* Header Overlay - Fully Transparent on top of carousel */}
+        {/* Header */}
         <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-blue-950/85 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 sm:h-20">
@@ -1023,28 +824,46 @@ const CitizenHome: React.FC = () => {
           </div>
         </header>
 
-        {/* Carousel Controls - Enhanced */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-2 sm:left-4 md:left-6 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/20 p-2 shadow-lg backdrop-blur-md transition-all hover:bg-white/40 hover:shadow-xl sm:flex sm:p-3"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
-        </button>
-        <button
-          onClick={nextSlide}
-          className="absolute right-2 sm:right-4 md:right-6 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/20 p-2 shadow-lg backdrop-blur-md transition-all hover:bg-white/40 hover:shadow-xl sm:flex sm:p-3"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
-        </button>
+        <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-4 pt-2 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[340px] text-white sm:max-w-xl">
+            <h1 className="max-w-lg text-2xl font-semibold leading-tight sm:text-4xl lg:text-[42px]">
+              SMC Citizen Services
+            </h1>
+            <p className="mt-3 max-w-md text-sm leading-6 text-blue-50 sm:text-base">
+              File grievances, request waste pickup and track updates.
+            </p>
+            <div className="mt-5 grid w-full grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+              <button
+                type="button"
+                onClick={() => handleNavigateToService("grievance")}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-md bg-white px-2 py-2 text-xs font-semibold text-blue-800 shadow-md transition hover:bg-blue-50 sm:px-5 sm:text-sm"
+              >
+                File Grievance
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavigateToService("wastePickup")}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-md bg-emerald-500 px-2 py-2 text-xs font-semibold text-white shadow-md transition hover:bg-emerald-400 sm:px-5 sm:text-sm"
+              >
+                Waste Pickup
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavigateToService("track")}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-md border border-white/30 bg-white/10 px-2 py-2 text-xs font-semibold text-white backdrop-blur transition hover:bg-white/20 sm:px-5 sm:text-sm"
+              >
+                Track Status
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Services - Overlaying on Carousel */}
-      <section className="relative -mt-20 sm:-mt-24 z-20 mb-10" id="services">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-2xl border border-blue-100 bg-white p-3 shadow-[0_20px_40px_rgba(15,23,42,0.12)] sm:p-4">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      {/* Quick Services */}
+      <section className="relative z-20 -mt-8 mb-5 max-w-full overflow-hidden sm:-mt-10" id="services">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-[0_18px_35px_rgba(15,23,42,0.12)] sm:p-3">
+            <div className="grid w-full max-w-full grid-cols-2 gap-2 sm:grid-cols-4">
               {quickServices.map((service, index) => {
                 const isInteractive = Boolean(service.action);
                 return (
@@ -1055,23 +874,23 @@ const CitizenHome: React.FC = () => {
                       if (!isInteractive) return;
                       handleNavigateToService(service.action);
                     }}
-                    className={`group flex min-h-[140px] flex-col items-center rounded-xl px-3 py-4 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors ${
+                    className={`group flex min-h-[104px] min-w-0 flex-col items-center rounded-lg px-2 py-3 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/60 transition-colors sm:min-h-[124px] ${
                       isInteractive
                         ? "hover:bg-blue-50 cursor-pointer"
                         : "cursor-default"
                     }`}
                   >
                     <div
-                      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mb-3 shadow-sm ${service.accentBg}`}
+                      className={`mb-2 flex h-10 w-10 items-center justify-center rounded-lg shadow-sm sm:h-12 sm:w-12 ${service.accentBg}`}
                     >
                       <service.icon
-                        className={`h-6 w-6 ${service.iconColor}`}
+                        className={`h-5 w-5 sm:h-6 sm:w-6 ${service.iconColor}`}
                       />
                     </div>
-                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-[0.1em]">
+                    <p className="max-w-full break-words text-[10px] font-bold uppercase leading-tight tracking-[0.06em] text-slate-900 sm:text-xs sm:tracking-[0.08em]">
                       {service.name}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                    <p className="mt-1 max-w-full break-words text-[10px] leading-snug text-slate-500 sm:text-xs">
                       {service.description}
                     </p>
                   </button>
@@ -1082,8 +901,26 @@ const CitizenHome: React.FC = () => {
         </div>
       </section>
 
+      {/* Civic stats strip */}
+      <section className="mb-6 max-w-full overflow-hidden">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid w-full max-w-full grid-cols-2 divide-x divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:grid-cols-4 sm:divide-y-0">
+            {civicStats.map((stat) => (
+              <div key={stat.label} className="px-3 py-3 text-center sm:px-4 sm:py-4">
+                <p className="text-xl font-bold text-blue-800 sm:text-3xl">
+                  {stat.value}
+                </p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 sm:text-xs sm:tracking-[0.12em]">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Analytics Cards - Government Portal Style */}
         <section className="relative mb-10 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-5 text-slate-900 shadow-[0_20px_45px_rgba(15,23,42,0.08)] sm:p-6">
           <div
