@@ -624,6 +624,7 @@ export default function ComplaintCockpitBoard() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [tempChanges, setTempChanges] = useState<Partial<Complaint>>({});
   const [commentText, setCommentText] = useState('');
+  const [actionRemarks, setActionRemarks] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -719,7 +720,7 @@ export default function ComplaintCockpitBoard() {
     }
   }
 
-  const fetchFullTicketData = async (ticketId: string, businessId: string) => {
+  const fetchFullTicketData = async (ticketId: string, businessId: string, options: { silent?: boolean } = {}) => {
     setLoading(true);
     try {
       // 1. Run both API calls in parallel for speed
@@ -741,7 +742,9 @@ export default function ComplaintCockpitBoard() {
 
     } catch (err) {
       console.error(err);
-      showToast('Failed to load ticket details', 'error');
+      if (!options.silent) {
+        showToast('Failed to load ticket details', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -828,6 +831,12 @@ export default function ComplaintCockpitBoard() {
     setCurrentPage(1);
   }, [searchQuery, activeFilters]);
 
+  useEffect(() => {
+    setActionRemarks('');
+    setCommentText('');
+    setTempChanges({});
+  }, [selectedTicketId]);
+
   const sortedFilteredData = useMemo(() => {
     return filteredData
       .slice()
@@ -885,7 +894,7 @@ export default function ComplaintCockpitBoard() {
       const statusChanged = Boolean(tempChanges.status && tempChanges.status !== selectedTicket.status);
       const closureNeedsRemark = statusChanged && ['RESOLVED', 'CLOSED', 'REJECTED'].includes(nextStatus);
 
-      if (closureNeedsRemark && !commentText.trim()) {
+      if (closureNeedsRemark && !actionRemarks.trim()) {
         showToast('Please enter officer remarks before closing, resolving or rejecting this complaint.', 'error');
         return;
       }
@@ -904,13 +913,13 @@ export default function ComplaintCockpitBoard() {
           status: currentData.status,
           assignedDepartment: currentData.assignedDepartment,
           assignedToId: currentData.assignedToId,
-          ...(commentText.trim() && { actionRemarks: commentText.trim() }),
+          ...(actionRemarks.trim() && { actionRemarks: actionRemarks.trim() }),
 
           ...(isAdminRole && 
             tempChanges.assignedDepartment && 
             tempChanges.assignedDepartment !== selectedTicket.assignedDepartment && {
               assignedDepartment: tempChanges.assignedDepartment,
-              departmentRemarks: commentText || "Department reassigned by Admin",
+              departmentRemarks: actionRemarks || commentText || "Department reassigned by Admin",
           }),
 
           ...(tempChanges.assignedToId && 
@@ -933,9 +942,12 @@ export default function ComplaintCockpitBoard() {
         //   ...updatedComplaint
         // }));
 
-        // 3. Re-fetch details to ensure server-calculated fields (like logs/history) are synced
-        // await fetchTicketDetails(selectedTicketId);
-        await fetchFullTicketData(selectedTicketId, selectedTicket.complaintId.toString());
+        // 3. Re-fetch details to sync server-calculated fields without making
+        // the successful status update look failed if detail refresh returns 404.
+        fetchFullTicketData(selectedTicketId, selectedTicket.complaintId.toString(), { silent: true })
+          .catch((refreshError) => {
+            console.warn("Complaint updated, but detail refresh failed:", refreshError);
+          });
         
         // 4. If a comment was added via actionRemarks, fetch comments too
         // if(commentText.trim()) {
@@ -955,7 +967,7 @@ export default function ComplaintCockpitBoard() {
       } finally {
         setIsSaving(false);
         setTempChanges({});
-        setCommentText('');
+        setActionRemarks('');
       }
     };
 
@@ -1651,6 +1663,29 @@ export default function ComplaintCockpitBoard() {
                               <option key={s} value={s}>{STATUS_CONFIG[s as keyof typeof STATUS_CONFIG].label}</option>
                             ))}
                           </select>
+                       </div>
+
+                       <div>
+                          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
+                            Officer Update / Closure Remark
+                            {['RESOLVED', 'CLOSED', 'REJECTED'].includes(String(tempChanges.status || selectedTicket.status)) && (
+                              <span className="ml-1 text-red-500">*</span>
+                            )}
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={actionRemarks}
+                            onChange={(e) => setActionRemarks(e.target.value)}
+                            placeholder={
+                              ['RESOLVED', 'CLOSED', 'REJECTED'].includes(String(tempChanges.status || selectedTicket.status))
+                                ? 'Enter closure remark visible to citizen...'
+                                : 'Example: Field team has started work at site...'
+                            }
+                            className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <p className="mt-1 text-[11px] leading-snug text-gray-500">
+                            This update will be shown to the citizen in Track Complaint.
+                          </p>
                        </div>
 
                        <div>
