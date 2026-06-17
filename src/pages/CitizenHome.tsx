@@ -1,11 +1,11 @@
 import {
-  BriefcaseMedical,
   ChevronRight,
   Clock,
   Facebook,
   FileCheck,
   FileText,
   Globe,
+  Landmark,
   Mail,
   Menu,
   Phone,
@@ -141,12 +141,12 @@ const CitizenHome: React.FC = () => {
       action: "track",
     },
     {
-      name: "Elections 2026",
-      icon: BriefcaseMedical,
-      description: "Information and updates",
-      accentBg: "bg-slate-100 text-slate-700",
-      iconColor: "text-slate-700",
-      action: "elections2026",
+      name: "My SMC Account",
+      icon: Landmark,
+      description: "ID, property tax & receipts",
+      accentBg: "bg-amber-50 text-amber-700",
+      iconColor: "text-amber-700",
+      action: "smcAccount",
     },
   ];
 
@@ -471,6 +471,13 @@ const CitizenHome: React.FC = () => {
       case "elections2026":
         navigate("/elections");
         break;
+      case "smcAccount":
+        if (!isAuthenticated) {
+          openLoginModal();
+        } else {
+          navigate("/my-smc-account");
+        }
+        break;
       case "grievance":
         if (!isAuthenticated) {
           openLoginModal();
@@ -737,23 +744,49 @@ const CitizenHome: React.FC = () => {
               {/* Desktop Navigation */}
               <nav className="hidden md:flex space-x-1" aria-label="Primary">
                 <a
-                  href="/elections"
-                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
-                >
-                  Elections 2026
-                </a>
-                <a
                   href="#home"
                   className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
                 >
                   Home
                 </a>
-                <a
-                  href="#services"
-                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
-                >
-                  Services
-                </a>
+                <div className="group relative">
+                  <a
+                    href="#services"
+                    className="block px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
+                  >
+                    Services
+                  </a>
+                  <div className="invisible absolute right-0 top-full z-50 w-56 translate-y-2 rounded-lg border border-slate-200 bg-white p-2 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => handleNavigateToService("smcAccount")}
+                      className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      My SMC Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigateToService("grievance")}
+                      className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      File Complaint
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigateToService("wastePickup")}
+                      className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      Waste Pickup
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigateToService("elections2026")}
+                      className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      Elections 2026
+                    </button>
+                  </div>
+                </div>
                 <a
                   href="#schemes"
                   className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
@@ -833,6 +866,26 @@ const CitizenHome: React.FC = () => {
                   >
                     Services
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleNavigateToService("smcAccount");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="px-6 py-2 text-left text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                  >
+                    My SMC Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleNavigateToService("elections2026");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="px-6 py-2 text-left text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                  >
+                    Elections 2026
+                  </button>
                   <a
                     href="#schemes"
                     className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
@@ -1950,6 +2003,14 @@ const CitizenHome: React.FC = () => {
                 ) : (
                   <>
                     <div className="rounded-2xl bg-gray-50 border border-gray-100 p-4 space-y-3">
+                      {citizenProfile?.smcCitizenId && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">SMC Citizen ID</span>
+                          <span className="font-semibold text-blue-700">
+                            {citizenProfile.smcCitizenId}
+                          </span>
+                        </div>
+                      )}
                       {citizenProfile?.name && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Name</span>

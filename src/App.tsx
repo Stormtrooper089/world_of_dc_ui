@@ -26,6 +26,7 @@ import ReportIssuePage from "./pages/elections/ReportIssuePage";
 import TeamDirectoryPage from "./pages/elections/TeamDirectoryPage";
 import VehicleLocatorPage from "./pages/elections/VehicleLocatorPage";
 import Home from "./pages/Home";
+import MySMCAccount from "./pages/MySMCAccount";
 import Officer from "./pages/Officer";
 import Profile from "./pages/Profile";
 import SquadManagementPage from "./pages/SquadManagementPage";
@@ -90,6 +91,14 @@ const AppRoutes: React.FC = () => {
         element={
           <RoleProtectedRoute allowedRoles={["CITIZEN"]}>
             <CitizenHome />
+          </RoleProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-smc-account"
+        element={
+          <RoleProtectedRoute allowedRoles={["CITIZEN"]}>
+            <MySMCAccount />
           </RoleProtectedRoute>
         }
       />

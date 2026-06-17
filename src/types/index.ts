@@ -27,6 +27,7 @@ export enum EmployeeCategory {
 export interface Citizen {
   id: string;
   mobileNumber: string;
+  smcCitizenId?: string;
   name: string;
   email?: string;
   address?: string;
@@ -35,6 +36,75 @@ export interface Citizen {
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PropertyTaxAccount {
+  id: string;
+  holdingNumber: string;
+  assessmentNumber?: string;
+  ownerName: string;
+  mobileNumber?: string;
+  wardNumber?: number;
+  wardName?: string;
+  locality?: string;
+  address?: string;
+  propertyType?: string;
+  usageType?: string;
+  financialYear?: string;
+  annualTax: number;
+  arrears: number;
+  penalty: number;
+  rebate: number;
+  amountDue: number;
+  dueDate?: string;
+  status: string;
+  linkedCitizenId?: string;
+  linkedAt?: string;
+}
+
+export interface PropertyTaxReceipt {
+  id: string;
+  receiptNumber: string;
+  holdingNumber: string;
+  citizenId: string;
+  smcCitizenId?: string;
+  ownerName: string;
+  financialYear?: string;
+  amountPaid: number;
+  paymentMode: string;
+  transactionReference?: string;
+  status: string;
+  paidAt: string;
+}
+
+export interface MySmcAccount {
+  citizen: Citizen;
+  smcCitizenId: string;
+  linkedProperties: PropertyTaxAccount[];
+  paymentReceipts: PropertyTaxReceipt[];
+  totalDue: number;
+  services: Array<{
+    name: string;
+    description: string;
+    status: string;
+  }>;
+}
+
+export interface PropertyTaxDashboard {
+  totalProperties: number;
+  linkedProperties: number;
+  paidProperties: number;
+  dueProperties: number;
+  totalDemand: number;
+  totalCollected: number;
+  totalOutstanding: number;
+  wardWise: Array<{
+    wardNumber: number;
+    wardName?: string;
+    properties: number;
+    outstanding: number;
+  }>;
+  recentReceipts: PropertyTaxReceipt[];
 }
 
 export interface CitizenUpdateData {
