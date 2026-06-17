@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, ChangeEvent } from 'react';
+import { useState, useEffect, useMemo, useRef, ChangeEvent, ElementType } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -16,6 +16,10 @@ import {
   X,
   Paperclip,
   ChevronRight,
+  Clock3,
+  Navigation,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 import * as trackingService from '../services/trackingService';
 import { Squad, MemberStatus, ActivityEvent, ActivityAttachment } from '../types';
@@ -376,6 +380,32 @@ const ActivityDetailModal = ({
 // ─── Helpers
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
+const getLastUpdateMs = (value?: string) => {
+  if (!value) return null;
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? null : ms;
+};
+
+const getMinutesSince = (value?: string) => {
+  const ms = getLastUpdateMs(value);
+  return ms === null ? null : Math.max(0, Math.floor((Date.now() - ms) / 60000));
+};
+
+const getFreshnessLabel = (value?: string) => {
+  const minutes = getMinutesSince(value);
+  if (minutes === null) return 'No update';
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  return `${Math.floor(hours / 24)} day ago`;
+};
+
+const isStaleMember = (value?: string) => {
+  const minutes = getMinutesSince(value);
+  return minutes === null || minutes >= 30;
+};
+
 // ─── Main component
 const TrackingDashboard = () => {
   const [squads, setSquads] = useState<Squad[]>([]);
@@ -439,6 +469,50 @@ const TrackingDashboard = () => {
           }
         : { active: 0, enRoute: 0, completed: 0, onBreak: 0 },
     [squad]
+  );
+
+  const overview = useMemo(() => {
+    const members = squads.flatMap((s) => s.members || []);
+    const onDuty = members.filter((m) => ['ACTIVE', 'EN_ROUTE', 'ON_DUTY'].includes(m.status)).length;
+    const stale = members.filter((m) => isStaleMember(m.lastUpdate)).length;
+    const supervisors = members.filter((m) => m.isAdmin).length;
+    return {
+      totalSquads: squads.length,
+      totalMembers: members.length,
+      onDuty,
+      stale,
+      supervisors,
+      activityCount: squads.reduce((sum, s) => sum + (s.activities?.length || 0), 0),
+    };
+  }, [squads]);
+
+  const squadHealth = useMemo(() => {
+    const members = squad?.members || [];
+    const activeLike = members.filter((m) => ['ACTIVE', 'EN_ROUTE', 'ON_DUTY'].includes(m.status)).length;
+    const stale = members.filter((m) => isStaleMember(m.lastUpdate)).length;
+    const duty = members.length ? Math.round((activeLike / members.length) * 100) : 0;
+    return { stale, duty };
+  }, [squad]);
+
+  const squadRanking = useMemo(
+    () =>
+      squads
+        .map((item) => {
+          const members = item.members || [];
+          const activeLike = members.filter((m) => ['ACTIVE', 'EN_ROUTE', 'ON_DUTY'].includes(m.status)).length;
+          const stale = members.filter((m) => isStaleMember(m.lastUpdate)).length;
+          return {
+            id: item.id,
+            name: item.name,
+            zone: item.zone,
+            members: members.length,
+            activeLike,
+            stale,
+            score: members.length ? Math.round((activeLike / members.length) * 100) : 0,
+          };
+        })
+        .sort((a, b) => b.score - a.score || b.members - a.members),
+    [squads]
   );
 
   const visibleActivities = useMemo(() => {
@@ -539,7 +613,73 @@ const TrackingDashboard = () => {
       </div>
 
       <div className="p-5 space-y-5">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          <OpsMetric label="Squads" value={overview.totalSquads} icon={Users} tone="blue" />
+          <OpsMetric label="Members" value={overview.totalMembers} icon={UserCheck} tone="slate" />
+          <OpsMetric label="On duty" value={overview.onDuty} icon={Navigation} tone="emerald" />
+          <OpsMetric label="Stale GPS" value={overview.stale} icon={AlertCircle} tone={overview.stale > 0 ? 'red' : 'slate'} />
+          <OpsMetric label="Supervisors" value={overview.supervisors} icon={ShieldCheck} tone="amber" />
+          <OpsMetric label="Events" value={overview.activityCount} icon={Activity} tone="blue" />
+        </section>
+
         {/* Stat chips */}
+        {squad && (
+          <div className="grid gap-4 xl:grid-cols-[1.25fr,1fr]">
+            <div className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Selected squad</p>
+                  <h3 className="mt-1 text-lg font-bold text-gray-950">{squad.name}</h3>
+                  <p className="text-sm text-gray-500">{squad.zone} · Lead: {squad.lead || 'Not assigned'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700">
+                    <p className="text-xs font-semibold">Duty strength</p>
+                    <p className="text-xl font-bold">{squadHealth.duty}%</p>
+                  </div>
+                  <div className={`rounded-lg px-3 py-2 ${squadHealth.stale > 0 ? 'bg-red-50 text-red-700' : 'bg-slate-50 text-slate-700'}`}>
+                    <p className="text-xs font-semibold">Stale updates</p>
+                    <p className="text-xl font-bold">{squadHealth.stale}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 h-2 rounded-full bg-gray-100">
+                <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${squadHealth.duty}%` }} />
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-bold text-gray-900">Squad readiness</p>
+                <span className="text-xs text-gray-500">{squadRanking.length} squads</span>
+              </div>
+              <div className="space-y-2">
+                {squadRanking.slice(0, 4).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setSelectedSquadId(item.id);
+                      setSelectedMemberId(null);
+                    }}
+                    className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${item.id === squad.id ? 'border-blue-200 bg-blue-50' : 'border-gray-100 hover:bg-gray-50'}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-900">{item.name}</p>
+                        <p className="text-xs text-gray-500">{item.activeLike}/{item.members} on duty · {item.stale} stale</p>
+                      </div>
+                      <span className="text-sm font-bold text-blue-700">{item.score}%</span>
+                    </div>
+                    <div className="mt-2 h-1.5 rounded-full bg-gray-100">
+                      <div className="h-1.5 rounded-full bg-blue-600" style={{ width: `${item.score}%` }} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {squad && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
@@ -598,13 +738,19 @@ const TrackingDashboard = () => {
                         }`}
                       >
                         <span
-                          className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                            m.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-300'
-                          }`}
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: MARKER_COLORS[m.status] }}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
+                            {m.isAdmin && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
+                          </div>
                           <p className="text-xs text-gray-500 truncate">{m.role}</p>
+                          <p className={`mt-0.5 flex items-center gap-1 text-[11px] ${isStaleMember(m.lastUpdate) ? 'text-red-600' : 'text-gray-400'}`}>
+                            <Clock3 className="h-3 w-3" />
+                            {getFreshnessLabel(m.lastUpdate)}
+                          </p>
                         </div>
                         <StatusBadge status={m.status} />
                       </button>
@@ -622,6 +768,12 @@ const TrackingDashboard = () => {
                   <div className="flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5 text-gray-500" />
                     <span className="truncate">{selectedMember.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock3 className="w-3.5 h-3.5 text-gray-500" />
+                    <span className={isStaleMember(selectedMember.lastUpdate) ? 'font-semibold text-red-600' : ''}>
+                      Last update {getFreshnessLabel(selectedMember.lastUpdate)}
+                    </span>
                   </div>
                 </div>
               )}
@@ -744,6 +896,39 @@ const TrackingDashboard = () => {
           onClose={() => setSelectedActivityId(null)}
         />
       )}
+    </div>
+  );
+};
+
+const OpsMetric = ({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  icon: ElementType;
+  tone: 'blue' | 'emerald' | 'amber' | 'red' | 'slate';
+}) => {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700',
+    emerald: 'bg-emerald-50 text-emerald-700',
+    amber: 'bg-amber-50 text-amber-700',
+    red: 'bg-red-50 text-red-700',
+    slate: 'bg-slate-50 text-slate-700',
+  };
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-gray-500">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-gray-950">{value}</p>
+        </div>
+        <div className={`rounded-lg p-2 ${tones[tone]}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
     </div>
   );
 };

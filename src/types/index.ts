@@ -384,6 +384,7 @@ export interface ActivityEvent {
   status: MemberStatus;
   address?: string;
   notes?: string;
+  description?: string;
   type?: string;
   latitude?: number;
   longitude?: number;
