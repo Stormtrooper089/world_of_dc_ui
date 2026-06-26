@@ -41,7 +41,7 @@ const statusClass = (status: string) => {
 
 const minNextBid = (auction: AuctionListing) =>
   (auction.currentHighestBid || 0) > 0
-    ? (auction.currentHighestBid || 0) + (auction.bidIncrement || 0)
+    ? Math.ceil((auction.currentHighestBid || 0) * 1.01)
     : auction.basePrice || 0;
 
 const countdown = (endAt?: string) => {

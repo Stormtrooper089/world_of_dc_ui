@@ -179,7 +179,10 @@ const AuctionDashboard: React.FC = () => {
             <Input label="Resource Type" value={form.resourceType || ""} onChange={(value) => setForm({ ...form, resourceType: value })} />
             <Select label="Category" value={form.category || ""} onChange={(value) => setForm({ ...form, category: value })} options={["PARKING", "MARKET_STALL", "ADVERTISEMENT", "SCRAP", "LEASE", "CONTRACT"]} />
             <Input label="Base Price" type="number" value={String(form.basePrice || "")} onChange={(value) => setForm({ ...form, basePrice: Number(value) })} />
-            <Input label="Bid Increment" type="number" value={String(form.bidIncrement || "")} onChange={(value) => setForm({ ...form, bidIncrement: Number(value) })} />
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+              <p className="text-xs font-semibold uppercase tracking-[0.1em]">Bid Step Rule</p>
+              <p className="mt-1 font-semibold">Minimum next bid is auto-calculated as 1% above the current highest bid.</p>
+            </div>
             <Input label="EMD Amount" type="number" value={String(form.emdAmount || "")} onChange={(value) => setForm({ ...form, emdAmount: Number(value) })} />
             <Input label="Ward Number" type="number" value={String(form.wardNumber || "")} onChange={(value) => setForm({ ...form, wardNumber: value ? Number(value) : undefined })} />
             <Input label="Locality" value={form.locality || ""} onChange={(value) => setForm({ ...form, locality: value })} />
