@@ -7,7 +7,8 @@ import {
   Users,
   BarChart3,
   Trash2,
-  Landmark
+  Landmark,
+  Store
 } from 'lucide-react';
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../constants/enums"; 
@@ -22,6 +23,7 @@ import SquadManagementPage from '../../pages/SquadManagementPage';
 import GovernanceDashboard from '../../pages/GovernanceDashboard';
 import WastePickupDashboard from '../../pages/WastePickupDashboard';
 import PropertyTaxDashboard from '../../pages/PropertyTaxDashboard';
+import TradeLicenseDashboard from '../../pages/TradeLicenseDashboard';
 
 // Helper for Rail Icons (Light Mode Updated)
 const NavIcon = ({ icon: Icon, label, isActive, onClick, badge }: any) => (
@@ -108,6 +110,13 @@ export default function AppShell() {
             onClick={() => setActiveView('PROPERTY_TAX')}
             badge={0}
           />
+          <NavIcon
+            icon={Store}
+            label="Trade License"
+            isActive={activeView === 'TRADE_LICENSE'}
+            onClick={() => setActiveView('TRADE_LICENSE')}
+            badge={0}
+          />
           <NavIcon 
             icon={Users} 
             label="Squad Management" 
@@ -158,6 +167,7 @@ export default function AppShell() {
         {activeView === 'GOVERNANCE' && <GovernanceDashboard />}
         {activeView === 'WASTE_PICKUP' && <WastePickupDashboard />}
         {activeView === 'PROPERTY_TAX' && <PropertyTaxDashboard />}
+        {activeView === 'TRADE_LICENSE' && <TradeLicenseDashboard />}
         {activeView === 'SQUAD_MANAGEMENT' && <SquadManagementPage />}
         {activeView === 'PROFILE' && <Profile />}
       </div>

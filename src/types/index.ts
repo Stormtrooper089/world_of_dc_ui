@@ -92,6 +92,57 @@ export interface PropertyTaxServiceRequest {
   updatedAt: string;
 }
 
+export interface TradeLicense {
+  id: string;
+  licenseNumber: string;
+  smcCitizenId?: string;
+  linkedCitizenId?: string;
+  applicantName: string;
+  mobileNumber?: string;
+  businessName: string;
+  tradeType: string;
+  businessAddress?: string;
+  wardNumber?: number;
+  wardName?: string;
+  locality?: string;
+  validFrom?: string;
+  validTo?: string;
+  annualFee: number;
+  arrears: number;
+  penalty: number;
+  amountDue: number;
+  status: string;
+  linkedAt?: string;
+}
+
+export interface TradeLicenseApplication {
+  id: string;
+  applicationNumber: string;
+  citizenId: string;
+  smcCitizenId?: string;
+  licenseNumber?: string;
+  applicationType: string;
+  applicantName?: string;
+  mobileNumber?: string;
+  businessName: string;
+  tradeType: string;
+  businessAddress: string;
+  wardNumber?: number;
+  locality?: string;
+  remarks?: string;
+  status: string;
+  submittedAt: string;
+  updatedAt: string;
+}
+
+export interface TradeLicenseAccount {
+  citizen: Citizen;
+  smcCitizenId: string;
+  tradeLicenses: TradeLicense[];
+  tradeLicenseApplications: TradeLicenseApplication[];
+  tradeLicenseDue: number;
+}
+
 export interface MySmcAccount {
   provider?: string;
   citizen: Citizen;
@@ -105,6 +156,16 @@ export interface MySmcAccount {
     description: string;
     status: string;
   }>;
+}
+
+export interface TradeLicenseDashboard {
+  totalLicenses: number;
+  activeLicenses: number;
+  expiredLicenses: number;
+  pendingApplications: number;
+  totalDue: number;
+  recentApplications: TradeLicenseApplication[];
+  licenses: TradeLicense[];
 }
 
 export interface PropertyTaxDashboard {

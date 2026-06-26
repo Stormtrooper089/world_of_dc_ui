@@ -11,6 +11,7 @@ import {
   Phone,
   Plus,
   Search,
+  Store,
   TrendingUp,
   Twitter,
   Trash2,
@@ -143,7 +144,7 @@ const CitizenHome: React.FC = () => {
     {
       name: "My SMC Account",
       icon: Landmark,
-      description: "ID, property tax & receipts",
+      description: "ID, tax & trade licenses",
       accentBg: "bg-amber-50 text-amber-700",
       iconColor: "text-amber-700",
       action: "smcAccount",
@@ -766,6 +767,14 @@ const CitizenHome: React.FC = () => {
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleNavigateToService("smcAccount")}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <Store className="h-4 w-4" />
+                      Trade License
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleNavigateToService("grievance")}
                       className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
                     >
@@ -875,6 +884,16 @@ const CitizenHome: React.FC = () => {
                     className="px-6 py-2 text-left text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
                   >
                     My SMC Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleNavigateToService("smcAccount");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="px-6 py-2 text-left text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                  >
+                    Trade License
                   </button>
                   <button
                     type="button"
