@@ -5,6 +5,7 @@ import {
   FileCheck,
   FileText,
   Globe,
+  Gavel,
   Landmark,
   Mail,
   Menu,
@@ -479,6 +480,13 @@ const CitizenHome: React.FC = () => {
           navigate("/my-smc-account");
         }
         break;
+      case "auctions":
+        if (!isAuthenticated) {
+          openLoginModal();
+        } else {
+          navigate("/auctions");
+        }
+        break;
       case "grievance":
         if (!isAuthenticated) {
           openLoginModal();
@@ -775,6 +783,14 @@ const CitizenHome: React.FC = () => {
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleNavigateToService("auctions")}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <Gavel className="h-4 w-4" />
+                      Auctions
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleNavigateToService("grievance")}
                       className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
                     >
@@ -894,6 +910,16 @@ const CitizenHome: React.FC = () => {
                     className="px-6 py-2 text-left text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
                   >
                     Trade License
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleNavigateToService("auctions");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="px-6 py-2 text-left text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                  >
+                    Auctions
                   </button>
                   <button
                     type="button"

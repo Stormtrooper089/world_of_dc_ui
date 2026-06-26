@@ -14,6 +14,7 @@ import CreateComplaint from "./components/complaints/CreateComplaint";
 import Layout from "./components/layout/Layout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AdminApproveOfficers from "./pages/AdminApproveOfficers";
+import AuctionListPage from "./pages/AuctionListPage";
 import CitizenHome from "./pages/CitizenHome";
 import ComplaintDetail from "./pages/ComplaintDetail";
 import CustomerPage from "./pages/CustomerPage";
@@ -99,6 +100,14 @@ const AppRoutes: React.FC = () => {
         element={
           <RoleProtectedRoute allowedRoles={["CITIZEN"]}>
             <MySMCAccount />
+          </RoleProtectedRoute>
+        }
+      />
+      <Route
+        path="/auctions"
+        element={
+          <RoleProtectedRoute allowedRoles={["CITIZEN"]}>
+            <AuctionListPage />
           </RoleProtectedRoute>
         }
       />

@@ -168,6 +168,104 @@ export interface TradeLicenseDashboard {
   licenses: TradeLicense[];
 }
 
+export interface AuctionDocument {
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  uploadedAt?: string;
+}
+
+export interface AuctionListing {
+  id?: string;
+  auctionId: string;
+  title: string;
+  description?: string;
+  category?: string;
+  resourceType?: string;
+  department?: string;
+  wardNumber?: number;
+  wardName?: string;
+  zone?: string;
+  locality?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  basePrice: number;
+  reservePrice?: number;
+  bidIncrement: number;
+  emdAmount?: number;
+  startAt?: string;
+  endAt?: string;
+  inspectionAt?: string;
+  status: string;
+  eligibilityCriteria?: string;
+  termsAndConditions?: string;
+  documents?: AuctionDocument[];
+  photos?: AuctionDocument[];
+  createdByOfficerId?: string;
+  createdByOfficerName?: string;
+  awardedBidId?: string;
+  awardedBidderId?: string;
+  awardedAt?: string;
+  cancellationReason?: string;
+  currentHighestBid?: number;
+  currentHighestBidId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuctionBid {
+  id?: string;
+  bidId: string;
+  auctionId: string;
+  bidderCitizenId?: string;
+  smcCitizenId?: string;
+  bidderName?: string;
+  bidderMobile?: string;
+  bidderEmail?: string;
+  bidderType?: string;
+  businessName?: string;
+  gstNumber?: string;
+  tradeLicenseNumber?: string;
+  bidAmount: number;
+  bidStatus: string;
+  termsAccepted?: boolean;
+  emdPaymentStatus?: string;
+  submittedAt?: string;
+  rejectedReason?: string;
+}
+
+export interface AuctionAuditTrail {
+  id?: string;
+  auctionId: string;
+  action: string;
+  previousStatus?: string;
+  newStatus?: string;
+  actorId?: string;
+  actorName?: string;
+  actorRole?: string;
+  remarks?: string;
+  timestamp?: string;
+}
+
+export interface AuctionDashboard {
+  totalAuctions: number;
+  draftAuctions: number;
+  publishedAuctions: number;
+  liveAuctions: number;
+  closedAuctions: number;
+  awardedAuctions: number;
+  cancelledAuctions: number;
+  totalBidValue: number;
+  highestValueAuction?: AuctionListing;
+  auctionsClosingToday: AuctionListing[];
+  auctionsWithoutBids: AuctionListing[];
+  categoryWiseAuctions: Record<string, number>;
+  wardWiseAuctions: Record<string, number>;
+  recentBids: AuctionBid[];
+  pendingAwardAuctions: AuctionListing[];
+}
+
 export interface PropertyTaxDashboard {
   provider?: string;
   totalProperties: number;
