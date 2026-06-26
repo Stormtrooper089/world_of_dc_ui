@@ -337,14 +337,19 @@ const MySMCAccount: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-5">
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-5">
+                <div className="order-5 rounded-xl border border-amber-100 bg-amber-50/30 p-4 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <Store className="h-5 w-5 text-blue-700" />
-                    <h2 className="text-lg font-bold">My Trade Licenses ({totalTradeLicenses})</h2>
+                    <Store className="h-5 w-5 text-amber-700" />
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+                        Business Services
+                      </p>
+                      <h2 className="text-lg font-bold">My Trade Licenses ({totalTradeLicenses})</h2>
+                    </div>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
-                    Link an existing SMC trade license or submit a new application under your SMC Citizen ID.
+                    For shop owners and businesses. Link an existing SMC trade license under your SMC Citizen ID.
                   </p>
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                     <input
@@ -401,10 +406,15 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="order-6 rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-blue-700" />
-                    <h2 className="text-lg font-bold">Trade License Services</h2>
+                    <ShieldCheck className="h-5 w-5 text-amber-700" />
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+                        Optional Business Workflow
+                      </p>
+                      <h2 className="text-lg font-bold">Trade License Services</h2>
+                    </div>
                   </div>
                   <div className="mt-4 space-y-3">
                     <select
@@ -475,13 +485,18 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="order-1 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <FileSearch className="h-5 w-5 text-blue-700" />
-                    <h2 className="text-lg font-bold">Property Services</h2>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+                        Citizen Essentials
+                      </p>
+                      <h2 className="text-lg font-bold">Property Services</h2>
+                    </div>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
-                    Submit transfer, correction, bifurcation or amalgamation requests for officer review.
+                    Property tax and holding services are kept first because they apply to most SMC citizens.
                   </p>
                   <div className="mt-4 space-y-3">
                     <input
@@ -519,10 +534,10 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="order-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-blue-700" />
-                    <h2 className="text-lg font-bold">My Services</h2>
+                    <h2 className="text-lg font-bold">Service Directory</h2>
                   </div>
                   <div className="mt-4 grid gap-2">
                     {[...(account?.services || []), {
@@ -554,7 +569,7 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="order-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <ReceiptText className="h-5 w-5 text-blue-700" />
                     <h2 className="text-lg font-bold">Payment Receipts</h2>
@@ -592,7 +607,7 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="order-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                   <h2 className="text-lg font-bold">Service Requests</h2>
                   <div className="mt-4 space-y-3">
                     {(!account?.propertyServiceRequests || account.propertyServiceRequests.length === 0) &&
