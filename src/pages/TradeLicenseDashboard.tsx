@@ -13,6 +13,7 @@ const formatCurrency = (value?: number) =>
 const TradeLicenseDashboard: React.FC = () => {
   const [dashboard, setDashboard] = useState<TradeLicenseDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState("");
   const [error, setError] = useState("");
 
   const loadDashboard = async () => {
@@ -30,6 +31,52 @@ const TradeLicenseDashboard: React.FC = () => {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  const handleApprove = async (applicationNumber: string) => {
+    const amountInput = window.prompt("Enter payable trade license fee", "2500");
+    if (amountInput === null) {
+      return;
+    }
+    const payableAmount = Number(amountInput);
+    if (Number.isNaN(payableAmount) || payableAmount < 0) {
+      setError("Enter a valid payable amount");
+      return;
+    }
+    const remarks = window.prompt("Officer remarks for citizen", "Accepted. Please complete payment.") || "";
+    try {
+      setActionLoading(applicationNumber);
+      setError("");
+      await tradeLicenseService.approveApplication(applicationNumber, {
+        payableAmount,
+        remarks,
+      });
+      await loadDashboard();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Unable to accept trade license application");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleReject = async (applicationNumber: string) => {
+    const rejectionReason = window.prompt("Reason for rejection");
+    if (!rejectionReason?.trim()) {
+      return;
+    }
+    try {
+      setActionLoading(applicationNumber);
+      setError("");
+      await tradeLicenseService.rejectApplication(applicationNumber, {
+        rejectionReason: rejectionReason.trim(),
+        remarks: rejectionReason.trim(),
+      });
+      await loadDashboard();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Unable to reject trade license application");
+    } finally {
+      setActionLoading("");
+    }
+  };
 
   return (
     <div className="h-full overflow-auto bg-slate-50 p-4 text-slate-950 sm:p-6">
@@ -84,6 +131,8 @@ const TradeLicenseDashboard: React.FC = () => {
                       <th className="py-3 pr-4">Type</th>
                       <th className="py-3 pr-4">Ward</th>
                       <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4">Payment</th>
+                      <th className="py-3 pr-4">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -95,8 +144,38 @@ const TradeLicenseDashboard: React.FC = () => {
                         <td className="py-3 pr-4">{application.wardNumber || "-"}</td>
                         <td className="py-3 pr-4">
                           <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
-                            {application.status}
+                            {application.status.replace(/_/g, " ")}
                           </span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <p className="font-semibold">{formatCurrency(application.payableAmount)}</p>
+                          <p className="text-xs text-slate-500">
+                            {application.paymentStatus || "NOT REQUIRED"}
+                          </p>
+                        </td>
+                        <td className="py-3 pr-4">
+                          {application.status === "SUBMITTED" ? (
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => handleApprove(application.applicationNumber)}
+                                disabled={actionLoading === application.applicationNumber}
+                                className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleReject(application.applicationNumber)}
+                                disabled={actionLoading === application.applicationNumber}
+                                className="rounded-md border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-500">
+                              {application.receiptNumber || application.upyogPaymentConsumerCode || "-"}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

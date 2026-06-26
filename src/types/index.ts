@@ -88,6 +88,24 @@ export interface PropertyTaxServiceRequest {
   mobileNumber?: string;
   remarks?: string;
   status: string;
+  payableAmount?: number;
+  paymentStatus?: string;
+  paymentMode?: string;
+  paymentReference?: string;
+  receiptNumber?: string;
+  paidAt?: string;
+  processedByOfficerId?: string;
+  processedByOfficerName?: string;
+  officerRemarks?: string;
+  rejectionReason?: string;
+  processedAt?: string;
+  citizenRating?: number;
+  citizenFeedback?: string;
+  feedbackAt?: string;
+  provider?: string;
+  upyogApplicationId?: string;
+  upyogBusinessService?: string;
+  upyogPaymentConsumerCode?: string;
   submittedAt: string;
   updatedAt: string;
 }

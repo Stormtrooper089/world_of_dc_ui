@@ -46,4 +46,45 @@ export const tradeLicenseService = {
     );
     return response.data.data;
   },
+
+  async approveApplication(
+    applicationNumber: string,
+    payload: { payableAmount?: number; remarks?: string }
+  ): Promise<TradeLicenseApplication> {
+    const response = await api.put<ApiResponse<TradeLicenseApplication>>(
+      `/officer/trade-license/applications/${applicationNumber}/approve`,
+      payload
+    );
+    return response.data.data;
+  },
+
+  async rejectApplication(
+    applicationNumber: string,
+    payload: { rejectionReason?: string; remarks?: string }
+  ): Promise<TradeLicenseApplication> {
+    const response = await api.put<ApiResponse<TradeLicenseApplication>>(
+      `/officer/trade-license/applications/${applicationNumber}/reject`,
+      payload
+    );
+    return response.data.data;
+  },
+
+  async payApplication(applicationNumber: string): Promise<TradeLicenseApplication> {
+    const response = await api.post<ApiResponse<TradeLicenseApplication>>(
+      `/trade-license/applications/${applicationNumber}/pay`,
+      { paymentMode: "UPYOG_SANDBOX" }
+    );
+    return response.data.data;
+  },
+
+  async submitFeedback(
+    applicationNumber: string,
+    payload: { rating: number; feedback?: string }
+  ): Promise<TradeLicenseApplication> {
+    const response = await api.post<ApiResponse<TradeLicenseApplication>>(
+      `/trade-license/applications/${applicationNumber}/feedback`,
+      payload
+    );
+    return response.data.data;
+  },
 };

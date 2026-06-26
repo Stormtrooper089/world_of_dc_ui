@@ -47,6 +47,7 @@ const MySMCAccount: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
+  const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, { rating: string; feedback: string }>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -189,6 +190,43 @@ const MySMCAccount: React.FC = () => {
       await loadAccount();
     } catch (err: any) {
       setError(err.response?.data?.message || "Unable to submit trade license application");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleTradeLicensePayment = async (applicationNumber: string) => {
+    try {
+      setActionLoading(`trade-pay-${applicationNumber}`);
+      setError("");
+      await tradeLicenseService.payApplication(applicationNumber);
+      setSuccess("Trade license fee paid and license issued");
+      await loadAccount();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Unable to process trade license payment");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleTradeLicenseFeedback = async (applicationNumber: string) => {
+    const draft = feedbackDrafts[applicationNumber] || { rating: "", feedback: "" };
+    const rating = Number(draft.rating);
+    if (!rating || rating < 1 || rating > 5) {
+      setError("Select a rating between 1 and 5 for trade license feedback");
+      return;
+    }
+    try {
+      setActionLoading(`trade-feedback-${applicationNumber}`);
+      setError("");
+      await tradeLicenseService.submitFeedback(applicationNumber, {
+        rating,
+        feedback: draft.feedback.trim(),
+      });
+      setSuccess("Trade license feedback submitted");
+      await loadAccount();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Unable to submit trade license feedback");
     } finally {
       setActionLoading("");
     }
@@ -650,13 +688,113 @@ const MySMCAccount: React.FC = () => {
                     ))}
                     {tradeAccount?.tradeLicenseApplications?.map((request) => (
                       <div key={request.applicationNumber} className="rounded-lg border border-slate-200 p-3">
-                        <p className="font-semibold">{request.applicationNumber}</p>
-                        <p className="text-sm text-slate-500">
-                          {request.applicationType.replace(/_/g, " ")} · {request.businessName}
-                        </p>
-                        <span className="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
-                          {request.status}
-                        </span>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="font-semibold">{request.applicationNumber}</p>
+                            <p className="text-sm text-slate-500">
+                              {request.applicationType.replace(/_/g, " ")} · {request.businessName}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              UPYOG ref: {request.upyogApplicationId || request.upyogPaymentConsumerCode || "ready after acceptance"}
+                            </p>
+                          </div>
+                          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${
+                            request.status === "REJECTED"
+                              ? "bg-red-50 text-red-700"
+                              : request.status === "ISSUED"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-blue-50 text-blue-700"
+                          }`}>
+                            {request.status.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        {request.officerRemarks && (
+                          <p className="mt-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                            Officer note: {request.officerRemarks}
+                          </p>
+                        )}
+                        {request.rejectionReason && (
+                          <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                            Rejection reason: {request.rejectionReason}
+                          </p>
+                        )}
+                        {request.status === "PAYMENT_PENDING" && (
+                          <div className="mt-3 rounded-md border border-emerald-100 bg-emerald-50 p-3">
+                            <p className="text-sm font-semibold text-emerald-900">
+                              License fee payable: {formatCurrency(request.payableAmount)}
+                            </p>
+                            <p className="mt-1 text-xs text-emerald-800">
+                              Payment will be routed through the UPYOG-ready trade license consumer code.
+                            </p>
+                            <button
+                              onClick={() => handleTradeLicensePayment(request.applicationNumber)}
+                              disabled={actionLoading === `trade-pay-${request.applicationNumber}`}
+                              className="mt-3 inline-flex min-h-[38px] items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                            >
+                              <CreditCard className="h-4 w-4" />
+                              {actionLoading === `trade-pay-${request.applicationNumber}` ? "Processing..." : "Pay License Fee"}
+                            </button>
+                          </div>
+                        )}
+                        {request.status === "ISSUED" && (
+                          <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                            <p className="text-sm font-semibold text-slate-900">
+                              Receipt: {request.receiptNumber || "Generated"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {request.paymentReference || "UPYOG payment reference will sync here."}
+                            </p>
+                            {request.citizenRating ? (
+                              <p className="mt-2 text-sm text-emerald-700">
+                                Feedback submitted: {request.citizenRating}/5
+                              </p>
+                            ) : (
+                              <div className="mt-3 grid gap-2 sm:grid-cols-[120px_1fr_auto]">
+                                <select
+                                  value={feedbackDrafts[request.applicationNumber]?.rating || ""}
+                                  onChange={(event) =>
+                                    setFeedbackDrafts({
+                                      ...feedbackDrafts,
+                                      [request.applicationNumber]: {
+                                        rating: event.target.value,
+                                        feedback: feedbackDrafts[request.applicationNumber]?.feedback || "",
+                                      },
+                                    })
+                                  }
+                                  className="min-h-[38px] rounded-md border border-slate-200 px-2 text-sm outline-none focus:border-blue-500"
+                                >
+                                  <option value="">Rating</option>
+                                  <option value="5">5 - Excellent</option>
+                                  <option value="4">4 - Good</option>
+                                  <option value="3">3 - Average</option>
+                                  <option value="2">2 - Poor</option>
+                                  <option value="1">1 - Bad</option>
+                                </select>
+                                <input
+                                  value={feedbackDrafts[request.applicationNumber]?.feedback || ""}
+                                  onChange={(event) =>
+                                    setFeedbackDrafts({
+                                      ...feedbackDrafts,
+                                      [request.applicationNumber]: {
+                                        rating: feedbackDrafts[request.applicationNumber]?.rating || "",
+                                        feedback: event.target.value,
+                                      },
+                                    })
+                                  }
+                                  placeholder="Service feedback"
+                                  className="min-h-[38px] rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500"
+                                />
+                                <button
+                                  onClick={() => handleTradeLicenseFeedback(request.applicationNumber)}
+                                  disabled={actionLoading === `trade-feedback-${request.applicationNumber}`}
+                                  className="min-h-[38px] rounded-md bg-blue-700 px-3 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+                                >
+                                  Submit
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
