@@ -1,4 +1,6 @@
 import {
+  BadgeCheck,
+  Building2,
   ChevronRight,
   Clock,
   Facebook,
@@ -8,6 +10,7 @@ import {
   Gavel,
   Landmark,
   Mail,
+  MapPin,
   Menu,
   Phone,
   Plus,
@@ -37,6 +40,15 @@ import {
 } from "../types";
 import GrievanceForm from "./GrievanceFile/GrievanceForm";
 import WastePickupRequestForm from "./WastePickupRequestForm";
+
+const departmentToneClasses: Record<string, string> = {
+  emerald: "border-emerald-100 bg-emerald-50 text-emerald-700",
+  blue: "border-blue-100 bg-blue-50 text-blue-700",
+  amber: "border-amber-100 bg-amber-50 text-amber-700",
+  sky: "border-sky-100 bg-sky-50 text-sky-700",
+  slate: "border-slate-200 bg-slate-50 text-slate-700",
+  indigo: "border-indigo-100 bg-indigo-50 text-indigo-700",
+};
 
 const CitizenHome: React.FC = () => {
   const navigate = useNavigate();
@@ -189,6 +201,66 @@ const CitizenHome: React.FC = () => {
       name: "Officer Task Coordination",
       desc: "Municipal employees can manage complaint and task boards across devices.",
       status: "Active",
+    },
+  ];
+
+  const departmentDirectory = [
+    {
+      name: "Sanitation & Solid Waste",
+      description: "Waste pickup requests, garbage points and field verification.",
+      contact: "Conservancy: 03842-233839",
+      icon: Trash2,
+      tone: "emerald",
+    },
+    {
+      name: "Taxation",
+      description: "Property holding, tax dues, payment receipts and citizen account linking.",
+      contact: "My SMC Account",
+      icon: Landmark,
+      tone: "blue",
+    },
+    {
+      name: "Trade License",
+      description: "Business license application, acceptance, payment and feedback workflow.",
+      contact: "Business Services",
+      icon: Store,
+      tone: "amber",
+    },
+    {
+      name: "Public Grievance Cell",
+      description: "Roads, drains, lights, encroachment, sanitation and ward-level complaints.",
+      contact: "Track by complaint ID",
+      icon: FileText,
+      tone: "sky",
+    },
+    {
+      name: "Revenue & Auctions",
+      description: "Municipal resource auctions, bids, awards and revenue transparency.",
+      contact: "Auction Board",
+      icon: Gavel,
+      tone: "slate",
+    },
+    {
+      name: "Administration",
+      description: "Citizen facilitation, official records and municipal office coordination.",
+      contact: "Office: 03842-233828",
+      icon: Building2,
+      tone: "indigo",
+    },
+  ];
+
+  const citizenGuides = [
+    {
+      title: "Before filing a complaint",
+      detail: "Keep ward, locality, landmark, photo and GPS location ready for faster routing.",
+    },
+    {
+      title: "For property and trade services",
+      detail: "Use My SMC Account to link holdings, track business license requests and view receipts.",
+    },
+    {
+      title: "For official follow-up",
+      detail: "Use tracking IDs and payment receipt numbers instead of repeat manual visits.",
     },
   ];
 
@@ -819,6 +891,12 @@ const CitizenHome: React.FC = () => {
                   Schemes
                 </a>
                 <a
+                  href="#departments"
+                  className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
+                >
+                  Departments
+                </a>
+                <a
                   href="#about"
                   className="px-3 py-2 text-sm text-white/90 hover:text-white font-semibold transition-colors"
                 >
@@ -937,6 +1015,13 @@ const CitizenHome: React.FC = () => {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Schemes
+                  </a>
+                  <a
+                    href="#departments"
+                    className="px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Departments
                   </a>
                   <a
                     href="#about"
@@ -1081,6 +1166,83 @@ const CitizenHome: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* Public Information + Department Directory */}
+        <section className="mb-10 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]" id="departments">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+              Public information
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-950">
+              Silchar Municipal Corporation
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              This portal keeps digital services upfront while giving citizens the official context they expect from a municipal website: office access, departments, service ownership and clear follow-up channels.
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <MapPin className="mt-1 h-5 w-5 shrink-0 text-blue-700" />
+                  <div>
+                    <p className="font-bold text-slate-950">Municipal Office</p>
+                    <p className="mt-1 text-sm leading-5 text-slate-600">
+                      Silchar Municipal Corporation, Sadarghat, Silchar, Cachar, Assam
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <div className="flex items-start gap-3">
+                  <Clock className="mt-1 h-5 w-5 shrink-0 text-emerald-700" />
+                  <div>
+                    <p className="font-bold text-slate-950">Citizen Support Hours</p>
+                    <p className="mt-1 text-sm leading-5 text-slate-600">
+                      Office counters: 10:00 AM to 5:00 PM. Online grievance and tracking services stay available 24x7.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {citizenGuides.map((guide) => (
+                <div key={guide.title} className="flex gap-3 rounded-xl border border-slate-200 p-3">
+                  <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+                  <div>
+                    <p className="text-sm font-bold text-slate-950">{guide.title}</p>
+                    <p className="mt-1 text-sm leading-5 text-slate-600">{guide.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
+                  Department directory
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                  Know the municipal wing behind each service
+                </h2>
+              </div>
+              <a
+                href="#services"
+                className="inline-flex min-h-[38px] items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-3 text-sm font-semibold text-blue-800 hover:bg-blue-100"
+              >
+                Services
+                <ChevronRight className="h-4 w-4" />
+              </a>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {departmentDirectory.map((department) => (
+                <DepartmentInfoCard key={department.name} department={department} />
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Analytics Cards - Government Portal Style */}
         <section className="relative mb-10 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-5 text-slate-900 shadow-[0_20px_45px_rgba(15,23,42,0.08)] sm:p-6">
           <div
@@ -1168,7 +1330,7 @@ const CitizenHome: React.FC = () => {
                 <div className="flex flex-wrap gap-3 mt-4">
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                     <h4 className="font-bold text-blue-900 mb-1">Coverage</h4>
-                    <p className="text-slate-700">28 wards</p>
+                    <p className="text-slate-700">Ward-based services</p>
                   </div>
                   <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
                     <h4 className="font-bold text-emerald-900 mb-1">
@@ -1300,19 +1462,29 @@ const CitizenHome: React.FC = () => {
               </h3>
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
+                  <MapPin className="h-5 w-5 mt-1 flex-shrink-0 text-blue-400" />
+                  <div>
+                    <span className="text-sm font-semibold block">
+                      Office
+                    </span>
+                    <span className="text-sm">Sadarghat, Silchar, Cachar, Assam</span>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
                   <Phone className="h-5 w-5 mt-1 flex-shrink-0 text-blue-400" />
                   <div>
                     <span className="text-sm font-semibold block">
-                      Toll Free
+                      Office Phone
                     </span>
-                    <span className="text-sm">1800-XXX-XXXX</span>
+                    <span className="text-sm">03842-233828</span>
+                    <span className="text-xs text-gray-500 block">Conservancy: 03842-233839</span>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
                   <Mail className="h-5 w-5 mt-1 flex-shrink-0 text-blue-400" />
                   <div>
                     <span className="text-sm font-semibold block">Email</span>
-                    <span className="text-sm">support@assam.gov.in</span>
+                    <span className="text-sm">silcharmunicipality@gmail.com</span>
                   </div>
                 </div>
               </div>
@@ -1326,38 +1498,38 @@ const CitizenHome: React.FC = () => {
               <ul className="space-y-3 text-sm">
                 <li>
                   <a
-                    href="#"
+                    href="#departments"
                     className="hover:text-white hover:underline underline-offset-4 transition-colors flex items-center space-x-2"
                   >
                     <ChevronRight className="h-3 w-3 text-blue-400" />
-                    <span>About Us</span>
+                    <span>Departments</span>
                   </a>
                 </li>
                 <li>
                   <a
-                    href="#"
+                    href="#services"
                     className="hover:text-white hover:underline underline-offset-4 transition-colors flex items-center space-x-2"
                   >
                     <ChevronRight className="h-3 w-3 text-blue-400" />
-                    <span>Terms of Service</span>
+                    <span>Citizen Services</span>
                   </a>
                 </li>
                 <li>
                   <a
-                    href="#"
+                    href="#about"
                     className="hover:text-white hover:underline underline-offset-4 transition-colors flex items-center space-x-2"
                   >
                     <ChevronRight className="h-3 w-3 text-blue-400" />
-                    <span>Privacy Policy</span>
+                    <span>About SMC</span>
                   </a>
                 </li>
                 <li>
                   <a
-                    href="#"
+                    href="#schemes"
                     className="hover:text-white hover:underline underline-offset-4 transition-colors flex items-center space-x-2"
                   >
                     <ChevronRight className="h-3 w-3 text-blue-400" />
-                    <span>FAQs</span>
+                    <span>Service Highlights</span>
                   </a>
                 </li>
               </ul>
@@ -1442,14 +1614,13 @@ const CitizenHome: React.FC = () => {
           <div className="border-t-2 border-gray-700 mt-8 pt-8">
             <div className="text-center space-y-2">
               <p className="text-sm font-semibold text-white">
-                © 2025 Government of Assam. All rights reserved.
+                © 2026 Silchar Municipal Corporation. All rights reserved.
               </p>
               <p className="text-xs text-gray-400">
-                Content owned, maintained and updated by Government of Assam
+                Content owned, maintained and updated by Silchar Municipal Corporation
               </p>
               <p className="text-xs text-gray-500 mt-2">
-                Designed & Developed by Department of Information Technology,
-                Government of Assam
+                Digital citizen-service portal for grievance, sanitation, revenue and municipal workflows
               </p>
             </div>
           </div>
@@ -2155,6 +2326,35 @@ const CitizenHome: React.FC = () => {
           />
         </DialogBox>
       )}
+    </div>
+  );
+};
+
+const DepartmentInfoCard = ({ department }: { department: any }) => {
+  const Icon = department.icon;
+  const toneClass =
+    departmentToneClasses[department.tone] || departmentToneClasses.blue;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border ${toneClass}`}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-bold leading-snug text-slate-950">
+            {department.name}
+          </p>
+          <p className="mt-1 text-sm leading-5 text-slate-600">
+            {department.description}
+          </p>
+          <p className="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+            {department.contact}
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
