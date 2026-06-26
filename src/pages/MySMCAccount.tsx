@@ -250,8 +250,29 @@ const MySMCAccount: React.FC = () => {
               <SummaryCard icon={Store} label="Trade License Due" value={formatCurrency(totalTradeDue)} />
             </section>
 
+            <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
+                    My SMC Services
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Jump to any linked citizen or business service on this page.
+                  </p>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 lg:pb-0">
+                  <ServiceShortcut href="#properties" label="Property Tax" tone="primary" />
+                  <ServiceShortcut href="#property-services" label="Property Requests" tone="primary" />
+                  <ServiceShortcut href="#receipts" label="Receipts" tone="primary" />
+                  <ServiceShortcut href="#service-requests" label="Track Requests" tone="primary" />
+                  <ServiceShortcut href="#trade-licenses" label="Trade License" tone="business" />
+                  <ServiceShortcut href="#trade-license-services" label="Business Requests" tone="business" />
+                </div>
+              </div>
+            </section>
+
             <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div id="properties" className="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-2">
                   <Landmark className="h-5 w-5 text-blue-700" />
                   <h2 className="text-lg font-bold">My Properties</h2>
@@ -338,7 +359,7 @@ const MySMCAccount: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-5">
-                <div className="order-5 rounded-xl border border-amber-100 bg-amber-50/30 p-4 shadow-sm">
+                <div id="trade-licenses" className="order-5 scroll-mt-6 rounded-xl border border-amber-100 bg-amber-50/30 p-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Store className="h-5 w-5 text-amber-700" />
                     <div>
@@ -406,7 +427,7 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="order-6 rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
+                <div id="trade-license-services" className="order-6 scroll-mt-6 rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-amber-700" />
                     <div>
@@ -485,7 +506,7 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="order-1 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+                <div id="property-services" className="order-1 scroll-mt-6 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <FileSearch className="h-5 w-5 text-blue-700" />
                     <div>
@@ -569,7 +590,7 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="order-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div id="receipts" className="order-2 scroll-mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-center gap-2">
                     <ReceiptText className="h-5 w-5 text-blue-700" />
                     <h2 className="text-lg font-bold">Payment Receipts</h2>
@@ -607,7 +628,7 @@ const MySMCAccount: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="order-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div id="service-requests" className="order-3 scroll-mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                   <h2 className="text-lg font-bold">Service Requests</h2>
                   <div className="mt-4 space-y-3">
                     {(!account?.propertyServiceRequests || account.propertyServiceRequests.length === 0) &&
@@ -657,6 +678,27 @@ const SummaryCard = ({ icon: Icon, label, value }: any) => (
     </p>
     <p className="mt-1 text-2xl font-bold text-slate-950">{value}</p>
   </div>
+);
+
+const ServiceShortcut = ({
+  href,
+  label,
+  tone,
+}: {
+  href: string;
+  label: string;
+  tone: "primary" | "business";
+}) => (
+  <a
+    href={href}
+    className={`inline-flex min-h-[38px] shrink-0 items-center rounded-full border px-3 text-sm font-semibold transition-colors ${
+      tone === "business"
+        ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+        : "border-blue-100 bg-blue-50 text-blue-800 hover:bg-blue-100"
+    }`}
+  >
+    {label}
+  </a>
 );
 
 const Amount = ({ label, value }: { label: string; value: number }) => (
