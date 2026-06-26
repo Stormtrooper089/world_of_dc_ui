@@ -4,6 +4,7 @@
 export enum UserRole {
   CITIZEN = "CITIZEN",
   ADMIN = "ADMIN",
+  SMC_COMMISSIONER = "SMC_COMMISSIONER",
   DISTRICT_COMMISSIONER = "DISTRICT_COMMISSIONER",
   ADDITIONAL_DISTRICT_COMMISSIONER = "ADDITIONAL_DISTRICT_COMMISSIONER",
   ASSISTANT_DISTRICT_COMMISSIONER = "ASSISTANT_DISTRICT_COMMISSIONER",
@@ -187,6 +188,7 @@ export const getUserRoleLabel = (role: UserRole): string => {
   const labels: Record<UserRole, string> = {
     [UserRole.CITIZEN]: "Citizen",
     [UserRole.ADMIN]: "Administrator",
+    [UserRole.SMC_COMMISSIONER]: "SMC Commissioner",
     [UserRole.DISTRICT_COMMISSIONER]: "District Commissioner",
     [UserRole.ADDITIONAL_DISTRICT_COMMISSIONER]:
       "Additional District Commissioner",
@@ -275,6 +277,7 @@ export const getComplaintCategoryLabel = (
 // Admin role definitions - officers cannot assign these to themselves
 export const ADMIN_ROLES: UserRole[] = [
   UserRole.ADMIN,
+  UserRole.SMC_COMMISSIONER,
   UserRole.DISTRICT_COMMISSIONER,
   UserRole.ADDITIONAL_DISTRICT_COMMISSIONER,
 ];
@@ -286,6 +289,7 @@ export const isAdminRole = (role: UserRole): boolean => {
 // Role hierarchy for validation
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.ADMIN]: 10,
+  [UserRole.SMC_COMMISSIONER]: 9,
   [UserRole.DISTRICT_COMMISSIONER]: 9,
   [UserRole.ADDITIONAL_DISTRICT_COMMISSIONER]: 8,
   [UserRole.ASSISTANT_DISTRICT_COMMISSIONER]: 8,

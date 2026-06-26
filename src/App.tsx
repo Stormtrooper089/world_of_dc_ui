@@ -38,6 +38,7 @@ import { UserRole } from "./constants/enums";
 // Officer roles that can access officer dashboard
 const OFFICER_ROLES: UserRole[] = [
   UserRole.OFFICER,
+  UserRole.SMC_COMMISSIONER,
   UserRole.DISTRICT_COMMISSIONER,
   UserRole.ADDITIONAL_DISTRICT_COMMISSIONER,
   UserRole.BLOCK_DEVELOPMENT_OFFICER,

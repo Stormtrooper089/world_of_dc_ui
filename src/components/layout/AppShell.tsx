@@ -56,7 +56,10 @@ export default function AppShell() {
   const [activeView, setActiveView] = useState('CONSOLE'); 
   const { user, logout } = useAuth();
 
-  const isAdmin = user?.role === UserRole.DISTRICT_COMMISSIONER || user?.role === 'ADMIN';
+  const isAdmin =
+    user?.role === UserRole.DISTRICT_COMMISSIONER ||
+    user?.role === UserRole.SMC_COMMISSIONER ||
+    user?.role === 'ADMIN';
 
   return (
     <div className="h-screen flex bg-slate-50 font-sans overflow-hidden">
