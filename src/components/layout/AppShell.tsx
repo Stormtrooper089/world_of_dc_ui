@@ -257,11 +257,11 @@ export default function AppShell() {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+        <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <select
             value={activeView}
             onChange={(event) => setActiveView(event.target.value)}
-            className="min-h-[42px] w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500"
+            className="min-h-[42px] min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500"
           >
             {navSections.flatMap((section) =>
               section.items.map((item) => (
@@ -272,6 +272,17 @@ export default function AppShell() {
             )}
             <option value="PROFILE">Account - Profile</option>
           </select>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("Are you sure you want to logout?")) logout();
+            }}
+            aria-label="Sign out"
+            title="Sign out"
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-md border border-red-100 bg-red-50 text-red-700 transition-colors hover:bg-red-100"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="relative flex flex-1 flex-col overflow-hidden">
