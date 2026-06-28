@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   BarChart3,
+  BookOpenCheck,
   Gavel,
   Landmark,
   LayoutDashboard,
@@ -22,6 +23,7 @@ import TicketDashboard from "../../pages/ComplaintTracker";
 import GovernanceDashboard from "../../pages/GovernanceDashboard";
 import Profile from "../../pages/Profile";
 import PropertyTaxDashboard from "../../pages/PropertyTaxDashboard";
+import ServiceRegistryDashboard from "../../pages/ServiceRegistryDashboard";
 import SquadManagementPage from "../../pages/SquadManagementPage";
 import TaskBoard from "../../pages/TaskBoard";
 import TrackingDashboard from "../../pages/TrackingDashboard";
@@ -122,6 +124,12 @@ export default function AppShell() {
             icon: BarChart3,
             label: "Governance Dashboard",
             description: "SLA and pendency",
+          },
+          {
+            view: "SERVICE_REGISTRY",
+            icon: BookOpenCheck,
+            label: "Service Registry",
+            description: "Services, SLA and documents",
           },
         ],
       },
@@ -272,6 +280,7 @@ export default function AppShell() {
           {activeView === "TASK_BOARD" && <TaskBoard />}
           {activeView === "TRACKING" && <TrackingDashboard />}
           {activeView === "GOVERNANCE" && <GovernanceDashboard />}
+          {activeView === "SERVICE_REGISTRY" && <ServiceRegistryDashboard />}
           {activeView === "WASTE_PICKUP" && <WastePickupDashboard />}
           {activeView === "PROPERTY_TAX" && <PropertyTaxDashboard />}
           {activeView === "TRADE_LICENSE" && <TradeLicenseDashboard />}

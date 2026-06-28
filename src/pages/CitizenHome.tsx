@@ -162,6 +162,14 @@ const CitizenHome: React.FC = () => {
       iconColor: "text-amber-700",
       action: "smcAccount",
     },
+    {
+      name: "Service Directory",
+      icon: FileText,
+      description: "Documents, SLA & fees",
+      accentBg: "bg-sky-50 text-sky-700",
+      iconColor: "text-sky-700",
+      action: "serviceRegistry",
+    },
   ];
 
   const civicStats = [
@@ -545,6 +553,9 @@ const CitizenHome: React.FC = () => {
       case "elections2026":
         navigate("/elections");
         break;
+      case "serviceRegistry":
+        navigate("/service-registry");
+        break;
       case "smcAccount":
         if (!isAuthenticated) {
           openLoginModal();
@@ -840,6 +851,14 @@ const CitizenHome: React.FC = () => {
                   <div className="invisible absolute right-0 top-full z-50 w-56 translate-y-2 rounded-lg border border-slate-200 bg-white p-2 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                     <button
                       type="button"
+                      onClick={() => handleNavigateToService("serviceRegistry")}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Service Directory
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleNavigateToService("smcAccount")}
                       className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700"
                     >
@@ -969,6 +988,16 @@ const CitizenHome: React.FC = () => {
                   >
                     Services
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleNavigateToService("serviceRegistry");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="px-6 py-2 text-left text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors rounded"
+                  >
+                    Service Directory
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -1108,7 +1137,7 @@ const CitizenHome: React.FC = () => {
       <section className="relative z-20 -mt-8 mb-5 max-w-full overflow-hidden sm:-mt-10" id="services">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="w-full max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-[0_18px_35px_rgba(15,23,42,0.12)] sm:p-3">
-            <div className="grid w-full max-w-full grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid w-full max-w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {quickServices.map((service, index) => {
                 const isInteractive = Boolean(service.action);
                 return (

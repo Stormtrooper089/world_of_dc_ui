@@ -30,6 +30,7 @@ import Home from "./pages/Home";
 import MySMCAccount from "./pages/MySMCAccount";
 import Officer from "./pages/Officer";
 import Profile from "./pages/Profile";
+import ServiceRegistryPage from "./pages/ServiceRegistryPage";
 import SquadManagementPage from "./pages/SquadManagementPage";
 import TaskBoard from "./pages/TaskBoard";
 import AppShell from "./components/layout/AppShell";
@@ -112,6 +113,7 @@ const AppRoutes: React.FC = () => {
           </RoleProtectedRoute>
         }
       />
+      <Route path="/service-registry" element={<ServiceRegistryPage />} />
       <Route
         path="/dashboard/*"
         element={

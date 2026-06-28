@@ -707,6 +707,39 @@ export interface UpdateMemberLocationInput {
   status: MemberStatus;
 }
 
+export interface DistrictService {
+  id?: string;
+  serviceCode: string;
+  serviceName: string;
+  department: string;
+  category: string;
+  description?: string;
+  eligibility?: string[];
+  requiredDocuments?: string[];
+  feeDescription?: string;
+  slaTimeline?: string;
+  serviceMode?: string;
+  applyUrl?: string;
+  trackingUrl?: string;
+  escalationOfficer?: string;
+  escalationContact?: string;
+  integrationStatus?: string;
+  active: boolean;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DistrictServiceDashboard {
+  totalServices: number;
+  activeServices: number;
+  onlineServices: number;
+  upyogReadyServices: number;
+  departmentWise: Record<string, number>;
+  categoryWise: Record<string, number>;
+  services: DistrictService[];
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   success: boolean;
