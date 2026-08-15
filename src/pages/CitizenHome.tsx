@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom";
 import assamHeroImage from "../assets/image-4.jpg";
 import smcCivicHero from "../assets/smc-civic-hero.png";
 import DialogBox from "../components/common/DialogBox";
+import VoiceAssistantWidget from "../components/voice/VoiceAssistantWidget";
 import { useAuth } from "../contexts/AuthContext";
 import { authService } from "../services/authService";
 import { complaintService } from "../services/complaintService";
@@ -798,6 +799,7 @@ const CitizenHome: React.FC = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
+      <VoiceAssistantWidget />
       {/* Compact citizen-service hero */}
       <div
         className="relative h-[350px] overflow-hidden bg-slate-950 pt-16 sm:h-[430px] lg:h-[480px]"
