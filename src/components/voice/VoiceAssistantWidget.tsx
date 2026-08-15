@@ -8,6 +8,7 @@ import {
   FileText,
   ListChecks,
   Info,
+  Receipt,
   CheckCircle2,
   User,
   Bot,
@@ -96,9 +97,9 @@ export default function VoiceAssistantWidget() {
   const greeting = useMemo(() => {
     if (isAuthenticated && user?.name) {
       const firstName = user.name.split(" ")[0];
-      return `Hi ${firstName}! I already have your details on file, so I can file a complaint or check on one without asking for your mobile number again. What would you like to do?`;
+      return `Hi ${firstName}! I can file a complaint, check on one, check your property tax dues, or tell you about a district service — what would you like to do?`;
     }
-    return "Namaskar! I can help you file a complaint, check a complaint's status, or find a district service. Log in first if you'd like me to skip asking for your mobile number.";
+    return "Namaskar! I can help you file a complaint, check a complaint's status, or find a district service. Log in first if you'd like me to also check your property tax dues or skip asking for your mobile number.";
   }, [isAuthenticated, user]);
 
   const [turns, setTurns] = useState<ConversationTurn[]>([{ role: "assistant", text: greeting }]);
@@ -133,30 +134,42 @@ export default function VoiceAssistantWidget() {
     );
   }, [open]);
 
-  // Quick-reply chips — the point is to make the three main things this
-  // assistant can do obvious and one-tap, instead of citizens having to
-  // guess how to phrase a request.
+  // Quick-reply chips — the point is to make the things this assistant can do
+  // obvious and one-tap, instead of citizens having to guess how to phrase a
+  // request (each phrase is specific enough to count as a clear choice under
+  // the backend's "don't assume intent" gate, not just a vague greeting).
   const quickActions: QuickAction[] = useMemo(
-    () => [
-      {
-        key: "file",
-        label: "File a complaint",
-        icon: <FileText className="h-3.5 w-3.5" />,
-        phrase: "I want to file a new complaint.",
-      },
-      {
-        key: "status",
-        label: isAuthenticated ? "My complaints" : "Check status",
-        icon: <ListChecks className="h-3.5 w-3.5" />,
-        phrase: isAuthenticated ? "Show me my recent complaints." : "I want to check a complaint's status.",
-      },
-      {
+    () => {
+      const actions: QuickAction[] = [
+        {
+          key: "file",
+          label: "File a complaint",
+          icon: <FileText className="h-3.5 w-3.5" />,
+          phrase: "I want to file a new complaint.",
+        },
+        {
+          key: "status",
+          label: isAuthenticated ? "My complaints" : "Check status",
+          icon: <ListChecks className="h-3.5 w-3.5" />,
+          phrase: isAuthenticated ? "Show me my recent complaints." : "I want to check a complaint's status.",
+        },
+      ];
+      if (isAuthenticated) {
+        actions.push({
+          key: "property-tax",
+          label: "Property tax dues",
+          icon: <Receipt className="h-3.5 w-3.5" />,
+          phrase: "What are my property tax dues?",
+        });
+      }
+      actions.push({
         key: "services",
         label: "District services",
         icon: <Info className="h-3.5 w-3.5" />,
         phrase: "What district services are available?",
-      },
-    ],
+      });
+      return actions;
+    },
     [isAuthenticated]
   );
 
