@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { voiceAssistantService } from "../../services/voiceAssistantService";
 import { useAuth } from "../../contexts/AuthContext";
+import { startCloudRecording, CloudRecording } from "../../utils/audioRecording";
 
 /**
  * Floating voice-assistant widget for the citizen portal.
@@ -29,13 +30,21 @@ import { useAuth } from "../../contexts/AuthContext";
  * spoofing risk. See VoiceAssistantService's Identity handling on the
  * backend for where the real trust boundary is.
  *
- * Phase 1 (this file): speech-to-text and text-to-speech run entirely in the
- * browser via the Web Speech API — zero backend cost, works today, no cloud
- * STT/TTS keys needed. Known limitation: browser support for Hindi/Assamese/
- * Bengali recognition is inconsistent across browsers (Chrome desktop is
- * decent for Hindi; Assamese is essentially unsupported everywhere). A text
- * fallback box is always shown for that reason, and is also what non-Chrome
- * browsers get automatically (see `speechSupported` below).
+ * Phase 1: for English, speech-to-text and text-to-speech run entirely in the
+ * browser via the Web Speech API — zero backend cost, no cloud STT/TTS keys
+ * needed. That's kept as-is here since it already works well for English.
+ *
+ * Phase 2 (this file, now): for Hindi/Assamese/Bengali, the browser's Web
+ * Speech API is unreliable-to-nonexistent (Chrome desktop is decent for
+ * Hindi; Assamese is essentially unsupported everywhere, and TTS voices for
+ * these languages are rarely installed at all). So non-English languages
+ * record raw microphone audio (see utils/audioRecording.ts, which WAV-encodes
+ * it client-side) and send it to the backend's Bhashini-backed
+ * /speech-to-text and /text-to-speech endpoints instead. If the backend
+ * isn't configured with Bhashini credentials yet, or a cloud call fails, this
+ * falls back to typed input / browser speechSynthesis (silently, for TTS —
+ * see `speak` below) rather than breaking the widget. A text fallback box is
+ * always shown regardless of language or path.
  */
 
 interface ConversationTurn {
@@ -52,6 +61,15 @@ interface QuickAction {
   phrase: string;
 }
 
+type Language = "en" | "hi" | "as" | "bn";
+
+const LANGUAGE_OPTIONS: { code: Language; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "हिंदी" },
+  { code: "as", label: "অসমীয়া" },
+  { code: "bn", label: "বাংলা" },
+];
+
 function createSessionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -63,6 +81,9 @@ const speechSupported =
   typeof window !== "undefined" &&
   ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
+const cloudRecordingSupported =
+  typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+
 export default function VoiceAssistantWidget() {
   const { user, isAuthenticated } = useAuth();
 
@@ -70,6 +91,7 @@ export default function VoiceAssistantWidget() {
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [typedInput, setTypedInput] = useState("");
+  const [language, setLanguage] = useState<Language>("en");
 
   const greeting = useMemo(() => {
     if (isAuthenticated && user?.name) {
@@ -83,6 +105,11 @@ export default function VoiceAssistantWidget() {
 
   const sessionIdRef = useRef(createSessionId());
   const recognitionRef = useRef<any>(null);
+  const cloudRecordingRef = useRef<CloudRecording | null>(null);
+  // True when stopListening() was called while startCloudRecording()'s
+  // getUserMedia prompt was still pending — otherwise a fast tap-tap would
+  // leave the mic stream running with nothing left holding a reference to it.
+  const pendingCloudStopRef = useRef(false);
 
   // Quick-reply chips — the point is to make the three main things this
   // assistant can do obvious and one-tap, instead of citizens having to
@@ -111,15 +138,29 @@ export default function VoiceAssistantWidget() {
     [isAuthenticated]
   );
 
-  const speak = useCallback((text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    window.speechSynthesis.speak(utterance);
-  }, []);
+  const speak = useCallback(
+    async (text: string) => {
+      try {
+        const { audioBase64 } = await voiceAssistantService.textToSpeech(text, language);
+        await new Audio(`data:audio/wav;base64,${audioBase64}`).play();
+        return;
+      } catch (err) {
+        // Cloud TTS not configured (yet) or failed — fall back below. Logged
+        // only, not shown to the citizen, same as the backend's own
+        // placeholder-mode logging for the chat LLM.
+        // eslint-disable-next-line no-console
+        console.error("Cloud text-to-speech failed, falling back to browser speech synthesis:", err);
+      }
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    },
+    [language]
+  );
 
   const sendTranscript = useCallback(
     async (transcript: string) => {
@@ -153,35 +194,106 @@ export default function VoiceAssistantWidget() {
     [speak]
   );
 
+  // English uses the existing free/instant browser recognizer. Other
+  // languages record raw audio for the backend's Bhashini STT endpoint
+  // instead, since browser recognition doesn't reliably support them.
+  const useCloudSpeechForLanguage = language !== "en";
+
   const startListening = useCallback(() => {
-    if (!speechSupported) return;
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognitionCtor();
-    recognition.lang = "en-IN"; // swap to "hi-IN" for Hindi; see file header for Assamese/Bengali caveat
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    if (!useCloudSpeechForLanguage) {
+      if (!speechSupported) return;
+      const SpeechRecognitionCtor =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognitionCtor();
+      recognition.lang = "en-IN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      sendTranscript(transcript);
-    };
-    recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        sendTranscript(transcript);
+      };
+      recognition.onerror = () => setListening(false);
+      recognition.onend = () => setListening(false);
 
-    recognitionRef.current = recognition;
-    recognition.start();
+      recognitionRef.current = recognition;
+      recognition.start();
+      setListening(true);
+      return;
+    }
+
+    if (!cloudRecordingSupported) return;
+    pendingCloudStopRef.current = false;
     setListening(true);
-  }, [sendTranscript]);
+    startCloudRecording()
+      .then((recording) => {
+        if (pendingCloudStopRef.current) {
+          pendingCloudStopRef.current = false;
+          recording.cancel();
+          return;
+        }
+        cloudRecordingRef.current = recording;
+      })
+      .catch((err) => {
+        setListening(false);
+        // eslint-disable-next-line no-console
+        console.error("Couldn't start microphone capture:", err);
+        setTurns((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "Couldn't access the microphone. Please check permissions, or type your message below.",
+          },
+        ]);
+      });
+  }, [useCloudSpeechForLanguage, sendTranscript]);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setListening(false);
+      return;
+    }
+
+    const recording = cloudRecordingRef.current;
+    cloudRecordingRef.current = null;
     setListening(false);
-  }, []);
+    if (!recording) {
+      // startCloudRecording() hasn't resolved yet — tell it to cancel itself
+      // once the mic stream does come through, instead of leaving it open.
+      pendingCloudStopRef.current = true;
+      return;
+    }
+
+    setBusy(true);
+    recording
+      .stop()
+      .then((audioBase64) => voiceAssistantService.speechToText(audioBase64, language))
+      .then(({ transcript }) => {
+        setBusy(false);
+        if (transcript.trim()) {
+          sendTranscript(transcript);
+        }
+      })
+      .catch((err) => {
+        setBusy(false);
+        // eslint-disable-next-line no-console
+        console.error("Cloud speech-to-text failed:", err);
+        setTurns((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "Sorry, I couldn't understand that. Please try again, or type your message below.",
+          },
+        ]);
+      });
+  }, [language, sendTranscript]);
 
   useEffect(() => {
     return () => {
       recognitionRef.current?.stop();
+      cloudRecordingRef.current?.cancel();
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
@@ -217,6 +329,23 @@ export default function VoiceAssistantWidget() {
         <button onClick={() => setOpen(false)} aria-label="Close voice assistant">
           <X className="h-4 w-4" />
         </button>
+      </div>
+
+      <div className="flex gap-1.5 border-b border-gray-100 px-3 py-2">
+        {LANGUAGE_OPTIONS.map((option) => (
+          <button
+            key={option.code}
+            onClick={() => setLanguage(option.code)}
+            disabled={listening || busy}
+            className={`flex-1 rounded-full px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+              language === option.code
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
@@ -264,7 +393,7 @@ export default function VoiceAssistantWidget() {
       </div>
 
       <div className="p-3 space-y-2">
-        {speechSupported ? (
+        {(useCloudSpeechForLanguage ? cloudRecordingSupported : speechSupported) ? (
           <button
             onClick={listening ? stopListening : startListening}
             disabled={busy}

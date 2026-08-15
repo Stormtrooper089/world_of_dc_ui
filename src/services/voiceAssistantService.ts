@@ -8,6 +8,19 @@ export interface VoiceChatResponse {
   complaintNumber?: string | null;
 }
 
+export interface SpeechToTextResponse {
+  transcript: string;
+}
+
+export interface TextToSpeechResponse {
+  audioBase64: string;
+  audioFormat: string;
+}
+
+// Bhashini's pipeline-config call (cache miss) plus the inference call can
+// take longer than the default 10s axios timeout, so these two get their own.
+const VOICE_CLOUD_TIMEOUT_MS = 20000;
+
 // Mirrors complaintService.ts's style. Reachable whether or not the citizen
 // is logged in (same as trackComplaint()) — but if they ARE logged in, the
 // axios interceptor in ./api.ts automatically attaches the Authorization
@@ -20,6 +33,25 @@ export const voiceAssistantService = {
     const response = await api.post<ApiResponse<VoiceChatResponse>>(
       "/citizen/voice-assistant/chat",
       { sessionId, transcript }
+    );
+    return response.data.data;
+  },
+
+  // audioBase64 must already be 16kHz mono PCM WAV — see utils/audioRecording.ts.
+  async speechToText(audioBase64: string, language: string): Promise<SpeechToTextResponse> {
+    const response = await api.post<ApiResponse<SpeechToTextResponse>>(
+      "/citizen/voice-assistant/speech-to-text",
+      { audioBase64, language },
+      { timeout: VOICE_CLOUD_TIMEOUT_MS }
+    );
+    return response.data.data;
+  },
+
+  async textToSpeech(text: string, language: string): Promise<TextToSpeechResponse> {
+    const response = await api.post<ApiResponse<TextToSpeechResponse>>(
+      "/citizen/voice-assistant/text-to-speech",
+      { text, language },
+      { timeout: VOICE_CLOUD_TIMEOUT_MS }
     );
     return response.data.data;
   },
