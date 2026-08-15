@@ -8,9 +8,13 @@ export interface VoiceChatResponse {
   complaintNumber?: string | null;
 }
 
-// Mirrors complaintService.ts's style. This hits a public/anonymous endpoint
-// (see VoiceAssistantController on the backend) — no auth header is required,
-// same as trackComplaint().
+// Mirrors complaintService.ts's style. Reachable whether or not the citizen
+// is logged in (same as trackComplaint()) — but if they ARE logged in, the
+// axios interceptor in ./api.ts automatically attaches the Authorization
+// bearer token to this request just like any other call, and the backend
+// uses that (not anything in this request body) to know who's asking. See
+// VoiceAssistantController/VoiceAssistantService for how that identity is
+// used to skip asking for a mobile number the citizen already gave at login.
 export const voiceAssistantService = {
   async sendTurn(sessionId: string, transcript: string): Promise<VoiceChatResponse> {
     const response = await api.post<ApiResponse<VoiceChatResponse>>(
