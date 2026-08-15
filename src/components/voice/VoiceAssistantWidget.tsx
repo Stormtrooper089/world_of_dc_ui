@@ -110,6 +110,28 @@ export default function VoiceAssistantWidget() {
   // getUserMedia prompt was still pending — otherwise a fast tap-tap would
   // leave the mic stream running with nothing left holding a reference to it.
   const pendingCloudStopRef = useRef(false);
+  // Captured once per widget session (same navigator.geolocation approach as
+  // CreateComplaint.tsx / GrievanceForm.tsx) and sent with every turn so it's
+  // already on hand the moment the assistant actually files a complaint —
+  // the citizen is never asked for it, GPS is silent background capture only.
+  const gpsCoordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  useEffect(() => {
+    if (!open || gpsCoordsRef.current || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        gpsCoordsRef.current = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+      },
+      () => {
+        // Denied or unavailable — complaint filing still works, just without
+        // a GPS fix (same graceful-degradation as the regular web forms).
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [open]);
 
   // Quick-reply chips — the point is to make the three main things this
   // assistant can do obvious and one-tap, instead of citizens having to
@@ -169,7 +191,12 @@ export default function VoiceAssistantWidget() {
       setTurns((prev) => [...prev, { role: "citizen", text: transcript }]);
       setBusy(true);
       try {
-        const reply = await voiceAssistantService.sendTurn(sessionIdRef.current, transcript);
+        const reply = await voiceAssistantService.sendTurn(
+          sessionIdRef.current,
+          transcript,
+          gpsCoordsRef.current?.latitude,
+          gpsCoordsRef.current?.longitude
+        );
         setTurns((prev) => [
           ...prev,
           {

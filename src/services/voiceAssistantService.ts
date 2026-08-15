@@ -29,10 +29,19 @@ const VOICE_CLOUD_TIMEOUT_MS = 20000;
 // VoiceAssistantController/VoiceAssistantService for how that identity is
 // used to skip asking for a mobile number the citizen already gave at login.
 export const voiceAssistantService = {
-  async sendTurn(sessionId: string, transcript: string): Promise<VoiceChatResponse> {
+  // latitude/longitude come from the widget's navigator.geolocation call (same
+  // trust level as the coords the regular web complaint forms already send) —
+  // harmless to include on every turn, the backend only uses them if this turn
+  // ends up actually filing a complaint.
+  async sendTurn(
+    sessionId: string,
+    transcript: string,
+    latitude?: number | null,
+    longitude?: number | null
+  ): Promise<VoiceChatResponse> {
     const response = await api.post<ApiResponse<VoiceChatResponse>>(
       "/citizen/voice-assistant/chat",
-      { sessionId, transcript }
+      { sessionId, transcript, latitude: latitude ?? undefined, longitude: longitude ?? undefined }
     );
     return response.data.data;
   },
