@@ -9,6 +9,7 @@ import {
   ListChecks,
   Info,
   Receipt,
+  Trash2,
   CheckCircle2,
   User,
   Bot,
@@ -53,6 +54,7 @@ interface ConversationTurn {
   text: string;
   actionTaken?: string | null;
   complaintNumber?: string | null;
+  trackingNumber?: string | null;
 }
 
 interface QuickAction {
@@ -97,9 +99,9 @@ export default function VoiceAssistantWidget() {
   const greeting = useMemo(() => {
     if (isAuthenticated && user?.name) {
       const firstName = user.name.split(" ")[0];
-      return `Hi ${firstName}! I can file a complaint, check on one, check your property tax dues, or tell you about a district service — what would you like to do?`;
+      return `Hi ${firstName}! I can file a complaint, check on one, request a waste pickup, check your property tax dues, or tell you about a district service — what would you like to do?`;
     }
-    return "Namaskar! I can help you file a complaint, check a complaint's status, or find a district service. Log in first if you'd like me to also check your property tax dues or skip asking for your mobile number.";
+    return "Namaskar! I can help you file a complaint, check a complaint's status, request a waste pickup, or find a district service. Log in first if you'd like me to also check your property tax dues or skip asking for your mobile number.";
   }, [isAuthenticated, user]);
 
   const [turns, setTurns] = useState<ConversationTurn[]>([{ role: "assistant", text: greeting }]);
@@ -152,6 +154,12 @@ export default function VoiceAssistantWidget() {
           label: isAuthenticated ? "My complaints" : "Check status",
           icon: <ListChecks className="h-3.5 w-3.5" />,
           phrase: isAuthenticated ? "Show me my recent complaints." : "I want to check a complaint's status.",
+        },
+        {
+          key: "waste-pickup",
+          label: "Waste pickup",
+          icon: <Trash2 className="h-3.5 w-3.5" />,
+          phrase: "I want to request a waste pickup.",
         },
       ];
       if (isAuthenticated) {
@@ -217,6 +225,7 @@ export default function VoiceAssistantWidget() {
             text: reply.replyText,
             actionTaken: reply.actionTaken,
             complaintNumber: reply.complaintNumber,
+            trackingNumber: reply.trackingNumber,
           },
         ]);
         speak(reply.replyText);
@@ -408,6 +417,12 @@ export default function VoiceAssistantWidget() {
                 <div className="mt-1.5 flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Complaint #{turn.complaintNumber}
+                </div>
+              )}
+              {turn.trackingNumber && (
+                <div className="mt-1.5 flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Tracking ID #{turn.trackingNumber}
                 </div>
               )}
             </div>

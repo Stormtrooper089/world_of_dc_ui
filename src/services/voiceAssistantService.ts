@@ -4,8 +4,9 @@ import { ApiResponse } from "../types";
 export interface VoiceChatResponse {
   sessionId: string;
   replyText: string;
-  actionTaken?: "COMPLAINT_CREATED" | "COMPLAINT_STATUS" | "SERVICE_INFO" | null;
+  actionTaken?: "COMPLAINT_CREATED" | "COMPLAINT_STATUS" | "SERVICE_INFO" | "WASTE_PICKUP_REQUESTED" | null;
   complaintNumber?: string | null;
+  trackingNumber?: string | null;
 }
 
 export interface SpeechToTextResponse {
