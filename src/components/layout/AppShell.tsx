@@ -39,7 +39,10 @@ const NavItem = ({
   badge,
 }: any) => (
   <button
-    onClick={onClick}
+    onClick={(event) => {
+      onClick();
+      event.currentTarget.blur();
+    }}
     className={`group flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
       isActive
         ? "border-blue-100 bg-blue-600 text-white shadow-sm"
@@ -56,7 +59,7 @@ const NavItem = ({
     >
       <Icon className="h-4 w-4" />
     </span>
-    <span className="min-w-0 flex-1 overflow-hidden opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
+    <span className="min-w-0 flex-1 overflow-hidden opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100">
       <span className="block truncate text-sm font-bold">{label}</span>
       {description && (
         <span
@@ -76,7 +79,7 @@ const NavItem = ({
 
 const NavSection = ({ title, items, activeView, setActiveView }: any) => (
   <section className="space-y-1.5">
-    <p className="h-4 overflow-hidden px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
+    <p className="h-4 overflow-hidden px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100">
       {title}
     </p>
     {items.map((item: any) => (
@@ -200,13 +203,13 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-      <nav className="group/sidebar z-50 hidden w-20 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white transition-[width] duration-200 ease-out hover:w-[276px] focus-within:w-[276px] md:flex">
+      <nav className="group/sidebar z-50 hidden w-20 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white transition-[width] duration-200 ease-out hover:w-[276px] md:flex">
         <div className="border-b border-slate-100 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-lg font-bold text-white shadow-lg shadow-blue-100">
               SMC
             </div>
-            <div className="min-w-0 overflow-hidden opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
+            <div className="min-w-0 overflow-hidden opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100">
               <p className="truncate text-sm font-bold text-slate-950">
                 SMC Admin Console
               </p>
@@ -246,7 +249,7 @@ export default function AppShell() {
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-red-600">
               <LogOut className="h-4 w-4" />
             </span>
-            <span className="min-w-0 overflow-hidden opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
+            <span className="min-w-0 overflow-hidden opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100">
               <span className="block text-sm font-bold">Sign Out</span>
               <span className="block text-xs text-red-500">
                 End current session
