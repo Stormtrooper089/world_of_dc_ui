@@ -9,9 +9,14 @@ import {
   Home,
   Landmark,
   Link as LinkIcon,
+  Layers3,
+  MapPinned,
+  Maximize2,
+  Navigation,
   ReceiptText,
   ShieldCheck,
   Store,
+  X,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -48,6 +53,7 @@ const MySMCAccount: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
   const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, { rating: string; feedback: string }>>({});
+  const [selectedMapProperty, setSelectedMapProperty] = useState<PropertyTaxAccount | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -341,7 +347,17 @@ const MySMCAccount: React.FC = () => {
                   {account?.linkedProperties.map((property) => (
                     <div
                       key={property.holdingNumber}
-                      className="rounded-lg border border-slate-200 p-4"
+                      onClick={() => setSelectedMapProperty(property)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedMapProperty(property);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Open cadastral map for ${property.holdingNumber}`}
+                      className="cursor-pointer rounded-lg border border-slate-200 p-4 transition-all hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
@@ -376,24 +392,46 @@ const MySMCAccount: React.FC = () => {
                         <Amount label="Penalty" value={property.penalty} />
                         <Amount label="Rebate" value={property.rebate} />
                       </div>
-                      <button
-                        onClick={() => handlePay(property)}
-                        disabled={
-                          property.amountDue <= 0 ||
-                          actionLoading === property.holdingNumber
-                        }
-                        className="mt-4 inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto"
-                      >
-                        <CreditCard className="h-4 w-4" />
-                        {property.amountDue <= 0
-                          ? "Paid"
-                          : actionLoading === property.holdingNumber
-                          ? "Processing..."
-                          : "Pay Now"}
-                      </button>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedMapProperty(property);
+                          }}
+                          className="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-800 hover:bg-blue-100 sm:w-auto"
+                        >
+                          <MapPinned className="h-4 w-4" />
+                          View cadastral map
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handlePay(property);
+                          }}
+                          disabled={
+                            property.amountDue <= 0 ||
+                            actionLoading === property.holdingNumber
+                          }
+                          className="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          {property.amountDue <= 0
+                            ? "Paid"
+                            : actionLoading === property.holdingNumber
+                            ? "Processing..."
+                            : "Pay Now"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
+
+                {selectedMapProperty && (
+                  <CadastralMap
+                    property={selectedMapProperty}
+                    onClose={() => setSelectedMapProperty(null)}
+                  />
+                )}
               </div>
 
               <div className="flex flex-col gap-5">
@@ -837,6 +875,137 @@ const ServiceShortcut = ({
   >
     {label}
   </a>
+);
+
+const CadastralMap = ({
+  property,
+  onClose,
+}: {
+  property: PropertyTaxAccount;
+  onClose: () => void;
+}) => {
+  const parcelId = property.assessmentNumber || property.holdingNumber;
+  const location = [property.locality, property.wardName].filter(Boolean).join(", ") || "Silchar Municipal Area";
+
+  return (
+    <section
+      id="cadastral-map"
+      className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+      aria-label={`Cadastral map for ${property.holdingNumber}`}
+    >
+      <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-4 py-4 text-white sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="rounded-lg bg-white/10 p-2 text-blue-200 ring-1 ring-white/15">
+            <MapPinned className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+              Property boundary view
+            </p>
+            <h3 className="mt-1 text-lg font-bold">Cadastral map · {property.holdingNumber}</h3>
+            <p className="mt-1 text-sm text-slate-300">{location}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex min-h-[40px] items-center justify-center gap-2 self-start rounded-md border border-white/20 bg-white/10 px-3 text-sm font-semibold text-white hover:bg-white/20 lg:self-auto"
+        >
+          <X className="h-4 w-4" />
+          Close map
+        </button>
+      </div>
+
+      <div className="grid border-b border-slate-200 bg-slate-50 sm:grid-cols-3">
+        <MapDetail label="Holding number" value={property.holdingNumber} />
+        <MapDetail label="Assessment / parcel ID" value={parcelId} />
+        <MapDetail label="Property class" value={property.propertyType || "Residential"} />
+      </div>
+
+      <div className="relative h-[360px] overflow-hidden bg-slate-900 sm:h-[440px]">
+        <svg
+          viewBox="0 0 1200 600"
+          className="h-full w-full"
+          role="img"
+          aria-label={`Indicative parcel map highlighting ${property.holdingNumber}`}
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <defs>
+            <linearGradient id="mapTerrain" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#243a35" />
+              <stop offset="0.46" stopColor="#37504a" />
+              <stop offset="1" stopColor="#1e302d" />
+            </linearGradient>
+            <pattern id="mapGrid" width="56" height="56" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
+              <path d="M 0 0 L 0 56 M 0 0 L 56 0" fill="none" stroke="#8ea19d" strokeOpacity=".12" strokeWidth="1" />
+            </pattern>
+            <filter id="parcelGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="7" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <rect width="1200" height="600" fill="url(#mapTerrain)" />
+          <rect width="1200" height="600" fill="url(#mapGrid)" />
+          <path d="M-30 96 C150 56 235 158 411 117 S718 13 890 91 S1100 159 1240 78" fill="none" stroke="#789a83" strokeOpacity=".25" strokeWidth="40" />
+          <path d="M-30 96 C150 56 235 158 411 117 S718 13 890 91 S1100 159 1240 78" fill="none" stroke="#b4c7ac" strokeOpacity=".24" strokeWidth="2" />
+          <path d="M-40 452 C152 392 244 495 429 438 S715 352 887 436 S1082 518 1240 438" fill="none" stroke="#7d9a78" strokeOpacity=".2" strokeWidth="65" />
+          <path d="M-40 452 C152 392 244 495 429 438 S715 352 887 436 S1082 518 1240 438" fill="none" stroke="#d6d3b6" strokeOpacity=".22" strokeWidth="2" />
+
+          <g fill="#52625e" fillOpacity=".62" stroke="#d4dfd8" strokeOpacity=".56" strokeWidth="1.5">
+            <path d="M42 162 l94 -31 58 47 -30 91 -88 23 -49 -48z" />
+            <path d="M199 124 l91 -21 50 58 -21 89 -94 29 -48 -64z" />
+            <path d="M359 137 l80 -40 60 43 -10 104 -97 24 -44 -49z" />
+            <path d="M517 99 l104 33 23 99 -90 42 -75 -48z" />
+            <path d="M679 118 l74 -46 79 53 -16 113 -87 29 -73 -57z" />
+            <path d="M860 122 l111 -25 57 68 -35 99 -103 11 -53 -72z" />
+            <path d="M1047 105 l109 31 25 99 -88 47 -85 -56z" />
+            <path d="M84 338 l87 -29 66 48 -19 98 -101 33 -55 -71z" />
+            <path d="M273 306 l98 -26 51 70 -25 97 -96 23 -55 -63z" />
+            <path d="M461 319 l79 -29 66 55 -7 97 -104 33 -55 -59z" />
+            <path d="M649 310 l91 -25 56 60 -21 108 -104 24 -51 -70z" />
+            <path d="M840 319 l92 -31 72 58 -15 110 -101 19 -62 -66z" />
+            <path d="M1030 331 l96 -29 66 58 -35 111 -101 14 -53 -70z" />
+          </g>
+          <g fill="#2f8380" fillOpacity=".45" stroke="#a8e1d8" strokeOpacity=".58" strokeWidth="1.5">
+            <path d="M-8 190 l31 56 -18 83 59 19 32 -56 -19 -84 -51 -39z" />
+            <path d="M322 252 l35 38 -10 65 51 29 45 -47 -24 -73 -53 -25z" />
+            <path d="M796 234 l42 44 -19 69 59 17 44 -62 -31 -64 -53 -14z" />
+            <path d="M606 430 l36 37 -14 66 60 33 49 -51 -24 -72 -58 -22z" />
+          </g>
+          <g filter="url(#parcelGlow)">
+            <path d="M461 319 l79 -29 66 55 -7 97 -104 33 -55 -59z" fill="#e89a25" fillOpacity=".78" stroke="#fff2b2" strokeWidth="4" />
+          </g>
+          <path d="M0 300 L1200 300" stroke="#e7dfc6" strokeOpacity=".4" strokeWidth="13" />
+          <path d="M0 300 L1200 300" stroke="#9b8b68" strokeOpacity=".7" strokeWidth="2" strokeDasharray="10 12" />
+          <text x="500" y="360" fill="#fff8df" fontSize="18" fontWeight="700">{property.holdingNumber}</text>
+          <text x="500" y="383" fill="#fff8df" fontSize="13">Selected property</text>
+        </svg>
+
+        <div className="absolute left-4 top-4 rounded-lg border border-white/20 bg-slate-950/80 p-2 text-xs font-semibold text-white shadow-lg backdrop-blur">
+          <div className="flex items-center gap-2"><Layers3 className="h-4 w-4 text-blue-300" /> Cadastral parcels</div>
+          <div className="mt-2 flex items-center gap-2 text-slate-200"><span className="h-3 w-3 rounded-sm border border-amber-100 bg-amber-500" /> Your linked property</div>
+          <div className="mt-1 flex items-center gap-2 text-slate-200"><span className="h-3 w-3 rounded-sm border border-teal-100 bg-teal-600" /> Public / open land</div>
+        </div>
+        <div className="absolute bottom-4 left-4 rounded-md bg-white/90 px-2 py-1 text-xs font-bold text-slate-800 shadow">50 m</div>
+        <div className="absolute bottom-4 right-4 flex gap-2">
+          <button type="button" className="rounded-md bg-white/90 p-2 text-slate-700 shadow hover:bg-white" aria-label="Centre map"><Navigation className="h-4 w-4" /></button>
+          <button type="button" className="rounded-md bg-white/90 p-2 text-slate-700 shadow hover:bg-white" aria-label="Expand map"><Maximize2 className="h-4 w-4" /></button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <p>Boundary display is indicative and intended for property identification only.</p>
+        <p className="font-medium text-slate-700">Authoritative survey records remain the legal reference.</p>
+      </div>
+    </section>
+  );
+};
+
+const MapDetail = ({ label, value }: { label: string; value: string }) => (
+  <div className="border-b border-slate-200 px-4 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 sm:px-5">
+    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+    <p className="mt-1 truncate text-sm font-semibold text-slate-900" title={value}>{value}</p>
+  </div>
 );
 
 const Amount = ({ label, value }: { label: string; value: number }) => (
