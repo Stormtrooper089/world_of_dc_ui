@@ -232,6 +232,22 @@ export interface AuctionListing {
   updatedAt?: string;
 }
 
+export interface LandParcelLink {
+  holdingNumber: string;
+  assessmentNumber?: string;
+  status: "NOT_LINKED" | "REFERENCE_PENDING" | "OFFICIAL_BOUNDARY_VERIFIED" | string;
+  cadastralReference?: string;
+  dagNumber?: string;
+  pattaNumber?: string;
+  ulpin?: string;
+  mapSource?: string;
+  officialRecordUrl?: string;
+  landRecordUpdatedAt?: string;
+  officialBoundary: boolean;
+  mapAvailable: boolean;
+  disclaimer: string;
+}
+
 export interface AuctionBid {
   id?: string;
   bidId: string;

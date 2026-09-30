@@ -1,6 +1,7 @@
 import api from "./api";
 import {
   ApiResponse,
+  LandParcelLink,
   MySmcAccount,
   PropertyTaxAccount,
   PropertyTaxDashboard,
@@ -31,6 +32,13 @@ export const propertyTaxService = {
     const response = await api.post<ApiResponse<PropertyTaxReceipt>>(
       "/property-tax/pay",
       { holdingNumber, paymentMode }
+    );
+    return response.data.data;
+  },
+
+  async getLandParcel(holdingNumber: string): Promise<LandParcelLink> {
+    const response = await api.get<ApiResponse<LandParcelLink>>(
+      `/property-tax/${encodeURIComponent(holdingNumber)}/land-parcel`
     );
     return response.data.data;
   },

@@ -22,7 +22,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { propertyTaxService } from "../services/propertyTaxService";
 import { tradeLicenseService } from "../services/tradeLicenseService";
-import { MySmcAccount, PropertyTaxAccount, TradeLicenseAccount } from "../types";
+import { LandParcelLink, MySmcAccount, PropertyTaxAccount, TradeLicenseAccount } from "../types";
 
 const formatCurrency = (value?: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -54,6 +54,8 @@ const MySMCAccount: React.FC = () => {
   const [actionLoading, setActionLoading] = useState("");
   const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, { rating: string; feedback: string }>>({});
   const [selectedMapProperty, setSelectedMapProperty] = useState<PropertyTaxAccount | null>(null);
+  const [landParcel, setLandParcel] = useState<LandParcelLink | null>(null);
+  const [mapLoading, setMapLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -238,6 +240,19 @@ const MySMCAccount: React.FC = () => {
     }
   };
 
+  const openCadastralMap = async (property: PropertyTaxAccount) => {
+    setSelectedMapProperty(property);
+    setLandParcel(null);
+    setMapLoading(true);
+    try {
+      setLandParcel(await propertyTaxService.getLandParcel(property.holdingNumber));
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Land-record link is not available for this property yet");
+    } finally {
+      setMapLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <header className="border-b border-slate-200 bg-white">
@@ -347,11 +362,11 @@ const MySMCAccount: React.FC = () => {
                   {account?.linkedProperties.map((property) => (
                     <div
                       key={property.holdingNumber}
-                      onClick={() => setSelectedMapProperty(property)}
+                      onClick={() => openCadastralMap(property)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                          setSelectedMapProperty(property);
+                          openCadastralMap(property);
                         }
                       }}
                       role="button"
@@ -396,7 +411,7 @@ const MySMCAccount: React.FC = () => {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            setSelectedMapProperty(property);
+                            openCadastralMap(property);
                           }}
                           className="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-800 hover:bg-blue-100 sm:w-auto"
                         >
@@ -429,7 +444,12 @@ const MySMCAccount: React.FC = () => {
                 {selectedMapProperty && (
                   <CadastralMap
                     property={selectedMapProperty}
-                    onClose={() => setSelectedMapProperty(null)}
+                    landParcel={landParcel}
+                    loading={mapLoading}
+                    onClose={() => {
+                      setSelectedMapProperty(null);
+                      setLandParcel(null);
+                    }}
                   />
                 )}
               </div>
@@ -879,9 +899,13 @@ const ServiceShortcut = ({
 
 const CadastralMap = ({
   property,
+  landParcel,
+  loading,
   onClose,
 }: {
   property: PropertyTaxAccount;
+  landParcel: LandParcelLink | null;
+  loading: boolean;
   onClose: () => void;
 }) => {
   const parcelId = property.assessmentNumber || property.holdingNumber;
@@ -900,7 +924,7 @@ const CadastralMap = ({
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
-              Property boundary view
+              {landParcel?.officialBoundary ? "Official cadastral boundary" : "Municipal property map"}
             </p>
             <h3 className="mt-1 text-lg font-bold">Cadastral map · {property.holdingNumber}</h3>
             <p className="mt-1 text-sm text-slate-300">{location}</p>
@@ -918,8 +942,8 @@ const CadastralMap = ({
 
       <div className="grid border-b border-slate-200 bg-slate-50 sm:grid-cols-3">
         <MapDetail label="Holding number" value={property.holdingNumber} />
-        <MapDetail label="Assessment / parcel ID" value={parcelId} />
-        <MapDetail label="Property class" value={property.propertyType || "Residential"} />
+        <MapDetail label="Cadastral reference" value={landParcel?.cadastralReference || parcelId} />
+        <MapDetail label="Map status" value={loading ? "Checking land record…" : landParcel?.status?.replace(/_/g, " ") || "Reference pending"} />
       </div>
 
       <div className="relative h-[360px] overflow-hidden bg-slate-900 sm:h-[440px]">
@@ -982,9 +1006,9 @@ const CadastralMap = ({
         </svg>
 
         <div className="absolute left-4 top-4 rounded-lg border border-white/20 bg-slate-950/80 p-2 text-xs font-semibold text-white shadow-lg backdrop-blur">
-          <div className="flex items-center gap-2"><Layers3 className="h-4 w-4 text-blue-300" /> Cadastral parcels</div>
+          <div className="flex items-center gap-2"><Layers3 className="h-4 w-4 text-blue-300" /> {landParcel?.officialBoundary ? "Cadastral parcels" : "Municipal preview"}</div>
           <div className="mt-2 flex items-center gap-2 text-slate-200"><span className="h-3 w-3 rounded-sm border border-amber-100 bg-amber-500" /> Your linked property</div>
-          <div className="mt-1 flex items-center gap-2 text-slate-200"><span className="h-3 w-3 rounded-sm border border-teal-100 bg-teal-600" /> Public / open land</div>
+          <div className="mt-1 text-slate-200">{loading ? "Checking authorised land record…" : landParcel?.mapSource || "Cadastral link pending"}</div>
         </div>
         <div className="absolute bottom-4 left-4 rounded-md bg-white/90 px-2 py-1 text-xs font-bold text-slate-800 shadow">50 m</div>
         <div className="absolute bottom-4 right-4 flex gap-2">
@@ -994,8 +1018,8 @@ const CadastralMap = ({
       </div>
 
       <div className="flex flex-col gap-2 bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <p>Boundary display is indicative and intended for property identification only.</p>
-        <p className="font-medium text-slate-700">Authoritative survey records remain the legal reference.</p>
+        <p>{loading ? "Checking the municipal-to-land-record link…" : landParcel?.disclaimer || "Boundary display is indicative and intended for property identification only."}</p>
+        <p className="font-medium text-slate-700">{landParcel?.officialBoundary ? "Open the certified survey record for legal use." : "Authoritative survey records remain the legal reference."}</p>
       </div>
     </section>
   );
